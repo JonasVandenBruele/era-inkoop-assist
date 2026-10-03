@@ -12,6 +12,9 @@
 - **Avondoverzicht** voor Donna: bewerkbare tekst, kopiëren, status *klaargezet* / *door mij doorgegeven* (herstelbaar), optionele referentiecode per gesprek. Wordt nooit automatisch verstuurd.
 - Migratie `20261003000002_lokale_resultaten.sql`: belverboden, opvolgacties, planningskeuzes, dagplannen, donna_overzichten — allemaal met RLS.
 
+### Online
+- Databasemigraties worden automatisch toegepast door GitHub bij elke publicatie (rechtstreekse databaseverbinding, enkel het databasewachtwoord als geheim). Migratie 2 is zo uitgevoerd; anonieme toegang tot de nieuwe tabellen is geweigerd (gecontroleerd).
+
 ### Tests
 - 103 tests, o.a.: elk belresultaat en het effect op de lijst, nieuwe lead mag dezelfde dag nog eens, lokale terugbelafspraak vervangt een oudere uit de bron, ongedaan maken, dagplan blijft stabiel, Donna-tekst, toegangsregels voor de nieuwe tabellen, en een herimport van de bron die geen enkele lokale keuze of belpoging overschrijft.
 

@@ -1,6 +1,6 @@
 # PLAN — Dagplanner (module 1 van ERA Inkoop Assist)
 
-Status: **fase 1–2 online en getest op iPhone; fase 3 gebouwd en lokaal getest. Databasewijzigingen worden voortaan automatisch via GitHub uitgevoerd (eenmalige sleutels nodig).**
+Status: **fase 1–3 online. Databasewijzigingen gaan automatisch mee bij elke publicatie via GitHub (geen handwerk meer in Supabase).**
 Laatst bijgewerkt: 3 oktober 2026
 
 ---
