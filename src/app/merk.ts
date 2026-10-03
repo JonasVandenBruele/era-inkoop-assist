@@ -1,5 +1,6 @@
-// Naam en merk van de app op één plaats. De naam wordt pas definitief na Jonas' keuze.
+// Naam en merk van de app op één plaats. Gekozen door Jonas op 3/10/2026:
+// "Oxpecker" — de ossenpikker op de neushoorn: altijd aanwezig, nooit opdringerig.
 export const MERK = {
-  naam: 'Dagplanner',
-  ondertitel: 'ERA Inkoop Assist',
+  naam: 'Oxpecker',
+  ondertitel: 'ERA · Dagplanner',
 } as const;

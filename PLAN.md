@@ -1,4 +1,6 @@
-# PLAN — Dagplanner (module 1 van ERA Inkoop Assist)
+# PLAN — Oxpecker (ERA Inkoop Assist), module 1: Dagplanner
+
+> Naam gekozen op 3/10/2026: **Oxpecker**, naar de ossenpikker op de neushoorn — altijd aanwezig, nooit opdringerig.
 
 Status: **fase 1–3b online, met "timeline eerst" (5.2). Bellen en registreren via ERAForce (Maf Call).**
 Laatst bijgewerkt: 3 oktober 2026

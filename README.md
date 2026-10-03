@@ -1,4 +1,6 @@
-# ERA Inkoop Assist — Dagplanner
+# Oxpecker — ERA Inkoop Assist
+
+*Altijd aanwezig, nooit opdringerig.* De eerste module is de **Dagplanner**.
 
 Persoonlijke dagplanner voor een inkoper: wie bel ik vandaag, waarom, en wanneer past dat tussen mijn afspraken.
 Het volledige plan staat in [PLAN.md](PLAN.md), de wijzigingen in [CHANGELOG.md](CHANGELOG.md).

@@ -17,9 +17,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'ERA Inkoop Assist',
-        short_name: 'Dagplanner',
-        description: 'Dagplanner voor inkopers',
+        name: 'Oxpecker — ERA Inkoop Assist',
+        short_name: 'Oxpecker',
+        description: 'Altijd aanwezig, nooit opdringerig: dagplanner voor inkopers bij ERA',
         lang: 'nl-BE',
         display: 'standalone',
         start_url: base,
