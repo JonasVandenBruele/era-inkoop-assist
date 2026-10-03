@@ -547,7 +547,7 @@ Elke fase sluit af met: wat werkt · hoe je het zelf test · wat je moet regelen
 - **Acceptatie:** melding komt binnen op je geïnstalleerde iPhone-app; zonder toestemming werkt alles behalve meldingen.
 
 ### Fase 8 — ERAForce-mirror (zodra beschikbaar)
-**Opruimen bij de start van fase 8 (op vraag van Jonas, 3/10/2026):** de tijdelijke functie **"Koppel aan ERAForce"** (link plakken op de contactpagina, tabel `eraforce_koppelingen`, component `EraforceKoppeling.tsx`) verwijderen zodra de mirror de ERAForce-ID's levert. Bestaande koppelingen eerst nakijken, dan via een migratie de tabel laten vallen.
+**Opruimen bij de start van fase 8 (op vraag van Jonas, 3/10/2026):** de tijdelijke instelling **"Testlink voor alle contacten"** (`eraforce.testIdVoorIedereen`) én de tijdelijke functie **"Koppel aan ERAForce"** (link plakken op de contactpagina, tabel `eraforce_koppelingen`, component `EraforceKoppeling.tsx`) verwijderen zodra de mirror de ERAForce-ID's levert. Bestaande koppelingen eerst nakijken, dan via een migratie de tabel laten vallen.
 
 Eerste waarnemingen staan al in [DATA.md](DATA.md): prospects zijn Salesforce-**Leads**, gesprekken zijn **Taken** (recordtype "ERAforce Taken algemeen", type "Uitgaande Oproep") die via **Maf Call** ontstaan. Bellen gebeurt via ERAForce; de Dagplanner opent het record met één tik (knop "Bel via ERAForce", gebouwd 3/10/2026).
 Volgt de 8 stappen uit je instructies: inventaris → DATA.md → mappingvoorstel → **jouw akkoord** → alleen-lezen adapter → tests (herhaalde import, wijzigingen, ontbrekende velden, verwijderingen, lokale resultaten) → 10 extractievoorbeelden beoordelen.

@@ -64,9 +64,11 @@ export function berichtTekst({ kandidaat: k, kanaal, voornaamGebruiker, organisa
 }
 
 /** Link die de juiste app opent met de tekst al ingevuld. Jonas verstuurt zelf. */
-export function berichtLink(kanaal: 'sms' | 'whatsapp' | 'mail', adres: string, bericht: Bericht): string {
+export function berichtLink(kanaal: 'sms' | 'whatsapp' | 'mail', adres: string, bericht: Bericht, mailApp: 'outlook' | 'standaard' = 'outlook'): string {
   const t = encodeURIComponent(bericht.tekst);
-  if (kanaal === 'mail') return `mailto:${adres}?subject=${encodeURIComponent(bericht.onderwerp ?? '')}&body=${t}`;
+  const onderwerp = encodeURIComponent(bericht.onderwerp ?? '');
+  if (kanaal === 'mail' && mailApp === 'outlook') return `ms-outlook://compose?to=${encodeURIComponent(adres)}&subject=${onderwerp}&body=${t}`;
+  if (kanaal === 'mail') return `mailto:${adres}?subject=${onderwerp}&body=${t}`;
   const nummer = adres.replace(/[^\d+]/g, '');
   if (kanaal === 'whatsapp') return `https://wa.me/${nummer.replace(/^\+/, '').replace(/^0/, '32')}?text=${t}`;
   return `sms:${nummer}&body=${t}`;

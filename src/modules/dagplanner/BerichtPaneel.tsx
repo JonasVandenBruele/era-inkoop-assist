@@ -41,7 +41,7 @@ export function BerichtPaneel({ k, start, onKlaar }: { k: Kandidaat; start: Beri
   const adres = kanaal === 'mail' ? c.email! : tel!;
   // Verzonnen testnummers nooit echt openen; testmailadressen eindigen op .test en komen nergens aan.
   const openenUit = c.isTestdata && kanaal !== 'mail';
-  const appNaam = { sms: 'Berichten', whatsapp: 'WhatsApp', mail: 'Mail' }[kanaal];
+  const appNaam = { sms: 'Berichten', whatsapp: 'WhatsApp', mail: instellingen.mailApp === 'outlook' ? 'Outlook' : 'Mail' }[kanaal];
 
   async function bewaar() {
     setBezig(true);
@@ -80,7 +80,7 @@ export function BerichtPaneel({ k, start, onKlaar }: { k: Kandidaat; start: Beri
         {openenUit ? (
           <button className="knop primair groot" disabled title="Testdata: verzonnen nummer">Open in {appNaam} (testdata)</button>
         ) : (
-          <a className="knop primair groot" href={berichtLink(kanaal, adres, { onderwerp: huidigOnderwerp, tekst: huidigeTekst })} target="_blank" rel="noreferrer" onClick={() => setGeopend(true)}>
+          <a className="knop primair groot" href={berichtLink(kanaal, adres, { onderwerp: huidigOnderwerp, tekst: huidigeTekst }, instellingen.mailApp)} target="_blank" rel="noreferrer" onClick={() => setGeopend(true)}>
             Open in {appNaam}
           </a>
         )}

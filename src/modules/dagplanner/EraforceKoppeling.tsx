@@ -5,10 +5,10 @@ import type { Contact } from '../../domain/model';
 
 /** "Open in ERAForce" en, zolang er geen mirror is, het contact zelf koppelen door de link uit de Salesforce-app te plakken. */
 export function EraforceKoppeling({ contactId, bron, externId }: { contactId: string; bron: Contact['bron']; externId: string | null }) {
-  const { gegevens, koppelAanEraforce, toon } = useApp();
+  const { gegevens, koppelAanEraforce, toon, instellingen } = useApp();
   const domein = import.meta.env.VITE_ERAFORCE_DOMEIN;
   const gekoppeld = gegevens.koppelingen.find((k) => k.contactId === contactId)?.salesforceId ?? null;
-  const link = eraforceLink({ bron, externId }, domein, gekoppeld);
+  const link = eraforceLink({ bron, externId }, domein, gekoppeld ?? instellingen.eraforce.testIdVoorIedereen);
   const [open, setOpen] = useState(false);
   const [plak, setPlak] = useState('');
   const id = salesforceIdUitLink(plak);

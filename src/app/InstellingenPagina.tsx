@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { useApp } from './context';
 import { langeDag } from '../core/dates';
 import { PlanningInstellingen } from './PlanningInstellingen';
+import { salesforceIdUitLink } from '../domain/eraforce';
 
 export function InstellingenPagina() {
   const { instellingen, wijzigInstellingen, herlaadTestdata, store, gebruikerEmail, afmelden, klok } = useApp();
   const [testdatum, setTestdatum] = useState(instellingen.testdatum ?? '');
+  const [testLink, setTestLink] = useState('');
   const [bezig, setBezig] = useState<string | null>(null);
   const [bericht, setBericht] = useState<string | null>(null);
 
@@ -91,6 +93,50 @@ export function InstellingenPagina() {
           Na bellen via ERAForce toch nog "hoe ging het?" vragen (voor een meteen bijgewerkte lijst)
         </label>
         {!import.meta.env.VITE_ERAFORCE_DOMEIN && <p className="klein zacht">ERAForce-domein nog niet ingesteld.</p>}
+
+        <h3>Testlink voor alle contacten (tijdelijk)</h3>
+        <p className="zacht klein">
+          Tot de ERAForce-mirror er is: plak de link van één prospect, dan opent "Bel via ERAForce" bij elk contact die prospect. Verdwijnt zodra de mirror er is.
+        </p>
+        {instellingen.eraforce.testIdVoorIedereen ? (
+          <p>
+            Actief ✓{' '}
+            <button
+              className="knop tekstknop"
+              onClick={() => doe('eraf', () => wijzigInstellingen({ ...instellingen, eraforce: { ...instellingen.eraforce, testIdVoorIedereen: null } }), 'Testlink verwijderd.')}
+            >
+              Verwijderen
+            </button>
+          </p>
+        ) : (
+          <div className="formulier">
+            <input value={testLink} onChange={(e) => setTestLink(e.target.value)} placeholder="https://…lightning.force.com/lightning/r/Lead/…/view" aria-label="Testlink" />
+            {testLink && !salesforceIdUitLink(testLink) && <p className="foutmelding klein">Daar vind ik geen ERAForce-ID in.</p>}
+            <button
+              className="knop"
+              disabled={!salesforceIdUitLink(testLink)}
+              onClick={() =>
+                doe('eraf', () => wijzigInstellingen({ ...instellingen, eraforce: { ...instellingen.eraforce, testIdVoorIedereen: salesforceIdUitLink(testLink) } }), 'Testlink actief voor alle contacten.')
+              }
+            >
+              Testlink bewaren
+            </button>
+          </div>
+        )}
+      </section>
+
+      <section className="kaart">
+        <h2>Mail</h2>
+        <label className="formulier">
+          Mail openen in
+          <select
+            value={instellingen.mailApp}
+            onChange={(e) => doe('mail', () => wijzigInstellingen({ ...instellingen, mailApp: e.target.value as 'outlook' | 'standaard' }), 'Bewaard.')}
+          >
+            <option value="outlook">Outlook</option>
+            <option value="standaard">Standaard-mailapp (Apple Mail)</option>
+          </select>
+        </label>
       </section>
 
       <section className="kaart">

@@ -186,3 +186,12 @@ describe('berichtteksten', () => {
     expect(t.tekst).toContain('Pieter'); // aanspreekvorm je
   });
 });
+
+describe('mail-app', () => {
+  it('opent standaard Outlook, of de standaard-mailapp als je dat kiest', async () => {
+    const { berichtLink } = await import('./berichten');
+    const b = { onderwerp: 'Uw woning', tekst: 'Beste' };
+    expect(berichtLink('mail', 'a@b.test', b)).toBe('ms-outlook://compose?to=a%40b.test&subject=Uw%20woning&body=Beste');
+    expect(berichtLink('mail', 'a@b.test', b, 'standaard')).toBe('mailto:a@b.test?subject=Uw%20woning&body=Beste');
+  });
+});

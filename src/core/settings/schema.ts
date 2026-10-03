@@ -74,8 +74,13 @@ export const InstellingenSchema = z.object({
       belViaEraforce: z.boolean().default(true),
       /** Na bellen via ERAForce nog "hoe ging het?" vragen? Standaard niet: de evaluatie staat dan al in ERAForce. */
       vraagNaBellenViaEraforce: z.boolean().default(false),
+      /** TIJDELIJK (tot de mirror er is): één ERAForce-ID voor alle contacten zonder eigen koppeling, om de knop te testen. */
+      testIdVoorIedereen: z.string().regex(/^[a-zA-Z0-9]{15}([a-zA-Z0-9]{3})?$/).nullable().default(null),
     })
-    .default({ belViaEraforce: true, vraagNaBellenViaEraforce: false }),
+    .default({ belViaEraforce: true, vraagNaBellenViaEraforce: false, testIdVoorIedereen: null }),
+
+  /** Welke mail-app opent bij "Mail": Outlook (standaard) of de standaard-mailapp van het toestel (Apple Mail). */
+  mailApp: z.enum(['outlook', 'standaard']).default('outlook'),
 
   // AI (fase 4)
   ai: z
