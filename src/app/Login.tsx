@@ -21,6 +21,7 @@ export function Login() {
 
   return (
     <main className="pagina login">
+      <img className="login-icoon" src={`${import.meta.env.BASE_URL}icon.svg`} alt="" width="72" height="72" />
       <div className="login-merk">
         <span className="appnaam">{MERK.naam}</span>
         <span className="appondertitel">{MERK.ondertitel}</span>

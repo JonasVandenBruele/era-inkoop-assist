@@ -424,3 +424,6 @@ a { color: var(--rood); }
 .belkaart > .knoppenrij { flex-wrap: nowrap; }
 .belkaart > .knoppenrij .knop { padding-left: 12px; padding-right: 12px; }
 .belkaart > .knoppenrij .belknop { flex: 1 1 auto; min-width: 0; font-size: 0.92rem; }
+.appbalk { align-items: center; }
+.appmerk { border-radius: 6px; flex: none; }
+.login-icoon { border-radius: 16px; margin-bottom: 14px; display: block; }

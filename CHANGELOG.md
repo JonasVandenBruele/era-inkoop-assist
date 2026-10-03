@@ -5,7 +5,7 @@
 ### Gewijzigd
 - De app heet voortaan **Oxpecker** (ERA Inkoop Assist), naar de ossenpikker op de neushoorn: altijd aanwezig, nooit opdringerig. De Dagplanner is de eerste module.
 - **ERA-huisstijl** afgeleid van era.be: blauw #000085, rood #D60A29, grijs #6E6F72; titels vet in hoofdletters; rode knoppen met donker schuin hoekje; Montserrat (in de app gebundeld) als alternatief voor Gotham.
-- Nieuwe appbalk, lijnicoontjes in de menubalk, en een app-icoon met een ossenpikker (witte vogel, rode snavel) op ERA-blauw.
+- Nieuwe appbalk, lijnicoontjes in de menubalk, en een beeldmerk: een ossenpikker (witte vogel, rode snavel) op de nok van een tweekleurig rood dak — een knipoog naar het ERA-dak — op ERA-blauw. Ook klein in de appbalk en op het inlogscherm.
 - Mail opent standaard in **Outlook** (instelbaar).
 - Tijdelijke **testlink naar ERAForce voor alle contacten** (Instellingen → ERAForce); verdwijnt bij de mirror.
 - Het officiële ERA-logo wordt pas toegevoegd met het bestand en akkoord van ERA Marketing.

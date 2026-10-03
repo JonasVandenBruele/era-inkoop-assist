@@ -5,29 +5,33 @@ import { writeFileSync } from 'node:fs';
 const BLAUW = [0, 0, 133]; // ERA-blauw #000085
 const WIT = [255, 255, 255];
 const ROOD = [214, 10, 41]; // ERA-rood #D60A29
+const ROOD_DONKER = [149, 16, 58]; // dieprood #95103A
 
-// Ossenpikker: witte vogel met rode snavel (ERA-rood) op de rug van een neushoorn (witte boog), op ERA-blauw.
-function kleurOp(x, y) {
+// Ossenpikker (witte vogel, rode snavel) op de nok van een tweekleurig rood dak — een knipoog naar het ERA-dak.
+function kleurOp(x, y0) {
+  // --- dak: band onder de daklijn, met korte zijmuren; links ERA-rood, rechts dieprood ---
+  const links = 0.12, rechts = 0.88, nok = 0.54, helling = 0.2, dikte = 0.11;
+  if (x >= links && x <= rechts) {
+    const daklijn = nok + (Math.abs(x - 0.5) / (0.5 - links)) * helling;
+    const inBand = y0 >= daklijn && y0 <= daklijn + dikte;
+    const inMuur = (x <= links + dikte * 0.9 || x >= rechts - dikte * 0.9) && y0 >= daklijn && y0 <= 0.9;
+    if (inBand || inMuur) return x < 0.5 ? ROOD : ROOD_DONKER;
+  }
+  // --- vogel, 0.2 hoger getekend zodat de poten op de nok staan ---
+  const y = y0 + 0.2;
   const inEllips = (cx, cy, rx, ry) => ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1;
   const inDriehoek = (ax, ay, bx, by, cx, cy) => {
     const d = (px, py, qx, qy, rx, ry) => (px - rx) * (qy - ry) - (qx - rx) * (py - ry);
     const d1 = d(x, y, ax, ay, bx, by), d2 = d(x, y, bx, by, cx, cy), d3 = d(x, y, cx, cy, ax, ay);
     return !((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0));
   };
-  // oog (blauw met rode ring)
   if (inEllips(0.6, 0.38, 0.028, 0.028)) return BLAUW;
   if (inEllips(0.6, 0.38, 0.045, 0.045)) return ROOD;
-  // snavel
   if (inDriehoek(0.66, 0.37, 0.66, 0.45, 0.84, 0.43)) return ROOD;
-  // kop, lijf, staart
   if (inEllips(0.58, 0.41, 0.1, 0.1)) return WIT;
   if (inEllips(0.47, 0.55, 0.18, 0.12)) return WIT;
   if (inDriehoek(0.32, 0.5, 0.33, 0.62, 0.16, 0.68)) return WIT;
-  // poten
-  if ((Math.abs(x - 0.46) < 0.012 || Math.abs(x - 0.52) < 0.012) && y > 0.64 && y < 0.72) return WIT;
-  // rug van de neushoorn (boog)
-  const boog = 0.73 + 0.9 * (x - 0.5) ** 2;
-  if (y > boog && y < boog + 0.035 && x > 0.12 && x < 0.88) return WIT;
+  if ((Math.abs(x - 0.47) < 0.012 || Math.abs(x - 0.53) < 0.012) && y > 0.64 && y < 0.745) return WIT;
   return BLAUW;
 }
 
@@ -81,6 +85,6 @@ writeFileSync('public/icon-512.png', png(512));
 writeFileSync('public/apple-touch-icon.png', png(180));
 writeFileSync(
   'public/icon.svg',
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="#000085"/><path d="M12 76 Q50 70 88 76" stroke="#fff" stroke-width="3.5" fill="none"/><path d="M32 50 L33 62 L16 68 Z" fill="#fff"/><ellipse cx="47" cy="55" rx="18" ry="12" fill="#fff"/><circle cx="58" cy="41" r="10" fill="#fff"/><path d="M66 37 L66 45 L84 43 Z" fill="#D60A29"/><circle cx="60" cy="38" r="4.5" fill="#D60A29"/><circle cx="60" cy="38" r="2.8" fill="#000085"/><rect x="45" y="64" width="2.4" height="8" fill="#fff"/><rect x="51" y="64" width="2.4" height="8" fill="#fff"/></svg>\n`,
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="#000085"/><path d="M12 74 L50 54 L50 65 L22 80 L22 90 L12 90 Z" fill="#D60A29"/><path d="M88 74 L50 54 L50 65 L78 80 L78 90 L88 90 Z" fill="#95103A"/><path d="M32 30 L33 42 L16 48 Z" fill="#fff"/><ellipse cx="47" cy="35" rx="18" ry="12" fill="#fff"/><circle cx="58" cy="21" r="10" fill="#fff"/><path d="M66 17 L66 25 L84 23 Z" fill="#D60A29"/><circle cx="60" cy="18" r="4.5" fill="#D60A29"/><circle cx="60" cy="18" r="2.8" fill="#000085"/><rect x="46" y="44" width="2.4" height="10" fill="#fff"/><rect x="52" y="44" width="2.4" height="10" fill="#fff"/></svg>\n`,
 );
 console.log('Iconen gemaakt in public/');
