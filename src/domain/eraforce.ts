@@ -13,13 +13,27 @@ const SALESFORCE_ID = /^[a-zA-Z0-9]{15}([a-zA-Z0-9]{3})?$/;
  * en ook niet handmatig gekoppeld is, of als het domein niet ingesteld is.
  * @param gekoppeldId Salesforce-ID uit een handmatige koppeling (gaat voor op het extern ID).
  */
-export function eraforceLink(contact: Pick<Contact, 'bron' | 'externId'>, domein: string | null | undefined, gekoppeldId?: string | null): string | null {
+export function eraforceLink(
+  contact: Pick<Contact, 'bron' | 'externId'>,
+  domein: string | null | undefined,
+  gekoppeldId?: string | null,
+  actie: string = MAF_CALL_ACTIE,
+): string | null {
   const id = gekoppeldId ?? (contact.bron === 'eraforce_mirror' ? contact.externId : null);
   if (!domein || !id || !SALESFORCE_ID.test(id)) return null;
   const host = domein.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
   const object = OBJECT_VOOR_PREFIX[id.slice(0, 3)];
+  // Prospects (Leads): een "quick action"-link opent de VOLLEDIGE recordpagina met "More" (getest 3/10/2026);
+  // een gewone recordlink opent in de mobiele app de compacte weergave zonder "More".
+  // Met de juiste technische actienaam zou Maf Call mogelijk meteen openen (nog niet bekend).
+  if (object === 'Lead') {
+    return `https://${host}/lightning/action/quick/Lead.${encodeURIComponent(actie)}?objectApiName=Lead&context=RECORD_DETAIL&recordId=${id}`;
+  }
   return object ? `https://${host}/lightning/r/${object}/${id}/view` : `https://${host}/lightning/r/${id}/view`;
 }
+
+/** Vermoede technische naam van de actie "Maf Call". Aan te passen zodra de echte API-naam bekend is. */
+export const MAF_CALL_ACTIE = 'Maf_Call';
 
 /** Haalt het Salesforce-ID uit een geplakte ERAForce-link (of een los ID). Null als er geen geldig ID in zit. */
 export function salesforceIdUitLink(tekst: string): string | null {

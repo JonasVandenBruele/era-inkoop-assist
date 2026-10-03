@@ -4,10 +4,14 @@ import { eraforceLink, salesforceIdUitLink } from './eraforce';
 const DOMEIN = 'voorbeeld.lightning.force.com';
 
 describe('ERAForce-link', () => {
-  it('opent een prospect (Lead) in ERAForce', () => {
+  it('opent een prospect (Lead) op de volledige pagina via de quick-action-link', () => {
     expect(eraforceLink({ bron: 'eraforce_mirror', externId: '00QAA00000AbCdEFGH' }, DOMEIN)).toBe(
-      'https://voorbeeld.lightning.force.com/lightning/r/Lead/00QAA00000AbCdEFGH/view',
+      'https://voorbeeld.lightning.force.com/lightning/action/quick/Lead.Maf_Call?objectApiName=Lead&context=RECORD_DETAIL&recordId=00QAA00000AbCdEFGH',
     );
+  });
+
+  it('de actienaam is aanpasbaar', () => {
+    expect(eraforceLink({ bron: 'eraforce_mirror', externId: '00QAA00000AbCdEFGH' }, DOMEIN, null, 'ERA_MafCall')).toContain('/quick/Lead.ERA_MafCall?');
   });
 
   it('herkent ook contactpersonen en accounts, en valt anders terug op een algemene recordlink', () => {
@@ -23,17 +27,15 @@ describe('ERAForce-link', () => {
   });
 
   it('aanvaardt een domein met https:// of een pad', () => {
-    expect(eraforceLink({ bron: 'eraforce_mirror', externId: '00QAA00000AbCdE' }, `https://${DOMEIN}/lightning/page/home`)).toBe(
-      'https://voorbeeld.lightning.force.com/lightning/r/Lead/00QAA00000AbCdE/view',
+    expect(eraforceLink({ bron: 'eraforce_mirror', externId: '00QAA00000AbCdE' }, `https://${DOMEIN}/lightning/page/home`)).toMatch(
+      /^https:\/\/voorbeeld\.lightning\.force\.com\/lightning\/action\/quick\/Lead\./,
     );
   });
 });
 
 describe('handmatige koppeling', () => {
   it('een gekoppeld ID geeft ook testcontacten een ERAForce-link', () => {
-    expect(eraforceLink({ bron: 'fictief', externId: 'FIC-C-004' }, DOMEIN, '00QAA00000AbCdEFGH')).toBe(
-      'https://voorbeeld.lightning.force.com/lightning/r/Lead/00QAA00000AbCdEFGH/view',
-    );
+    expect(eraforceLink({ bron: 'fictief', externId: 'FIC-C-004' }, DOMEIN, '00QAA00000AbCdEFGH')).toContain('recordId=00QAA00000AbCdEFGH');
   });
 
   it('haalt het ID uit allerlei geplakte links', () => {

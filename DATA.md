@@ -17,12 +17,13 @@ Status: **eerste waarnemingen** (3 oktober 2026), op basis van screenshots van d
 
 ## Deep links (getest op iPhone, 3/10/2026)
 
-Beide vormen openen de prospect rechtstreeks in de Salesforce-app (niet in Safari):
+| Link | Resultaat in de Salesforce-app |
+|---|---|
+| `https://<domein>/lightning/r/Lead/<LeadId>/view` (ook met `?target=detailTab__body`) | Compacte weergave (Related/Details/Chatter) — **geen** "More" |
+| `salesforce1://sObject/<LeadId>/view` | Compacte weergave |
+| `https://<domein>/lightning/action/quick/Lead.<Actie>?objectApiName=Lead&context=RECORD_DETAIL&recordId=<LeadId>` | **Volledige pagina met "More"** ← **gebruikt**. Met de geraden namen `Maf_Call` / `MAF_Call` opent de actie zelf niet. |
 
-- `https://<domein>/lightning/r/Lead/<LeadId>/view` ← **gebruikt** (werkt ook op een computer)
-- `salesforce1://sObject/<LeadId>/view`
-
-Rechtstreeks de actie "Maf Call" openen is niet getest; de knop vooraan zetten in de mobiele layout is geen optie.
+Met de echte technische naam van de actie "Maf Call" zou die mogelijk meteen openen (te vragen aan de ERAForce-beheerder, of zichtbaar in het adres bij een klik op Maf Call op een computer). De knop vooraan zetten in de mobiele layout is geen optie.
 
 ## Open vragen voor fase 8
 
