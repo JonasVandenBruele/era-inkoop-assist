@@ -3,7 +3,7 @@ import type { Klok } from '../core/clock';
 import type { Gegevens, Store } from '../core/db/store';
 import type { Instellingen } from '../core/settings/schema';
 import type { Belresultaat, BelresultaatInvoer } from '../domain/belresultaat';
-import type { Contact, Planningskeuze } from '../domain/model';
+import type { Contact, Contactvoorkeur, Planningskeuze, Waardehaak } from '../domain/model';
 
 export interface Melding {
   tekst: string;
@@ -44,6 +44,11 @@ export interface AppStaat {
   trekBelverbodIn(belverbodId: string): Promise<void>;
   maakTijdelijkContact(c: NieuwContact): Promise<Contact>;
   toon(m: Melding): void;
+
+  // ---- Fase 3b ----
+  bewaarHaak(h: Omit<Waardehaak, 'id' | 'aangemaaktOp' | 'isTestdata'>): Promise<void>;
+  verwijderHaak(id: string): Promise<void>;
+  bewaarVoorkeur(v: Omit<Contactvoorkeur, 'isTestdata'>): Promise<void>;
 }
 
 export const AppContext = createContext<AppStaat | null>(null);

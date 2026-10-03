@@ -14,7 +14,8 @@ export function Vandaag() {
   const vandaag = klok.vandaag();
   const contactOpId = useMemo(() => new Map(gegevens.contacten.map((c) => [c.id, c])), [gegevens.contacten]);
   const afspraken = useMemo(() => afsprakenVanDag(gegevens.afspraken, vandaag), [gegevens.afspraken, vandaag]);
-  const lijst = useMemo(() => berekenBellijst({ ...gegevens, instellingen, vandaag }), [gegevens, instellingen, vandaag]);
+  const uur = uurVan(klok.nu());
+  const lijst = useMemo(() => berekenBellijst({ ...gegevens, instellingen, vandaag, uur }), [gegevens, instellingen, vandaag, uur]);
 
   // Dagplan: de volgorde van de eerste opening van de dag blijft behouden.
   const [plan, setPlan] = useState<Dagplan | null | 'laden'>('laden');

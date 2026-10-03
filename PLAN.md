@@ -1,6 +1,6 @@
 # PLAN — Dagplanner (module 1 van ERA Inkoop Assist)
 
-Status: **fase 1–3 online. Databasewijzigingen gaan automatisch mee bij elke publicatie via GitHub (geen handwerk meer in Supabase).**
+Status: **fase 1–3b online (3b: contactstrategie). Databasewijzigingen gaan automatisch mee bij elke publicatie via GitHub.**
 Laatst bijgewerkt: 3 oktober 2026
 
 ---
@@ -326,6 +326,61 @@ Bij twijfel blijft de koppeling dus onbevestigd. Gevolg voor de planning is klei
 
 ---
 
+## 7b. Contactstrategie — de ossenpikker-aanpak
+
+**Principe: altijd aanwezig, nooit opdringerig.** De ossenpikker zit op de neushoorn omdat hij nuttig is.
+- *Altijd aanwezig:* niemand valt uit beeld. Het ritme blijft lopen en tussen gesprekken houdt een licht contact (bericht of mail met iets nuttigs) de band warm.
+- *Nooit opdringerig:* elk contactmoment levert de klant iets op (buurt/markt, dossier, persoonlijke attentie); "even checken" is enkel de terugvaloptie. Na 2× geen antwoord een bericht in plaats van een 3e belpoging, na een bericht eerst rust, nooit twee contactmomenten op één dag (behalve een nieuwe lead), geen berichten buiten de rustige uren, en een voorkeur van de klant gaat altijd voor.
+
+### 7b.1 Kanaaladvies (gewone code, instelbaar)
+
+| Situatie | Advies |
+|---|---|
+| Standaard | 📞 Bellen |
+| 2× geen antwoord op rij | 💬 Berichtje (sms/WhatsApp) in plaats van een 3e belpoging |
+| Na een berichtje zonder reactie | 3 werkdagen wachten, daarna nog één keer bellen; daarna handmatig beoordelen |
+| Geen telefoonnummer, wel e-mail | ✉️ Mail |
+| Langetermijn/koud met een informatieve haak (bv. marktinfo) | ✉️ Mail of 💬 bericht — rustig te lezen, geen druk |
+| Voorkeur van het contact ("liever sms", "enkel mail", "na 17u") | Altijd gerespecteerd (harde regel) |
+| Berichten | Niet vóór 9u, niet na 20u, niet op zondag |
+
+De app verstuurt **nooit zelf**: de knoppen openen Berichten, WhatsApp of Mail met een voorgestelde tekst, jij past aan en verstuurt. Daarna tik je "verstuurd" zodat het meetelt. Een verstuurd bericht is geen inhoudelijk contact; een reactie wel.
+
+### 7b.2 Waardehaken
+
+Een *haak* is een concrete, herleidbare reden om contact op te nemen. Elke haak heeft: soort, korte tekst, bron, datum, geldig-tot en een gevoeligheidsvlag.
+
+| Soort | Voorbeelden | Bron |
+|---|---|---|
+| Buurt/markt | woning verkocht of te koop in de straat, prijsevolutie in de wijk, werken of nieuw project in de buurt | nu: manueel of fictief; later: Marktradar |
+| Dossier | einde huurcontract nadert, pensioen in zicht, een jaar na de schatting, verbouwing klaar | afgeleid uit de gegevens (later ook AI) |
+| Regelgeving/algemeen | wijziging die eigenaars raakt (bv. EPC/renovatie, premies) | manueel, met bron |
+| Persoonlijk | verjaardag, iets wat je zelf zag of hoorde | **enkel manueel door jou** |
+
+Regels:
+- Een haak met een geldige datum geeft extra punten in de score (instelbaar gewicht) en een voorgestelde opening/tekst die ernaar verwijst.
+- Gevoelige onderwerpen (overlijden, ziekte, scheiding, financiële problemen) worden nooit als haak voorgesteld of in een tekst gebruikt.
+- Persoonlijke haken toont de app enkel als tip voor jou (bv. "verjaardag 14/10"); ze komen nooit vanzelf in een voorgestelde tekst. Jij beslist of en hoe je ze gebruikt.
+- Verlopen haken verdwijnen vanzelf; je kunt haken altijd wissen.
+
+### 7b.3 Sociale media
+
+De app **leest geen Facebook of andere sociale media uit**: dat mag niet volgens hun voorwaarden en het botst met de GDPR. Wel kan de app een knop tonen die een zoekopdracht opent ("bekijk even sociale media"). Wat je zelf ziet en nuttig vindt, noteer je kort als persoonlijke haak.
+
+### 7b.4 Na te gaan met ERA vóór echte data (geen juridisch advies)
+
+- **Bellen:** respecteert ERA de Bel-me-niet-meer-lijst, en voor welke contacten geldt die (bv. niet voor wie zelf een schatting vroeg)?
+- **Sms/WhatsApp/mail:** in België vraagt elektronische direct marketing aan particulieren in principe voorafgaande toestemming. Persoonlijke 1-op-1 opvolging van iemand die zelf contact zocht, ligt anders. Wat is het ERA-beleid?
+- **Persoonlijke haken** (verjaardag, sociale media) zijn persoonsgegevens: enkel bewaren wat nodig en gepast is, met bewaartermijn en wisknop.
+
+### 7b.5 Fasering
+
+- **Fase 3b (nu, zonder AI):** kanaaladvies, bericht-/mailknoppen met sjablonen, "verstuurd" en "reactie" registreren, contactvoorkeuren, waardehaken (manueel, uit het dossier, fictieve buurthaken in de testdata), scorebonus, rustige uren.
+- **Fase 4–5 (AI):** haken en voorkeuren uit notities halen (met bron), persoonlijke berichten en openingszinnen rond een haak.
+- **Marktradar (later):** buurthaken automatisch uit toegestane bronnen.
+
+---
+
 ## 8. AI-extractie, openingszinnen en briefings
 
 ### 8.1 Extractie (fase 4)
@@ -458,6 +513,12 @@ Elke fase sluit af met: wat werkt · hoe je het zelf test · wat je moet regelen
 - Vastpinnen, overslaan vandaag, uitstellen, toevoegen, tijdelijk contact, herstellen.
 - Avondoverzicht: bewerkbaar, kopieerbaar, statussen klaargezet/doorgegeven.
 - **Acceptatie:** na "geen antwoord" verdwijnt het contact en verschijnt het op de juiste werkdag; na 3× staat het bij "Handmatig beoordelen". "Overslaan" is morgen terug, "Niet meer bellen" niet. Elke keuze is ongedaan te maken. Een lokaal resultaat telt meteen mee terwijl de fictieve mirror nog niets weet. Een nieuwe import overschrijft geen enkele lokale keuze (test).
+
+### Fase 3b — Contactstrategie (ossenpikker), zonder AI
+- Kanaaladvies per contact (bellen / berichtje / mail) volgens §7b.1; contactvoorkeuren als harde regel.
+- Knoppen sms, WhatsApp en mail met voorgestelde tekst; jij verstuurt, de app registreert "verstuurd" en later "reactie".
+- Waardehaken: manueel toevoegen (incl. persoonlijk), afgeleid uit het dossier, fictieve buurthaken in testdata; scorebonus; gevoelige onderwerpen uitgesloten.
+- **Acceptatie:** na 2× geen antwoord stelt de app een bericht voor in plaats van een 3e belpoging; een bericht telt niet als gesprek, een reactie wel; na een bericht wacht de app 3 werkdagen; een contact met "enkel mail" krijgt nooit belen als advies; een geldige haak verhoogt de score en verschijnt in de voorgestelde tekst; een verlopen of gevoelige haak niet; berichten niet buiten de rustige uren voorgesteld.
 
 ### Fase 4 — AI-extractie, bronnen en correcties
 - Prompt v1 + schema v1, budgetcontrole, kostenlog, maandoverzicht.

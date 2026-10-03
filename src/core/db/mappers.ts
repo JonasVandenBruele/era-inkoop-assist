@@ -1,5 +1,5 @@
 // Vertaling tussen databaserijen (snake_case) en het interne model (camelCase).
-import type { Afspraak, Belpoging, Belverbod, Bronactiviteit, Bronstatus, Contact, ContactPand, Dagplan, DonnaOverzicht, Opvolgactie, Pand, Planningskeuze } from '../../domain/model';
+import type { Afspraak, Belpoging, Belverbod, Bronactiviteit, Bronstatus, Contact, ContactPand, Contactvoorkeur, Dagplan, DonnaOverzicht, Opvolgactie, Pand, Planningskeuze, Waardehaak } from '../../domain/model';
 
 type Rij = Record<string, unknown>;
 const d = (v: unknown): Date | null => (v ? new Date(v as string) : null);
@@ -146,6 +146,7 @@ export const belpogingNaarModel = (r: Rij): Belpoging => ({
   contactId: r.contact_id as string,
   tijdstip: new Date(r.tijdstip as string),
   uitkomst: r.uitkomst as Belpoging['uitkomst'],
+  kanaal: (r.kanaal as Belpoging['kanaal']) ?? 'telefoon',
   isInhoudelijk: Boolean(r.is_inhoudelijk),
   notitie: s(r.notitie),
   volgendeStap: s(r.volgende_stap),
@@ -157,6 +158,7 @@ export const belpogingNaarRij = (p: Belpoging) => ({
   contact_id: p.contactId,
   tijdstip: p.tijdstip.toISOString(),
   uitkomst: p.uitkomst,
+  kanaal: p.kanaal ?? 'telefoon',
   is_inhoudelijk: p.isInhoudelijk,
   notitie: p.notitie,
   volgende_stap: p.volgendeStap,
@@ -275,4 +277,56 @@ export const donnaNaarRij = (o: DonnaOverzicht) => ({
   klaargezet_op: o.klaargezetOp.toISOString(),
   doorgegeven_op: o.doorgegevenOp?.toISOString() ?? null,
   is_testdata: o.isTestdata,
+});
+
+// ---------- Fase 3b: contactstrategie ----------
+export const voorkeurNaarModel = (r: Rij): Contactvoorkeur => ({
+  contactId: r.contact_id as string,
+  kanaal: r.kanaal as Contactvoorkeur['kanaal'],
+  nietVoor: r.niet_voor ? String(r.niet_voor).slice(0, 5) : null,
+  nietNa: r.niet_na ? String(r.niet_na).slice(0, 5) : null,
+  notitie: s(r.notitie),
+  isTestdata: Boolean(r.is_testdata),
+});
+export const voorkeurNaarRij = (v: Contactvoorkeur) => ({
+  contact_id: v.contactId,
+  kanaal: v.kanaal,
+  niet_voor: v.nietVoor,
+  niet_na: v.nietNa,
+  notitie: v.notitie,
+  bijgewerkt_op: new Date().toISOString(),
+  is_testdata: v.isTestdata ?? false,
+});
+
+export const haakNaarModel = (r: Rij): Waardehaak => ({
+  id: r.id as string,
+  contactId: s(r.contact_id),
+  pandId: s(r.pand_id),
+  straat: s(r.straat),
+  gemeente: s(r.gemeente),
+  soort: r.soort as Waardehaak['soort'],
+  onderwerp: r.onderwerp as string,
+  detail: s(r.detail),
+  bron: s(r.bron),
+  geldigVanaf: dagKolom(r.geldig_vanaf)!,
+  geldigTot: dagKolom(r.geldig_tot),
+  gevoelig: Boolean(r.gevoelig),
+  aangemaaktOp: new Date(r.aangemaakt_op as string),
+  isTestdata: Boolean(r.is_testdata),
+});
+export const haakNaarRij = (h: Waardehaak) => ({
+  id: h.id,
+  contact_id: h.contactId,
+  pand_id: h.pandId,
+  straat: h.straat,
+  gemeente: h.gemeente,
+  soort: h.soort,
+  onderwerp: h.onderwerp,
+  detail: h.detail,
+  bron: h.bron,
+  geldig_vanaf: h.geldigVanaf,
+  geldig_tot: h.geldigTot,
+  gevoelig: h.gevoelig,
+  aangemaakt_op: h.aangemaaktOp.toISOString(),
+  is_testdata: h.isTestdata ?? false,
 });

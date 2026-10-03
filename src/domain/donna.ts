@@ -62,6 +62,12 @@ export function maakDonnaConcept(i: DonnaInvoer): DonnaConcept {
       case 'niet_meer_bellen':
         delen.push('Wil NIET MEER gebeld worden.');
         break;
+      case 'bericht_verstuurd':
+        delen.push(`${p.kanaal === 'mail' ? 'Mail' : p.kanaal === 'whatsapp' ? 'WhatsApp-bericht' : 'Sms'} gestuurd (nog geen reactie).`);
+        break;
+      case 'reactie':
+        delen.push(`Reactie ontvangen${p.kanaal && p.kanaal !== 'telefoon' ? ` via ${p.kanaal === 'whatsapp' ? 'WhatsApp' : p.kanaal}` : ''}.`);
+        break;
     }
     if (p.notitie) delen.push(`Notitie: ${p.notitie}`);
     if (p.volgendeStap) delen.push(`Volgende stap: ${p.volgendeStap}`);

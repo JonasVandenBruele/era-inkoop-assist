@@ -26,4 +26,12 @@ export const UITKOMST_LABEL: Record<BelUitkomst, string> = {
   terugbellen: 'Terugbellen op datum',
   afspraak: 'Afspraak gemaakt',
   niet_meer_bellen: 'Niet meer bellen',
+  bericht_verstuurd: 'Bericht verstuurd',
+  reactie: 'Reactie ontvangen',
+};
+export const KANAAL_LABEL: Record<'telefoon' | 'sms' | 'whatsapp' | 'mail', string> = {
+  telefoon: 'telefoon',
+  sms: 'sms',
+  whatsapp: 'WhatsApp',
+  mail: 'mail',
 };

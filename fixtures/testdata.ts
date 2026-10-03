@@ -9,9 +9,11 @@ import type {
   Contact,
   ContactPand,
   ContactStatus,
+  Contactvoorkeur,
   Fase,
   Pand,
   PandRol,
+  Waardehaak,
 } from '../src/domain/model';
 import { maakPrng, stabieleUuid, type Prng } from './prng';
 
@@ -25,6 +27,8 @@ export interface Testdataset {
   afspraken: Afspraak[];
   belpogingen: Belpoging[];
   bronnen: Bronstatus[];
+  haken: Waardehaak[];
+  voorkeuren: Contactvoorkeur[];
 }
 
 export interface TestdataOpties {
@@ -59,6 +63,12 @@ export const RANDGEVAL = {
   afspraakOverlap: 'FIC-C-020',
   afspraakZonderContact: 'FIC-A-ZONDER-CONTACT',
   pandErfenis: 'FIC-P-010',
+  // Contactstrategie (fase 3b)
+  tweeKeerGeenAntwoord: 'FIC-C-010',
+  voorkeurMail: 'FIC-C-006',
+  voorkeurBericht: 'FIC-C-005',
+  persoonlijkeHaak: 'FIC-C-016',
+  huurcontractLooptAf: 'FIC-C-013',
 } as const;
 
 // ---------- Bouwstenen ----------
@@ -225,6 +235,7 @@ export function genereerTestdata(opties: TestdataOpties): Testdataset {
       contactId: contact.id,
       tijdstip: tijd(-dagenGeleden, uur),
       uitkomst,
+      kanaal: 'telefoon',
       isInhoudelijk: uitkomst !== 'geen_antwoord',
       notitie,
       volgendeStap: null,
@@ -288,6 +299,7 @@ export function genereerTestdata(opties: TestdataOpties): Testdataset {
 
   const dubois = voegContactToe({ ext: RANDGEVAL.lauwOverRitme, aanhef: 'Dhr.', voornaam: 'Luc', achternaam: 'Dubois', status: 'prospect', fase: 'lauw', horizon: 'ergens volgend jaar', aanspreek: 'u', aangemaaktDagGeleden: 180 });
   voegPandToe('FIC-P-006', dubois, 'eigenaar', { type: 'woning' });
+  dubois.email = 'luc.dubois@voorbeeld.test';
   activiteit(dubois, 'gesprek', 50, 'Dhr. Dubois wil kleiner wonen, ergens volgend jaar. Vrouw nog nt overtuigd.');
 
   const willems = voegContactToe({ ext: RANDGEVAL.koudNogNietAanDeBeurt, aanhef: 'Mevr.', voornaam: 'Els', achternaam: 'Willems', status: 'langetermijn', fase: 'koud', horizon: 'nog geen idee, mss over 2 jaar', aanspreek: 'u', aangemaaktDagGeleden: 300 });
@@ -315,6 +327,8 @@ export function genereerTestdata(opties: TestdataOpties): Testdataset {
   activiteit(vdbKoen, 'gesprek', 18, 'Koen VdB: ouderlijk huis Melle, 3 erfgenamen. Koen trekt de kar, Lien akkoord, Dirk "moet nog nadenken".');
   activiteit(vdbKoen, 'evaluatie', 17, 'Eval: warm bij Koen, maar beslissing pas als alle 3 akkoord. Notaris: Mr. De Wolf. Volgende stap: gesprek met de 3 samen.');
   activiteit(vdbLien, 'notitie', 15, 'Lien VdB belde zelf: "van mij mag het, maar Dirk wil een hogere prijs". tutoyeert.');
+  lokalePoging(vdbKoen, 6, '10:20', 'geen_antwoord');
+  lokalePoging(vdbKoen, 4, '16:45', 'geen_antwoord');
 
   // Eén contact met meerdere panden
   const verstraete = voegContactToe({ ext: RANDGEVAL.meerderePanden, aanhef: 'Dhr.', voornaam: 'Filip', achternaam: 'Verstraete', status: 'prospect', fase: 'lauw', horizon: 'volgend voorjaar', aanspreek: 'u', herkomst: 'doorverwezen door notaris', aangemaaktDagGeleden: 70 });
@@ -437,11 +451,54 @@ export function genereerTestdata(opties: TestdataOpties): Testdataset {
     }
   });
 
+  // ---------- Contactstrategie: fictieve haken en voorkeuren ----------
+  const haak = (sleutel: string, h: Omit<Waardehaak, 'id' | 'aangemaaktOp' | 'isTestdata' | 'detail' | 'bron' | 'gevoelig'> & Partial<Waardehaak>): Waardehaak => ({
+    id: id(`haak:${sleutel}`),
+    detail: null,
+    bron: 'fictief voorbeeld',
+    gevoelig: false,
+    aangemaaktOp: geimporteerdOp,
+    isTestdata: true,
+    ...h,
+  });
+  const haken: Waardehaak[] = [
+    haak('buurt-melle', {
+      contactId: null, pandId: null, straat: 'Lindenlaan', gemeente: 'Melle', soort: 'buurt',
+      onderwerp: 'Woning in de Lindenlaan verkocht na 3 weken', detail: 'Fictief voorbeeld van een buurtsignaal (later uit de Marktradar).',
+      geldigVanaf: dag(-5), geldigTot: dag(25),
+    }),
+    haak('algemeen-premie', {
+      contactId: null, pandId: null, straat: null, gemeente: null, soort: 'algemeen',
+      onderwerp: 'Nieuwe regels rond EPC bij verkoop (fictief voorbeeld)', detail: 'Altijd de echte bron vermelden vóór gebruik.',
+      geldigVanaf: dag(-10), geldigTot: dag(50),
+    }),
+    haak('persoonlijk-hermans', {
+      contactId: id(RANDGEVAL.persoonlijkeHaak), pandId: null, straat: null, gemeente: null, soort: 'persoonlijk',
+      onderwerp: 'Verjaardag op ' + dag(1).slice(8, 10) + '/' + dag(1).slice(5, 7), detail: 'Zelf ingegeven (fictief).',
+      geldigVanaf: dag(-1), geldigTot: dag(1),
+    }),
+    haak('gevoelig-peeters', {
+      contactId: id(RANDGEVAL.terugbellenVandaagMetUur), pandId: null, straat: null, gemeente: null, soort: 'persoonlijk',
+      onderwerp: 'Man overleden vorig jaar', gevoelig: true,
+      geldigVanaf: dag(-30), geldigTot: null,
+    }),
+    haak('verlopen-wouters', {
+      contactId: id(RANDGEVAL.warmOverRitme), pandId: null, straat: null, gemeente: null, soort: 'dossier',
+      onderwerp: 'Opendeurdag nieuwbouwproject (voorbij)',
+      geldigVanaf: dag(-40), geldigTot: dag(-10),
+    }),
+  ];
+  const voorkeuren: Contactvoorkeur[] = [
+    { contactId: id(RANDGEVAL.voorkeurMail), kanaal: 'mail', nietVoor: null, nietNa: null, notitie: 'Liefst per mail (fictief)', isTestdata: true },
+    { contactId: id(RANDGEVAL.voorkeurBericht), kanaal: 'bericht', nietVoor: null, nietNa: null, notitie: 'Stuurt liever een sms (fictief)', isTestdata: true },
+    { contactId: id(RANDGEVAL.erfgenaamB), kanaal: 'geen', nietVoor: '17:00', nietNa: null, notitie: 'Werkt overdag, bellen na 17u', isTestdata: true },
+  ];
+
   const bronnen: Bronstatus[] = [
     { id: id('bron:crm'), soort: 'crm', adapter: 'fictief', naam: 'CRM (fictief)', isTestdata: true, laatstSuccesvolOp: geimporteerdOp, laatsteFout: null },
     { id: id('bron:agenda'), soort: 'agenda', adapter: 'fictief', naam: 'Agenda (fictief)', isTestdata: true, laatstSuccesvolOp: new Date(nu.getTime() - 30 * 60_000), laatsteFout: null },
     { id: id('bron:gesprekken'), soort: 'gesprekken', adapter: 'handmatig', naam: 'Gesprekssamenvattingen', isTestdata: true, laatstSuccesvolOp: null, laatsteFout: null },
   ];
 
-  return { contacten, panden, contactPanden, activiteiten, afspraken, belpogingen, bronnen };
+  return { contacten, panden, contactPanden, activiteiten, afspraken, belpogingen, bronnen, haken, voorkeuren };
 }

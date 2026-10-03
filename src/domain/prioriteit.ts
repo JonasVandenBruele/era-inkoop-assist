@@ -2,7 +2,9 @@
 // Pure functie: alle gegevens, instellingen en "vandaag" komen binnen als parameter. De AI speelt hier geen rol.
 import { dagVan, dagenTussen, korteDag, relatief, type DagKey } from '../core/dates';
 import type { Instellingen } from '../core/settings/schema';
-import type { Afspraak, Belpoging, Belverbod, Bronactiviteit, Contact, Fase, Opvolgactie, Planningskeuze } from './model';
+import type { Afspraak, Belpoging, Belverbod, Bronactiviteit, Contact, ContactPand, Contactvoorkeur, Fase, Opvolgactie, Pand, Planningskeuze, Waardehaak } from './model';
+import { hakenVoorContact, specifiekeHaken } from './haken';
+import { kanaaladvies, kanaalVan, type Kanaaladvies } from './kanaaladvies';
 export type { Belverbod, Opvolgactie, Planningskeuze } from './model';
 import { heeftTelefoon, laatsteInhoudelijkContact, type LaatsteContact } from './overzicht';
 import { horizonCategorie, HORIZON_LABEL, type HorizonCategorie } from './horizon';
@@ -18,6 +20,13 @@ export interface BellijstInvoer {
   keuzes?: Planningskeuze[];
   opvolgacties?: Opvolgactie[];
   belverboden?: Belverbod[];
+  // Contactstrategie (fase 3b)
+  haken?: Waardehaak[];
+  voorkeuren?: Contactvoorkeur[];
+  panden?: Pand[];
+  contactPanden?: ContactPand[];
+  /** Brussels uur "HH:mm" van nu, voor de rustige uren in het kanaaladvies. */
+  uur?: string;
   instellingen: Instellingen;
   vandaag: DagKey;
 }
@@ -61,6 +70,9 @@ export interface Kandidaat {
   terugbel: Terugbelafspraak | null;
   pogingenZonderAntwoord: number;
   isVastgepind: boolean;
+  /** Geldige waardehaken (incl. algemene). */
+  haken: Waardehaak[];
+  advies: Kanaaladvies;
 }
 
 export type UitsluitReden =
@@ -220,6 +232,16 @@ export function berekenBellijst(invoer: BellijstInvoer): Bellijst {
     if (fase === 'lauw') onderdelen.push({ label: 'Fase lauw', punten: w.faseLauw });
     if (horizon === 'kort') onderdelen.push({ label: `Wil verkopen ${HORIZON_LABEL.kort}`, punten: w.horizonKort });
     if (horizon === 'middel') onderdelen.push({ label: `Wil verkopen binnen ${HORIZON_LABEL.middel}`, punten: w.horizonMiddel });
+    const haken = hakenVoorContact({
+      contact: c,
+      panden: invoer.panden ?? [],
+      contactPanden: invoer.contactPanden ?? [],
+      haken: invoer.haken ?? [],
+      activiteiten: invoer.activiteiten,
+      vandaag,
+    });
+    const specifiek = specifiekeHaken(haken);
+    if (specifiek.length > 0) onderdelen.push({ label: `Haakje: ${specifiek[0]!.onderwerp}`, punten: w.waardehaak });
     const vervolgstap = (invoer.opvolgacties ?? []).find((o) => o.contactId === c.id && o.soort === 'vervolgstap' && o.status === 'open' && o.dag <= vandaag);
     if (vervolgstap) onderdelen.push({ label: `Eigen vervolgstap gepland voor ${korteDag(vervolgstap.dag)}`, punten: w.eigenVervolgstap });
     const score = onderdelen.reduce((s, o) => s + o.punten, 0);
@@ -255,6 +277,10 @@ export function berekenBellijst(invoer: BellijstInvoer): Bellijst {
       reden = laatste
         ? `Laatste gesprek ${dagenSinds} dagen geleden; ritme ${faseTekst} is ${ritme} dagen`
         : `Sinds binnenkomst ${dagenSinds ?? '?'} dagen geen gesprek`;
+    } else if (specifiek.length > 0 && verhouding >= 0.5) {
+      // Altijd aanwezig: een nuttig haakje haalt een contact naar voren, maar niet vóór de helft van het ritme.
+      groep = 'D';
+      reden = `Haakje: ${specifiek[0]!.onderwerp} (laatste gesprek ${dagenSinds} dagen geleden)`;
     }
 
     if (groep === null) {
@@ -278,6 +304,17 @@ export function berekenBellijst(invoer: BellijstInvoer): Bellijst {
       terugbel,
       pogingenZonderAntwoord: pogingen.length,
       isVastgepind: Boolean(pin),
+      haken,
+      advies: kanaaladvies({
+        contact: c,
+        pogingen,
+        voorkeur: (invoer.voorkeuren ?? []).find((v) => v.contactId === c.id) ?? null,
+        haken,
+        fase,
+        instellingen: inst,
+        dag: vandaag,
+        uur: invoer.uur ?? '10:00',
+      }),
     };
 
     // Regel 6: geen bruikbaar nummer → aparte actie.
@@ -288,17 +325,26 @@ export function berekenBellijst(invoer: BellijstInvoer): Bellijst {
 
     // Regel 7 en herplanning na geen antwoord. Een terugbelafspraak (A/C) of vastpinnen gaat voor.
     if (pogingen.length > 0 && !pin && groep !== 'A' && groep !== 'C') {
-      const max = inst.geenAntwoord.maxPogingenOpRij;
-      if (pogingen.length >= max) {
-        kandidaat.reden = `${pogingen.length} keer geen antwoord op rij — beslis zelf: pauze, sms/mail of opnieuw proberen`;
+      const oproepen = pogingen.filter((p) => kanaalVan(p) === 'telefoon').length;
+      const berichten = pogingen.length - oproepen;
+      if (oproepen >= inst.geenAntwoord.maxPogingenOpRij) {
+        kandidaat.reden = `${oproepen} keer geen antwoord op rij${berichten ? ` (en ${berichten} bericht${berichten > 1 ? 'en' : ''})` : ''} — beslis zelf: pauze, ander kanaal of opnieuw proberen`;
         resultaat.handmatigBeoordelen.push(kandidaat);
         continue;
       }
-      const laatstePoging = dagVan(pogingen[0]!.tijdstip);
-      const zelfdeDagOpnieuw = groep === 'B' && pogingen.length === 1 && laatstePoging === vandaag && inst.geenAntwoord.nieuweLeadZelfdeDagOpnieuw;
-      const volgende = volgendePogingDag(pogingen.length, laatstePoging, inst)!;
+      const laatste = pogingen[0]!;
+      const laatstePoging = dagVan(laatste.tijdstip);
+      const naBericht = kanaalVan(laatste) !== 'telefoon';
+      const zelfdeDagOpnieuw =
+        !naBericht && groep === 'B' && pogingen.length === 1 && laatstePoging === vandaag && inst.geenAntwoord.nieuweLeadZelfdeDagOpnieuw;
+      const volgende = naBericht ? plusWerkdagen(laatstePoging, inst.contact.werkdagenNaBericht) : volgendePogingDag(oproepen, laatstePoging, inst)!;
       if (!zelfdeDagOpnieuw && volgende > vandaag) {
-        sluitUit('wacht_na_geen_antwoord', `Geen antwoord op ${korteDag(laatstePoging)}; volgende poging ${korteDag(volgende)}.`);
+        sluitUit(
+          'wacht_na_geen_antwoord',
+          naBericht
+            ? `Bericht gestuurd op ${korteDag(laatstePoging)}; even rust tot ${korteDag(volgende)}.`
+            : `Geen antwoord op ${korteDag(laatstePoging)}; volgende poging ${korteDag(volgende)}.`,
+        );
         continue;
       }
     }

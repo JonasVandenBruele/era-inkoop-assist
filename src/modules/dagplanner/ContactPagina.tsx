@@ -7,6 +7,7 @@ import { volledigeNaam } from '../../domain/model';
 import { historiek, laatsteInhoudelijkContact } from '../../domain/overzicht';
 import { pogingenSindsContact } from '../../domain/prioriteit';
 import { KeuzeKnoppen, ResultaatPaneel } from './ResultaatPaneel';
+import { HakenEnVoorkeur } from './HakenEnVoorkeur';
 
 export function ContactPagina() {
   const { id } = useParams();
@@ -125,6 +126,8 @@ export function ContactPagina() {
         )}
       </section>
 
+      <HakenEnVoorkeur contact={contact} />
+
       {openTaken.length > 0 && (
         <section className="kaart">
           <h2>Open taken</h2>
@@ -179,7 +182,8 @@ export function ContactPagina() {
             ) : (
               <li key={item.belpoging.id} className={item.belpoging.ongedaanOp ? 'ongedaan' : ''}>
                 <div className="klein">
-                  <span className="label lokaal">Jij</span> {UITKOMST_LABEL[item.belpoging.uitkomst]} · {datumUur(item.tijdstip)}
+                  <span className="label lokaal">Jij</span> {UITKOMST_LABEL[item.belpoging.uitkomst]}
+                  {item.belpoging.kanaal && item.belpoging.kanaal !== 'telefoon' && ` (${item.belpoging.kanaal === 'whatsapp' ? 'WhatsApp' : item.belpoging.kanaal})`} · {datumUur(item.tijdstip)}
                   {!item.belpoging.isInhoudelijk && ' · telt niet als gesprek'}
                   {item.belpoging.ongedaanOp && ' · ongedaan gemaakt'}
                 </div>

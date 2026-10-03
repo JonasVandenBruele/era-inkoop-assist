@@ -17,7 +17,10 @@ const VELDEN: Veld[] = [
   { label: 'Punten horizon < 3 maanden', lees: (i) => i.gewichten.horizonKort, zet: (i, v) => ({ ...i, gewichten: { ...i.gewichten, horizonKort: v } }) },
   { label: 'Punten horizon 3–12 maanden', lees: (i) => i.gewichten.horizonMiddel, zet: (i, v) => ({ ...i, gewichten: { ...i.gewichten, horizonMiddel: v } }) },
   { label: 'Punten eigen vervolgstap', lees: (i) => i.gewichten.eigenVervolgstap, zet: (i, v) => ({ ...i, gewichten: { ...i.gewichten, eigenVervolgstap: v } }) },
-  { label: 'Max. pogingen zonder antwoord op rij', lees: (i) => i.geenAntwoord.maxPogingenOpRij, zet: (i, v) => ({ ...i, geenAntwoord: { ...i.geenAntwoord, maxPogingenOpRij: v } }) },
+  { label: 'Max. belpogingen zonder antwoord op rij', lees: (i) => i.geenAntwoord.maxPogingenOpRij, zet: (i, v) => ({ ...i, geenAntwoord: { ...i.geenAntwoord, maxPogingenOpRij: v } }) },
+  { label: 'Punten voor een waardehaak', uitleg: 'Een concreet haakje (buurt, dossier, persoonlijk) geeft voorrang.', lees: (i) => i.gewichten.waardehaak, zet: (i, v) => ({ ...i, gewichten: { ...i.gewichten, waardehaak: v } }) },
+  { label: 'Bericht voorstellen na … keer geen antwoord', lees: (i) => i.contact.berichtNaGeenAntwoord, zet: (i, v) => ({ ...i, contact: { ...i.contact, berichtNaGeenAntwoord: v } }) },
+  { label: 'Werkdagen rust na een bericht', lees: (i) => i.contact.werkdagenNaBericht, zet: (i, v) => ({ ...i, contact: { ...i.contact, werkdagenNaBericht: v } }) },
 ];
 
 export function PlanningInstellingen() {
@@ -79,6 +82,7 @@ export function PlanningInstellingen() {
               nieuweLeadDagen: STANDAARD_INSTELLINGEN.nieuweLeadDagen,
               gewichten: STANDAARD_INSTELLINGEN.gewichten,
               geenAntwoord: STANDAARD_INSTELLINGEN.geenAntwoord,
+              contact: STANDAARD_INSTELLINGEN.contact,
             })
           }
         >

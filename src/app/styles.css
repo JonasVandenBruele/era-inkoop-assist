@@ -303,3 +303,13 @@ p.label { display: block; white-space: normal; border-radius: 8px; }
 .belkaart-kop { flex-wrap: wrap; }
 .belkaart-kop .labels.rechts { flex-basis: 100%; justify-content: flex-start; padding-left: 38px; }
 .belkaart-kop .labels.rechts:first-child { padding-left: 0; }
+
+/* ---------- Fase 3b: contactstrategie ---------- */
+.advies { margin: 0; padding: 8px 10px; border-radius: 10px; background: var(--blauw-licht); font-size: 0.92rem; }
+.advies-bericht, .advies-mail { background: #ecfdf5; }
+@media (prefers-color-scheme: dark) { .advies-bericht, .advies-mail { background: #12301f; } }
+.haken { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; font-size: 0.88rem; }
+.kanaalkeuze { display: flex; gap: 6px; flex-wrap: wrap; }
+.kanaalkeuze .knop { flex: 1; min-height: 44px; }
+.voorkeur { margin-top: 14px; border-top: 1px solid var(--rand); padding-top: 10px; }
+.voorkeur h3 { margin: 0; font-size: 1rem; }

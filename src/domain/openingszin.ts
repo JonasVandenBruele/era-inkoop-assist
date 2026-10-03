@@ -1,6 +1,7 @@
 // Standaard-openingszin zonder AI. Gebruikt enkel herleidbare feiten (groep, herkomst, terugbelafspraak),
 // nooit vrije notitietekst — zo komt er geen gevoelige persoonlijke aanleiding of verzonnen voorgeschiedenis in.
 import type { Kandidaat } from './prioriteit';
+import { haakZin } from './haken';
 
 export interface OpeningszinContext {
   kandidaat: Kandidaat;
@@ -42,5 +43,9 @@ export function standaardOpeningszin({ kandidaat: k, voornaamGebruiker, organisa
     if (/notaris/i.test(herkomst)) return `${begin} Ik kreeg ${uw} gegevens via de notaris. ${past}`;
     return `${begin} ${je ? 'Je' : 'U'} had interesse getoond om ${uw} eigendom te laten schatten. ${past}`;
   }
+  // Ossenpikker: liefst met een nuttig haakje (nooit persoonlijk of gevoelig); anders een neutrale vraag.
+  const haak = (k.haken ?? []).find((h) => h.soort !== 'persoonlijk' && !h.gevoelig);
+  const zin = haak ? haakZin(haak, je) : null;
+  if (zin) return `${begin} ${zin} ${past}`;
   return `${begin} Ik bel even om te horen hoe het met ${uw} verkoopplannen staat. ${past}`;
 }

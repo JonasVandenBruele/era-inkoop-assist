@@ -29,7 +29,7 @@ function controleer<T>(r: { data: T | null; error: { message: string; code?: str
 
 /** Testdata-tabellen in volgorde van afhankelijkheid (ouders eerst). */
 const BRONTABELLEN = ['bronnen', 'contacten', 'panden', 'contact_pand', 'bronactiviteiten', 'afspraken', 'belpogingen'] as const;
-const LOKALE_TABELLEN = ['belverboden', 'opvolgacties', 'planningskeuzes', 'dagplannen', 'donna_overzichten'] as const;
+const LOKALE_TABELLEN = ['belverboden', 'opvolgacties', 'planningskeuzes', 'dagplannen', 'donna_overzichten', 'waardehaken', 'contactvoorkeuren'] as const;
 
 export function maakSupabaseStore(gebruikerId: string): Store {
   const sb = supabase();
@@ -44,8 +44,8 @@ export function maakSupabaseStore(gebruikerId: string): Store {
     soort: 'supabase',
 
     async laadGegevens(): Promise<Gegevens> {
-      const tabellen = ['contacten', 'panden', 'contact_pand', 'bronactiviteiten', 'afspraken', 'belpogingen', 'bronnen', 'opvolgacties', 'planningskeuzes', 'belverboden'];
-      const [contacten, panden, contactPanden, activiteiten, afspraken, belpogingen, bronnen, opvolgacties, keuzes, belverboden] = await Promise.all(tabellen.map(alles));
+      const tabellen = ['contacten', 'panden', 'contact_pand', 'bronactiviteiten', 'afspraken', 'belpogingen', 'bronnen', 'opvolgacties', 'planningskeuzes', 'belverboden', 'waardehaken', 'contactvoorkeuren'];
+      const [contacten, panden, contactPanden, activiteiten, afspraken, belpogingen, bronnen, opvolgacties, keuzes, belverboden, haken, voorkeuren] = await Promise.all(tabellen.map(alles));
       return {
         contacten: contacten!.map(m.contactNaarModel),
         panden: panden!.map(m.pandNaarModel),
@@ -57,6 +57,8 @@ export function maakSupabaseStore(gebruikerId: string): Store {
         opvolgacties: opvolgacties!.map(m.opvolgactieNaarModel),
         keuzes: keuzes!.map(m.keuzeNaarModel),
         belverboden: belverboden!.map(m.belverbodNaarModel),
+        haken: haken!.map(m.haakNaarModel),
+        voorkeuren: voorkeuren!.map(m.voorkeurNaarModel),
       };
     },
 
@@ -90,6 +92,20 @@ export function maakSupabaseStore(gebruikerId: string): Store {
         // upsert: een onderbroken vorige poging geeft geen dubbele rijen.
         controleer(await sb.from(tabel).upsert(rijen[tabel]), `Laden van testdata in ${tabel}`);
       }
+      controleer(await sb.from('waardehaken').upsert(t.haken.map(m.haakNaarRij)), 'Laden van testhaken');
+      controleer(await sb.from('contactvoorkeuren').upsert(t.voorkeuren.map(m.voorkeurNaarRij), { onConflict: 'eigenaar_id,contact_id' }), 'Laden van testvoorkeuren');
+    },
+
+    async bewaarHaak(h) {
+      controleer(await sb.from('waardehaken').upsert(m.haakNaarRij(h)), 'Bewaren van haak');
+    },
+
+    async verwijderHaak(id) {
+      controleer(await sb.from('waardehaken').delete().eq('id', id), 'Verwijderen van haak');
+    },
+
+    async bewaarVoorkeur(v) {
+      controleer(await sb.from('contactvoorkeuren').upsert(m.voorkeurNaarRij(v), { onConflict: 'eigenaar_id,contact_id' }), 'Bewaren van voorkeur');
     },
 
     async bewaarBelresultaat(r) {

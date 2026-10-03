@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.4.0] — 2026-10-03 — Fase 3b: contactstrategie "altijd aanwezig, nooit opdringerig" (ossenpikker)
+
+### Toegevoegd
+- **Kanaaladvies** per contact: bellen, berichtje of mail. Na 2× geen antwoord een bericht in plaats van een 3e belpoging; geen nummer → mail; koud contact met nuttige info → mail/bericht; contactvoorkeur gaat altijd voor; rustige uren voor berichten (9u–20u, niet op zondag).
+- **Bericht- en mailpaneel** met voorgestelde tekst (u/je, haakje, geen "even checken"); opent Berichten, WhatsApp of Mail — de app verstuurt nooit zelf. "Verstuurd" registreren telt mee maar niet als gesprek; daarna 3 werkdagen rust. Nieuwe uitkomst **Reactie ontvangen** telt wel als gesprek.
+- **Waardehaken**: buurt, dossier, algemeen en persoonlijk. Automatisch uit het dossier (huurcontract dat afloopt, een jaar na het eerste gesprek). Specifieke haken geven extra punten, halen een contact naar voren vanaf de helft van zijn ritme, en verschijnen in openingszin en bericht. Persoonlijke haken zijn enkel een tip; gevoelige onderwerpen worden geweigerd; verlopen haken verdwijnen.
+- **Contactvoorkeur** per contact (kanaal, niet bellen vóór/na), op de contactpagina.
+- Instellingen voor haakgewicht, bericht na x keer geen antwoord en rust na een bericht.
+- Migratie `20261003000003_contactstrategie.sql` (kanaal en nieuwe uitkomsten bij belpogingen, contactvoorkeuren, waardehaken — met RLS).
+- PLAN.md §7b: principe, regels, sociale media (enkel manueel) en wat vóór echte data met ERA af te stemmen is (Bel-me-niet-meer, toestemming voor sms/mail, persoonsgegevens).
+
+### Gewijzigd
+- Agenda komt uit Salesforce/ERAForce; fase 9 (Outlook) vervalt.
+
+### Tests
+- 126 tests, waaronder alle acceptatiecriteria van fase 3b.
+
 ## [0.3.0] — 2026-10-03 — Fase 3: belresultaten, keuzes, herplanning en Donna-overzicht
 
 ### Toegevoegd

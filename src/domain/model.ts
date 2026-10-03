@@ -96,13 +96,16 @@ export interface Afspraak extends Herkomst {
   omschrijving: string | null;
 }
 
-export type BelUitkomst = 'gesproken' | 'geen_antwoord' | 'terugbellen' | 'afspraak' | 'niet_meer_bellen';
+export type BelUitkomst = 'gesproken' | 'geen_antwoord' | 'terugbellen' | 'afspraak' | 'niet_meer_bellen' | 'bericht_verstuurd' | 'reactie';
+export type Kanaal = 'telefoon' | 'sms' | 'whatsapp' | 'mail';
 
 export interface Belpoging {
   id: string;
   contactId: string;
   tijdstip: Date;
   uitkomst: BelUitkomst;
+  /** Telefoon, sms, WhatsApp of mail. Ontbreekt bij oudere records: dan telefoon. */
+  kanaal?: Kanaal;
   isInhoudelijk: boolean;
   notitie: string | null;
   volgendeStap: string | null;
@@ -165,6 +168,38 @@ export interface DonnaOverzicht {
   isTestdata: boolean;
 }
 
+export interface Contactvoorkeur {
+  contactId: string;
+  kanaal: 'geen' | 'bellen' | 'bericht' | 'mail';
+  nietVoor: string | null; // "HH:mm"
+  nietNa: string | null;
+  notitie: string | null;
+  isTestdata?: boolean;
+}
+
+export type HaakSoort = 'buurt' | 'dossier' | 'algemeen' | 'persoonlijk';
+
+/** Concrete, herleidbare reden om contact op te nemen (PLAN.md §7b.2). */
+export interface Waardehaak {
+  id: string;
+  /** Bereik: contact, pand, straat in gemeente, of algemeen (alles leeg). */
+  contactId: string | null;
+  pandId: string | null;
+  straat: string | null;
+  gemeente: string | null;
+  soort: HaakSoort;
+  onderwerp: string;
+  detail: string | null;
+  bron: string | null;
+  geldigVanaf: string;
+  geldigTot: string | null;
+  gevoelig: boolean;
+  aangemaaktOp: Date;
+  isTestdata?: boolean;
+  /** Afgeleid uit het dossier (niet opgeslagen). */
+  afgeleid?: boolean;
+}
+
 export interface Bronstatus {
   id: string;
   soort: BronSoort;
@@ -177,7 +212,7 @@ export interface Bronstatus {
 
 /** Of een uitkomst standaard telt als inhoudelijk contact (zie PLAN.md §4). */
 export function standaardInhoudelijk(uitkomst: BelUitkomst): boolean {
-  return uitkomst !== 'geen_antwoord';
+  return uitkomst !== 'geen_antwoord' && uitkomst !== 'bericht_verstuurd';
 }
 
 export function volledigeNaam(c: Pick<Contact, 'aanhef' | 'voornaam' | 'achternaam'>): string {

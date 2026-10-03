@@ -7,11 +7,13 @@ import { volledigeNaam } from '../../domain/model';
 import { standaardOpeningszin } from '../../domain/openingszin';
 import { GROEP_LABEL, type Kandidaat } from '../../domain/prioriteit';
 import { KeuzeKnoppen, ResultaatPaneel } from './ResultaatPaneel';
+import { BerichtPaneel } from './BerichtPaneel';
+import { haakLabel } from '../../domain/haken';
 
 export function BelKaart({ k, nummer, opLijst = true }: { k: Kandidaat; nummer?: number; opLijst?: boolean }) {
   const { gegevens, instellingen, klok } = useApp();
   const [uitleg, setUitleg] = useState(false);
-  const [paneel, setPaneel] = useState<'geen' | 'resultaat' | 'meer'>('geen');
+  const [paneel, setPaneel] = useState<'geen' | 'resultaat' | 'meer' | 'sms' | 'whatsapp' | 'mail'>('geen');
   const c = k.contact;
 
   const pand = gegevens.contactPanden
@@ -48,6 +50,24 @@ export function BelKaart({ k, nummer, opLijst = true }: { k: Kandidaat; nummer?:
 
       <p className="reden">{k.reden}</p>
       {geenAntwoordVandaag > 0 && <p className="label waarschuwing">Vandaag al {geenAntwoordVandaag}× geen antwoord — later nog eens proberen</p>}
+      {(k.advies.kanaal !== 'bellen' || k.advies.opmerking) && (
+        <p className={`advies advies-${k.advies.kanaal}`}>
+          {{ bellen: '📞', bericht: '💬', mail: '✉️' }[k.advies.kanaal]} <strong>Advies:</strong> {k.advies.reden}
+          {k.advies.opmerking && <span className="zacht"> · {k.advies.opmerking}</span>}
+        </p>
+      )}
+      {k.haken.filter((h) => h.soort !== 'algemeen').length > 0 && (
+        <ul className="haken">
+          {k.haken
+            .filter((h) => h.soort !== 'algemeen')
+            .map((h) => (
+              <li key={h.id}>
+                {h.soort === 'persoonlijk' ? '🙂' : '💡'} {haakLabel(h)}
+                {h.soort === 'persoonlijk' && <span className="zacht"> — tip voor jou, niet in de tekst</span>}
+              </li>
+            ))}
+        </ul>
+      )}
 
       <p className="klein zacht">
         {k.laatste ? (
@@ -70,10 +90,23 @@ export function BelKaart({ k, nummer, opLijst = true }: { k: Kandidaat; nummer?:
 
       {paneel === 'resultaat' ? (
         <ResultaatPaneel contact={c} pogingenZonderAntwoord={k.pogingenZonderAntwoord} onKlaar={() => setPaneel('geen')} />
+      ) : paneel === 'sms' || paneel === 'whatsapp' || paneel === 'mail' ? (
+        <BerichtPaneel k={k} start={paneel} onKlaar={() => setPaneel('geen')} />
       ) : (
         <>
           <div className="knoppenrij">
+            {opLijst && k.advies.kanaal === 'bericht' && (
+              <button className="knop primair belknop" onClick={() => setPaneel('sms')}>
+                💬 Bericht
+              </button>
+            )}
+            {opLijst && k.advies.kanaal === 'mail' && (
+              <button className="knop primair belknop" onClick={() => setPaneel('mail')}>
+                ✉️ Mail
+              </button>
+            )}
             {opLijst &&
+              k.advies.kanaal === 'bellen' &&
               (tel && !c.isTestdata ? (
                 <a className="knop primair belknop" href={`tel:${tel.nummer.replace(/\s/g, '')}`}>
                   📞 Bel
@@ -92,6 +125,17 @@ export function BelKaart({ k, nummer, opLijst = true }: { k: Kandidaat; nummer?:
           </div>
           {paneel === 'meer' && (
             <div className="meer">
+              <div className="knoppenrij kleine-knoppen">
+                {k.advies.kanaal !== 'bellen' && tel && (
+                  c.isTestdata ? (
+                    <button className="knop" disabled>📞 Toch bellen (testdata)</button>
+                  ) : (
+                    <a className="knop" href={`tel:${tel.nummer.replace(/\s/g, '')}`}>📞 Toch bellen</a>
+                  )
+                )}
+                {k.advies.kanaal !== 'bericht' && tel && <button className="knop" onClick={() => setPaneel('sms')}>💬 Bericht</button>}
+                {k.advies.kanaal !== 'mail' && c.email && <button className="knop" onClick={() => setPaneel('mail')}>✉️ Mail</button>}
+              </div>
               <KeuzeKnoppen contactId={c.id} toonVastpinnen={!opLijst} />
               <button className="knop tekstknop" onClick={() => setUitleg(!uitleg)} aria-expanded={uitleg}>
                 {uitleg ? 'Verberg uitleg' : 'Waarom staat dit contact hier?'}

@@ -30,8 +30,20 @@ export const InstellingenSchema = z.object({
       horizonKort: z.number().default(15),
       horizonMiddel: z.number().default(5),
       eigenVervolgstap: z.number().default(20),
+      waardehaak: z.number().default(10),
     })
-    .default({ ritmePerVerhouding: 25, ritmeMax: 60, faseWarm: 15, faseLauw: 8, horizonKort: 15, horizonMiddel: 5, eigenVervolgstap: 20 }),
+    .default({ ritmePerVerhouding: 25, ritmeMax: 60, faseWarm: 15, faseLauw: 8, horizonKort: 15, horizonMiddel: 5, eigenVervolgstap: 20, waardehaak: 10 }),
+
+  // Contactstrategie (fase 3b): altijd aanwezig, nooit opdringerig.
+  contact: z
+    .object({
+      berichtNaGeenAntwoord: z.number().int().min(1).default(2),
+      werkdagenNaBericht: z.number().int().min(0).default(3),
+      berichtenVanaf: uur.default('09:00'),
+      berichtenTot: uur.default('20:00'),
+      geenBerichtenOpZondag: z.boolean().default(true),
+    })
+    .default({ berichtNaGeenAntwoord: 2, werkdagenNaBericht: 3, berichtenVanaf: '09:00', berichtenTot: '20:00', geenBerichtenOpZondag: true }),
 
   // Herplanning na geen antwoord (fase 3)
   geenAntwoord: z

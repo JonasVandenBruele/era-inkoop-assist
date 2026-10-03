@@ -7,11 +7,13 @@ import type {
   Bronstatus,
   Contact,
   ContactPand,
+  Contactvoorkeur,
   Dagplan,
   DonnaOverzicht,
   Opvolgactie,
   Pand,
   Planningskeuze,
+  Waardehaak,
 } from '../../domain/model';
 import type { Belresultaat } from '../../domain/belresultaat';
 import type { Instellingen } from '../settings/schema';
@@ -28,6 +30,9 @@ export interface Gegevens {
   opvolgacties: Opvolgactie[];
   keuzes: Planningskeuze[];
   belverboden: Belverbod[];
+  // Contactstrategie (fase 3b)
+  haken: Waardehaak[];
+  voorkeuren: Contactvoorkeur[];
 }
 
 export interface Store {
@@ -52,8 +57,12 @@ export interface Store {
   bewaarDagplan(p: Dagplan): Promise<void>;
   laadDonnaOverzicht(dag: string): Promise<DonnaOverzicht | null>;
   bewaarDonnaOverzicht(o: DonnaOverzicht): Promise<void>;
+  bewaarHaak(h: Waardehaak): Promise<void>;
+  verwijderHaak(id: string): Promise<void>;
+  /** Eén voorkeur per contact; overschrijft de vorige. */
+  bewaarVoorkeur(v: Contactvoorkeur): Promise<void>;
 }
 
 export function leegGegevens(): Gegevens {
-  return { contacten: [], panden: [], contactPanden: [], activiteiten: [], afspraken: [], belpogingen: [], bronnen: [], opvolgacties: [], keuzes: [], belverboden: [] };
+  return { contacten: [], panden: [], contactPanden: [], activiteiten: [], afspraken: [], belpogingen: [], bronnen: [], opvolgacties: [], keuzes: [], belverboden: [], haken: [], voorkeuren: [] };
 }

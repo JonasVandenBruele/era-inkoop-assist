@@ -89,5 +89,14 @@ export function maakDemoStore(): Store {
     async bewaarDonnaOverzicht(o) {
       donna.set(o.dag, o);
     },
+    async bewaarHaak(h) {
+      g.haken = [...g.haken.filter((x) => x.id !== h.id), h];
+    },
+    async verwijderHaak(id) {
+      g.haken = g.haken.filter((x) => x.id !== id);
+    },
+    async bewaarVoorkeur(v) {
+      g.voorkeuren = [...g.voorkeuren.filter((x) => x.contactId !== v.contactId), v];
+    },
   };
 }

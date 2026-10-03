@@ -11,6 +11,7 @@ const KNOPPEN: { uitkomst: BelUitkomst; label: string; klasse: string }[] = [
   { uitkomst: 'geen_antwoord', label: '📵 Geen antwoord', klasse: '' },
   { uitkomst: 'terugbellen', label: '🔁 Terugbellen op datum', klasse: '' },
   { uitkomst: 'afspraak', label: '📅 Afspraak gemaakt', klasse: 'goed' },
+  { uitkomst: 'reactie', label: '📩 Reactie ontvangen (bericht/mail)', klasse: 'goed' },
   { uitkomst: 'niet_meer_bellen', label: '⛔ Niet meer bellen', klasse: 'gevaar' },
 ];
 
@@ -29,6 +30,7 @@ export function ResultaatPaneel({ contact, pogingenZonderAntwoord, onKlaar }: { 
   const [afspraakUur, setAfspraakUur] = useState('10:00');
   const [duur, setDuur] = useState(60);
   const [bevestigVerbod, setBevestigVerbod] = useState(false);
+  const [reactieKanaal, setReactieKanaal] = useState<'sms' | 'whatsapp' | 'mail'>('sms');
   const [fout, setFout] = useState<string | null>(null);
   const [bezig, setBezig] = useState(false);
 
@@ -39,6 +41,7 @@ export function ResultaatPaneel({ contact, pogingenZonderAntwoord, onKlaar }: { 
       const r = await registreerBelresultaat({
         contact,
         uitkomst: gekozen,
+        kanaal: gekozen === 'reactie' ? reactieKanaal : 'telefoon',
         notitie,
         volgendeStap,
         vervolgDag: vervolgDag || null,
@@ -108,6 +111,17 @@ export function ResultaatPaneel({ contact, pogingenZonderAntwoord, onKlaar }: { 
             Ik sprak de persoon zelf (telt als gesprek)
           </label>
         </>
+      )}
+
+      {uitkomst === 'reactie' && (
+        <label>
+          Via
+          <select value={reactieKanaal} onChange={(e) => setReactieKanaal(e.target.value as 'sms' | 'whatsapp' | 'mail')}>
+            <option value="sms">Sms</option>
+            <option value="whatsapp">WhatsApp</option>
+            <option value="mail">Mail</option>
+          </select>
+        </label>
       )}
 
       {uitkomst === 'afspraak' && (

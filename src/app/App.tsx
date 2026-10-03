@@ -174,6 +174,21 @@ function IngelogdeApp({ store, email }: { store: Store; email: string | null }) 
         return contact;
       },
       toon: setMelding,
+
+      async bewaarHaak(h) {
+        const contact = h.contactId ? gegevens.contacten.find((c) => c.id === h.contactId) : null;
+        await store.bewaarHaak({ ...h, id: crypto.randomUUID(), aangemaaktOp: klok.nu(), isTestdata: contact?.isTestdata ?? gegevens.contacten.some((c) => c.isTestdata) });
+        await herlaad();
+      },
+      async verwijderHaak(id) {
+        await store.verwijderHaak(id);
+        await herlaad();
+      },
+      async bewaarVoorkeur(v) {
+        const contact = gegevens.contacten.find((c) => c.id === v.contactId);
+        await store.bewaarVoorkeur({ ...v, isTestdata: contact?.isTestdata ?? false });
+        await herlaad();
+      },
     };
   }, [store, instellingen, klok, gegevens, email, herlaad, dataVersie]);
 

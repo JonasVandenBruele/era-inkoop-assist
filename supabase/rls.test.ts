@@ -140,3 +140,20 @@ describe('toegangsregels voor lokale resultaten (fase 3)', () => {
     });
   });
 });
+
+describe('toegangsregels voor contactstrategie (fase 3b)', () => {
+  it('gebruiker B ziet geen haken of contactvoorkeuren van A; berichten zijn toegelaten uitkomsten', async () => {
+    await als(A, async () => {
+      const { rows } = await db.query<{ id: string }>(`insert into public.contacten (achternaam) values ('Haak') returning id`);
+      const id = rows[0]!.id;
+      await db.query(`insert into public.waardehaken (contact_id, soort, onderwerp) values ($1, 'persoonlijk', 'Verjaardag')`, [id]);
+      await db.query(`insert into public.contactvoorkeuren (contact_id, kanaal) values ($1, 'mail')`, [id]);
+      await db.query(`insert into public.belpogingen (contact_id, uitkomst, kanaal, is_inhoudelijk) values ($1, 'bericht_verstuurd', 'sms', false)`, [id]);
+      await expect(db.query(`insert into public.belpogingen (contact_id, uitkomst, kanaal, is_inhoudelijk) values ($1, 'bericht_verstuurd', 'duif', false)`, [id])).rejects.toThrow();
+    });
+    for (const t of ['waardehaken', 'contactvoorkeuren']) {
+      expect((await als(B, () => db.query(`select * from public.${t}`))).rows, t).toEqual([]);
+      expect((await als(A, () => db.query(`select * from public.${t}`))).rows.length, t).toBe(1);
+    }
+  });
+});

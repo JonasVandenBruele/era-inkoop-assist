@@ -1,13 +1,15 @@
 // Een belresultaat omzetten naar lokale records (PLAN.md §6). Pure functie: de opslag gebeurt elders.
 // Alles wat uit één belresultaat ontstaat, draagt dezelfde belpogingId, zodat "ongedaan maken" alles samen terugdraait.
 import { dagVan, opDagUur, type DagKey } from '../core/dates';
-import type { Afspraak, Belpoging, Belverbod, BelUitkomst, Contact, Opvolgactie } from './model';
+import type { Afspraak, Belpoging, Belverbod, BelUitkomst, Contact, Kanaal, Opvolgactie } from './model';
 import { volledigeNaam } from './model';
 
 export interface BelresultaatInvoer {
   contact: Contact;
   uitkomst: BelUitkomst;
   tijdstip: Date;
+  /** Standaard telefoon; bij een bericht of mail het gebruikte kanaal. */
+  kanaal?: Kanaal;
   notitie?: string | null;
   volgendeStap?: string | null;
   /** Bij "gesproken": optionele dag voor de volgende stap. */
@@ -38,7 +40,10 @@ export function verwerkBelresultaat(i: BelresultaatInvoer): Belresultaat {
   const vandaag = dagVan(i.tijdstip);
   const isTestdata = i.contact.isTestdata;
   const belpogingId = i.maakId();
-  const isInhoudelijk = i.uitkomst === 'geen_antwoord' ? false : i.uitkomst === 'terugbellen' ? (i.teltAlsGesprek ?? true) : true;
+  const kanaal: Kanaal = i.kanaal ?? 'telefoon';
+  if (i.uitkomst === 'bericht_verstuurd' && kanaal === 'telefoon') throw new OngeldigBelresultaat('Kies via welk kanaal je het bericht stuurde.');
+  const isInhoudelijk =
+    i.uitkomst === 'geen_antwoord' || i.uitkomst === 'bericht_verstuurd' ? false : i.uitkomst === 'terugbellen' ? (i.teltAlsGesprek ?? true) : true;
 
   const resultaat: Belresultaat = {
     belpoging: {
@@ -46,6 +51,7 @@ export function verwerkBelresultaat(i: BelresultaatInvoer): Belresultaat {
       contactId: i.contact.id,
       tijdstip: i.tijdstip,
       uitkomst: i.uitkomst,
+      kanaal,
       isInhoudelijk,
       notitie: leeg(i.notitie),
       volgendeStap: leeg(i.volgendeStap),
@@ -128,6 +134,8 @@ export function verwerkBelresultaat(i: BelresultaatInvoer): Belresultaat {
       break;
 
     case 'geen_antwoord':
+    case 'bericht_verstuurd':
+    case 'reactie':
       break;
   }
 
