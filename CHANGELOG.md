@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.8.0] — 2026-10-03 — Belmomenten en pushmeldingen
+
+### Toegevoegd
+- **Belmomenten** op Vandaag: vrije blokken tussen afspraken binnen je werkuren, zonder pauze, met reisbuffer rond afspraken op verplaatsing (niet voor kantoorafspraken). Per blok de capaciteit (minuten ÷ belduur) en wie erin gepland is; een terugbelafspraak met uur komt in het juiste blok. Waarschuwing als niet alles past; een hele-dagafspraak blokkeert de dag. Werkuren, pauze, belduur en reisbuffer zijn instelbaar.
+- **Pushmeldingen** (iPhone, app op het beginscherm, iOS 16.4+): ochtendoverzicht, start van een vrij belmoment, en herinnering vóór een terugbelafspraak met uur. Standaard zonder klantnamen; elke soort apart aan/uit. Elke melding vertrekt maar één keer.
+- Meldingentaak in GitHub Actions (elke 10 min op werkdagen, ± 7u–20u), met handmatige testmelding. Sleutelpaar: publiek als repo-variabele, privé als GitHub-geheim.
+- Migratie `20261003000005_pushmeldingen.sql` (pushabonnementen en meldingenlogboek, met RLS).
+- Afspraakbriefings worden niet gebouwd: Donna levert die al.
+
+### Tests
+- 155 tests, o.a. belmomenten (overlap, hele dag, zomertijd, vanaf nu) en meldingsregels (vensters, geen namen, maar één keer).
+
 ## [0.7.0] — 2026-10-03 — Volgens de officiële ERA Brand Guide
 
 ### Gewijzigd

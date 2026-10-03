@@ -157,3 +157,12 @@ describe('toegangsregels voor contactstrategie (fase 3b)', () => {
     }
   });
 });
+
+describe('toegangsregels voor pushmeldingen', () => {
+  it('gebruiker B ziet geen pushabonnementen van A; gebruikers kunnen het meldingenlogboek niet beschrijven', async () => {
+    await als(A, () => db.query(`insert into public.push_abonnementen (endpoint, p256dh, auth) values ('https://push.example/abc', 'p', 'a')`));
+    expect((await als(B, () => db.query('select * from public.push_abonnementen'))).rows).toEqual([]);
+    expect((await als(A, () => db.query('select * from public.push_abonnementen'))).rows.length).toBe(1);
+    await expect(als(A, () => db.query(`insert into public.verstuurde_meldingen (eigenaar_id, sleutel) values ($1, 'x')`, [A]))).rejects.toThrow();
+  });
+});

@@ -113,6 +113,14 @@ export function maakSupabaseStore(gebruikerId: string): Store {
       controleer(await sb.from('eraforce_koppelingen').delete().eq('contact_id', contactId), 'Ontkoppelen van ERAForce');
     },
 
+    async bewaarPushAbonnement(a) {
+      controleer(await sb.from('push_abonnementen').upsert({ ...a, eigenaar_id: gebruikerId }, { onConflict: 'eigenaar_id,endpoint' }), 'Meldingen aanzetten');
+    },
+
+    async verwijderPushAbonnement(endpoint) {
+      controleer(await sb.from('push_abonnementen').delete().eq('endpoint', endpoint), 'Meldingen uitzetten');
+    },
+
     async bewaarVoorkeur(v) {
       controleer(await sb.from('contactvoorkeuren').upsert(m.voorkeurNaarRij(v), { onConflict: 'eigenaar_id,contact_id' }), 'Bewaren van voorkeur');
     },

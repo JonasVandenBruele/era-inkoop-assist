@@ -7,6 +7,7 @@ import { volledigeNaam, type Dagplan } from '../../domain/model';
 import { afsprakenVanDag } from '../../domain/overzicht';
 import { BLOK_VAN_GROEP, berekenBellijst, samenvattingNietOpLijst, type Kandidaat } from '../../domain/prioriteit';
 import { dagWeergave } from '../../domain/dagplan';
+import { berekenBelmomenten, blokTekst } from '../../domain/belmomenten';
 import { BelKaart } from './BelKaart';
 
 export function Vandaag() {
@@ -120,6 +121,8 @@ export function Vandaag() {
           })}
         </ul>
       </section>
+
+      <Belmomenten actief={actief} />
 
       <section>
         <h2>Bellijst ({actief.length})</h2>
@@ -324,5 +327,59 @@ function Blokken({ actief }: { actief: Kandidaat[] }) {
         );
       })}
     </>
+  );
+}
+
+/** Vrije blokken tussen afspraken, met de verdeling van de bellijst (PLAN.md §11). */
+function Belmomenten({ actief }: { actief: Kandidaat[] }) {
+  const { gegevens, klok, instellingen } = useApp();
+  const vandaag = klok.vandaag();
+  const r = useMemo(
+    () => berekenBelmomenten(gegevens.afspraken, actief, vandaag, instellingen, klok.nu()),
+    // klok.nu() verandert elke render; herbereken enkel bij nieuwe gegevens of lijst
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [gegevens.afspraken, actief, vandaag, instellingen],
+  );
+  if (r.heleDag) {
+    return (
+      <section>
+        <h2>Belmomenten</h2>
+        <p className="infomelding">Vandaag staat er een hele-dagafspraak: <strong>{r.heleDag.titel}</strong>. Geen belmomenten gepland.</p>
+      </section>
+    );
+  }
+  return (
+    <section>
+      <h2>Belmomenten</h2>
+      {r.momenten.length === 0 ? (
+        <p className="zacht">Geen vrije belmomenten meer vandaag.</p>
+      ) : (
+        <ul className="lijst">
+          {r.momenten.map((m, i) => (
+            <li key={m.start.toISOString()} className={`kaart belmoment ${i === 0 ? 'eerstvolgend' : ''}`}>
+              <div className="belmoment-kop">
+                <strong>{blokTekst(m)}</strong>
+                <span className="zacht klein">
+                  {m.minuten} min · plaats voor ±{m.capaciteit}
+                </span>
+              </div>
+              {m.kandidaten.length > 0 ? (
+                <p className="klein">
+                  {m.kandidaten.map((k) => (k.groep === 'A' && k.terugbel?.uur ? `${k.terugbel.uur} ${k.contact.achternaam}` : k.contact.achternaam)).join(' · ')}
+                </p>
+              ) : (
+                <p className="klein zacht">Nog vrij: ruimte voor wie bij "Niet op vandaag" staat.</p>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {r.pastNiet.length > 0 && (
+        <p className="foutmelding klein">
+          {r.pastNiet.length} {r.pastNiet.length === 1 ? 'contact past' : 'contacten passen'} niet meer in je vrije tijd vandaag ({r.pastNiet.map((k) => k.contact.achternaam).join(', ')}).
+        </p>
+      )}
+      <p className="klein zacht">Met {instellingen.werkdag.reisbufferMinuten} min reisbuffer rond afspraken op verplaatsing en {instellingen.werkdag.belduurMinuten} min per telefoontje — geen echte reistijd.</p>
+    </section>
   );
 }

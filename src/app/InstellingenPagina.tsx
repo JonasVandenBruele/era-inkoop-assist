@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useApp } from './context';
 import { langeDag } from '../core/dates';
 import { PlanningInstellingen } from './PlanningInstellingen';
+import { MeldingenInstellingen } from './MeldingenInstellingen';
 import { salesforceIdUitLink } from '../domain/eraforce';
 
 export function InstellingenPagina() {
@@ -67,6 +68,8 @@ export function InstellingenPagina() {
           {bezig === 'reset' ? 'Bezig…' : 'Testdata opnieuw laden'}
         </button>
       </section>
+
+      <MeldingenInstellingen />
 
       <PlanningInstellingen />
 

@@ -474,3 +474,10 @@ h1, .appnaam { font-weight: 900; }
 .appmerk { border-radius: 7px; }
 .login-merk { border-left-color: var(--rood); }
 .login-merk .appnaam { font-size: 2rem; }
+
+/* ---------- Belmomenten ---------- */
+.belmoment { display: grid; gap: 4px; border-left: 4px solid var(--rand); }
+.belmoment.eerstvolgend { border-left-color: var(--rood); }
+.belmoment-kop { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.belmoment-kop strong { color: var(--blauw); font-size: 1.05rem; }
+.belmoment p { margin: 0; }

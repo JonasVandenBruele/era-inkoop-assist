@@ -64,6 +64,9 @@ export interface Store {
   /** Eén voorkeur per contact; overschrijft de vorige. */
   bewaarVoorkeur(v: Contactvoorkeur): Promise<void>;
   bewaarKoppeling(k: EraforceKoppeling): Promise<void>;
+  /** Pushabonnement van dit toestel bewaren (enkel met Supabase; de demo kan geen meldingen ontvangen). */
+  bewaarPushAbonnement(a: { endpoint: string; p256dh: string; auth: string; toestel: string }): Promise<void>;
+  verwijderPushAbonnement(endpoint: string): Promise<void>;
   verwijderKoppeling(contactId: string): Promise<void>;
 }
 

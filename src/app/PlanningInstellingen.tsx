@@ -52,6 +52,42 @@ export function PlanningInstellingen() {
         Jouw voornaam (voor de openingszin)
         <input value={concept.gebruiker.voornaam} onChange={(e) => setConcept({ ...concept, gebruiker: { ...concept.gebruiker, voornaam: e.target.value } })} />
       </label>
+      <h3>Werkdag en belmomenten</h3>
+      <div className="instellingenrooster">
+        <label>
+          <span>Start werkdag</span>
+          <input type="time" value={concept.werkdag.start} onChange={(e) => setConcept({ ...concept, werkdag: { ...concept.werkdag, start: e.target.value } })} />
+        </label>
+        <label>
+          <span>Einde werkdag</span>
+          <input type="time" value={concept.werkdag.einde} onChange={(e) => setConcept({ ...concept, werkdag: { ...concept.werkdag, einde: e.target.value } })} />
+        </label>
+        <label>
+          <span>Middagpauze van</span>
+          <input
+            type="time"
+            value={concept.werkdag.pauzes[0]?.start ?? ''}
+            onChange={(e) => setConcept({ ...concept, werkdag: { ...concept.werkdag, pauzes: e.target.value ? [{ start: e.target.value, einde: concept.werkdag.pauzes[0]?.einde ?? e.target.value }] : [] } })}
+          />
+        </label>
+        <label>
+          <span>Middagpauze tot</span>
+          <input
+            type="time"
+            value={concept.werkdag.pauzes[0]?.einde ?? ''}
+            onChange={(e) => setConcept({ ...concept, werkdag: { ...concept.werkdag, pauzes: concept.werkdag.pauzes[0] ? [{ start: concept.werkdag.pauzes[0].start, einde: e.target.value }] : [] } })}
+          />
+        </label>
+        <label>
+          <span>Minuten per telefoontje</span>
+          <input type="number" inputMode="numeric" min={1} value={concept.werkdag.belduurMinuten} onChange={(e) => setConcept({ ...concept, werkdag: { ...concept.werkdag, belduurMinuten: Number(e.target.value) || 1 } })} />
+        </label>
+        <label>
+          <span>Reisbuffer rond afspraken (min)</span>
+          <input type="number" inputMode="numeric" min={0} value={concept.werkdag.reisbufferMinuten} onChange={(e) => setConcept({ ...concept, werkdag: { ...concept.werkdag, reisbufferMinuten: Number(e.target.value) || 0 } })} />
+        </label>
+      </div>
+      <h3>Prioriteit</h3>
       <div className="instellingenrooster">
         {VELDEN.map((v) => (
           <label key={v.label}>

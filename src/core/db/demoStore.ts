@@ -101,6 +101,12 @@ export function maakDemoStore(): Store {
     async verwijderKoppeling(contactId) {
       g.koppelingen = g.koppelingen.filter((x) => x.contactId !== contactId);
     },
+    async bewaarPushAbonnement() {
+      throw new Error('Pushmeldingen werken enkel in de online app met login, niet in de lokale demo.');
+    },
+    async verwijderPushAbonnement() {
+      /* niets te doen in de demo */
+    },
     async bewaarVoorkeur(v) {
       g.voorkeuren = [...g.voorkeuren.filter((x) => x.contactId !== v.contactId), v];
     },

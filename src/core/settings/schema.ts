@@ -79,6 +79,18 @@ export const InstellingenSchema = z.object({
     })
     .default({ belViaEraforce: true, vraagNaBellenViaEraforce: false, testIdVoorIedereen: null }),
 
+  // Pushmeldingen (zonder klantgegevens tenzij toonNamen aan staat).
+  meldingen: z
+    .object({
+      ochtend: z.boolean().default(true),
+      ochtendUur: uur.default('08:00'),
+      belmoment: z.boolean().default(true),
+      terugbel: z.boolean().default(true),
+      terugbelMinutenVooraf: z.number().int().min(0).max(120).default(10),
+      toonNamen: z.boolean().default(false),
+    })
+    .default({ ochtend: true, ochtendUur: '08:00', belmoment: true, terugbel: true, terugbelMinutenVooraf: 10, toonNamen: false }),
+
   /** Welke mail-app opent bij "Mail": Outlook (standaard) of de standaard-mailapp van het toestel (Apple Mail). */
   mailApp: z.enum(['outlook', 'standaard']).default('outlook'),
 

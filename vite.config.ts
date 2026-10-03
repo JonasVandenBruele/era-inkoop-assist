@@ -15,6 +15,10 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // Eigen servicewerker (src/sw.ts) voor pushmeldingen; precaching blijft via Workbox.
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
       includeAssets: ['icon.svg', 'apple-touch-icon.png'],
       manifest: {
         name: 'Oxpecker — ERA Inkoop Assist',

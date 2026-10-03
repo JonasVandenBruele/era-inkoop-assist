@@ -2,7 +2,7 @@
 
 > Naam gekozen op 3/10/2026: **Oxpecker**, naar de ossenpikker op de neushoorn — altijd aanwezig, nooit opdringerig.
 
-Status: **fase 1–3b online, met "timeline eerst" (5.2). Bellen en registreren via ERAForce (Maf Call).**
+Status: **fase 1–3b, 6 (belmomenten) en 7 (pushmeldingen) online. Oxpecker in ERA-huisstijl. Wacht op: ERAForce-mirror (fase 8), Claude API (fase 4).**
 Laatst bijgewerkt: 3 oktober 2026
 
 ---
@@ -536,13 +536,13 @@ Elke fase sluit af met: wat werkt · hoe je het zelf test · wat je moet regelen
 - AI-openingszinnen met aanspreekvorm; standaardzin als terugval.
 - **Acceptatie:** een correctie van jou wint altijd van AI; een expliciete terugbelafspraak wint van een algemene notitie; openingszinnen bevatten geen feiten die niet in de bron staan (steekproef + regels).
 
-### Fase 6 — Afspraakbriefings en belmomenten
+### Fase 6 — Belmomenten (gebouwd 3/10/2026); afspraakbriefings vervallen (Donna levert ze)
 - Instellingen: werkuren, pauzes, belduur, reisbuffer.
 - Vrije belblokken tussen afspraken (overlap, hele-dag-afspraken, zomertijd) en verdeling van de lijst over de blokken; melding als niet alles past; blokken aanpasbaar.
 - Briefings (30 seconden leestijd), beperkte briefing + koppelen bij twijfel; voorlezen op verzoek.
 - **Acceptatie:** testdag met overlappende afspraken en een hele-dag-afspraak geeft correcte blokken; reistijd wordt nooit als "exact" voorgesteld.
 
-### Fase 7 — Pushmeldingen en mobiele controle
+### Fase 7 — Pushmeldingen (gebouwd 3/10/2026: ochtend, belmoment, terugbelherinnering via GitHub Actions elke 10 min) en mobiele controle
 - Eerst actuele iOS-ondersteuning nagaan; dan webpush met service worker, toestemming via een knop.
 - Meldingen zonder klantdetails ("3 terugbelafspraken vandaag"); herinneringen ook in de app.
 - Volledige controle op iPhone-formaat (Playwright) + jouw eigen test.

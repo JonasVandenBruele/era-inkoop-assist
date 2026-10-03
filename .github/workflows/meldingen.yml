@@ -1,0 +1,38 @@
+# Pushmeldingen: kijkt op werkdagen elke 10 minuten (± 7u–20u Belgische tijd) of er meldingen moeten vertrekken.
+# GitHub kan geplande taken enkele minuten vertragen. Handmatig starten met "testmelding" verstuurt een test.
+name: Meldingen
+
+on:
+  schedule:
+    - cron: '*/10 5-18 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      testmelding:
+        description: 'Testmelding naar alle toestellen sturen'
+        type: boolean
+        default: false
+
+concurrency:
+  group: meldingen
+  cancel-in-progress: false
+
+jobs:
+  meldingen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Meldingen versturen
+        run: npx tsx scripts/meldingen.ts
+        env:
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_DB_HOST: ${{ vars.SUPABASE_DB_HOST }}
+          SUPABASE_PROJECT_ID: ${{ vars.SUPABASE_PROJECT_ID }}
+          VAPID_PUBLIC_KEY: ${{ vars.VITE_VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          TESTMELDING: ${{ inputs.testmelding }}
