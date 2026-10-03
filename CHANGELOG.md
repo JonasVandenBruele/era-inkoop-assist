@@ -13,6 +13,11 @@
 - Pagina **Contacten** met zoeken en per contact waarom hij vandaag (niet) op de lijst staat.
 - Instellingen: ritmes, maximum, gewichten, nieuwe-lead-periode, max. pogingen en je voornaam zijn aanpasbaar, met knop naar standaardwaarden.
 
+### Online
+- Gepubliceerd op https://jonasvandenbruele.github.io/era-inkoop-assist/ met Supabase-login (project in EU-regio Frankfurt).
+- Gecontroleerd: niet-ingelogde bezoekers kunnen niets lezen of schrijven; zelfregistratie staat uit. Werkt als app op het beginscherm van de iPhone.
+- Git zonder Xcode: losse git in de gebruikersmap; commits met anoniem GitHub-adres.
+
 ### Tests
 - 85 tests, waaronder alle voorbeelden uit PLAN.md §5.4 als acceptatietest, vastpinnen vs. belverbod, overslaan vs. uitstellen, ongedaan maken, herplanning over weekend, limiet en instelbare gewichten.
 
