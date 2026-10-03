@@ -6,10 +6,10 @@ import { maakDemoStore } from '../core/db/demoStore';
 import { leegGegevens, type Gegevens, type Store } from '../core/db/store';
 import { maakSupabaseStore, supabase, supabaseGeconfigureerd } from '../core/db/supabaseStore';
 import type { Instellingen } from '../core/settings/schema';
-import { AppContext, type AppStaat, type Melding as MeldingType } from './context';
+import { AppContext, type AppStaat, type LopendeOproep, type Melding as MeldingType } from './context';
+import { NaHetBellen } from '../modules/dagplanner/NaHetBellen';
 import { verwerkBelresultaat } from '../domain/belresultaat';
 import type { Contact } from '../domain/model';
-import { Avondoverzicht } from '../modules/dagplanner/Avondoverzicht';
 import { Layout } from './Layout';
 import { Login } from './Login';
 import { InstellingenPagina } from './InstellingenPagina';
@@ -45,6 +45,21 @@ function IngelogdeApp({ store, email }: { store: Store; email: string | null }) 
   const [bezig, setBezig] = useState(true);
   const [melding, setMelding] = useState<MeldingType | null>(null);
   const [dataVersie, setDataVersie] = useState(0);
+  const [oproep, setOproep] = useState<LopendeOproep | null>(() => leesOproep());
+
+  // Bij terugkeer in de app na een oproep: vraag "hoe ging het?" (maximaal 3 uur na het starten).
+  useEffect(() => {
+    const bijTerugkeer = () => {
+      if (document.visibilityState !== 'visible') return;
+      setOproep((o) => (o && !o.vraag && Date.now() - o.sinds > 3000 && Date.now() - o.sinds < 3 * 3600_000 ? bewaarOproep({ ...o, vraag: true }) : o));
+    };
+    document.addEventListener('visibilitychange', bijTerugkeer);
+    window.addEventListener('focus', bijTerugkeer);
+    return () => {
+      document.removeEventListener('visibilitychange', bijTerugkeer);
+      window.removeEventListener('focus', bijTerugkeer);
+    };
+  }, []);
 
   const herlaad = useCallback(async () => {
     try {
@@ -184,13 +199,20 @@ function IngelogdeApp({ store, email }: { store: Store; email: string | null }) 
         await store.verwijderHaak(id);
         await herlaad();
       },
+      oproep,
+      startOproep(contactId, simuleer = false) {
+        setOproep(bewaarOproep({ contactId, sinds: Date.now(), vraag: simuleer }));
+      },
+      sluitOproep() {
+        setOproep(bewaarOproep(null));
+      },
       async bewaarVoorkeur(v) {
         const contact = gegevens.contacten.find((c) => c.id === v.contactId);
         await store.bewaarVoorkeur({ ...v, isTestdata: contact?.isTestdata ?? false });
         await herlaad();
       },
     };
-  }, [store, instellingen, klok, gegevens, email, herlaad, dataVersie]);
+  }, [store, instellingen, klok, gegevens, email, herlaad, dataVersie, oproep]);
 
   if (bezig || !staat) return <Melding tekst={fout ? `Er ging iets mis: ${fout}` : 'Gegevens laden…'} />;
 
@@ -201,10 +223,10 @@ function IngelogdeApp({ store, email }: { store: Store; email: string | null }) 
           <Route path="/" element={<Vandaag />} />
           <Route path="/contacten" element={<Contacten />} />
           <Route path="/contact/:id" element={<ContactPagina />} />
-          <Route path="/avond" element={<Avondoverzicht />} />
           <Route path="/instellingen" element={<InstellingenPagina />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        <NaHetBellen />
       </Layout>
     </AppContext.Provider>
   );
@@ -216,4 +238,24 @@ function Melding({ tekst }: { tekst: string }) {
       <p>{tekst}</p>
     </main>
   );
+}
+
+const OPROEP_SLEUTEL = 'dagplanner.lopendeOproep';
+function leesOproep(): LopendeOproep | null {
+  try {
+    const t = localStorage.getItem(OPROEP_SLEUTEL);
+    return t ? (JSON.parse(t) as LopendeOproep) : null;
+  } catch {
+    return null;
+  }
+}
+/** Bewaart de lopende oproep ook in localStorage: iOS kan de app herladen terwijl je belt. */
+function bewaarOproep(o: LopendeOproep | null): LopendeOproep | null {
+  try {
+    if (o) localStorage.setItem(OPROEP_SLEUTEL, JSON.stringify(o));
+    else localStorage.removeItem(OPROEP_SLEUTEL);
+  } catch {
+    /* privémodus: enkel in het geheugen */
+  }
+  return o;
 }

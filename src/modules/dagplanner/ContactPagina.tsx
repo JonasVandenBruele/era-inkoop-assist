@@ -11,7 +11,7 @@ import { HakenEnVoorkeur } from './HakenEnVoorkeur';
 
 export function ContactPagina() {
   const { id } = useParams();
-  const { gegevens, klok, trekBelverbodIn, herstelKeuze } = useApp();
+  const { gegevens, klok, trekBelverbodIn, herstelKeuze, startOproep } = useApp();
   const [resultaat, setResultaat] = useState(false);
   const contact = gegevens.contacten.find((c) => c.id === id);
 
@@ -70,7 +70,7 @@ export function ContactPagina() {
               📞 {t.nummer} <span className="zacht klein">(verzonnen — bellen uitgeschakeld voor testdata)</span>
             </p>
           ) : (
-            <a key={t.nummer} className="knop primair groot" href={`tel:${t.nummer.replace(/\s/g, '')}`}>
+            <a key={t.nummer} className="knop primair groot" href={`tel:${t.nummer.replace(/\s/g, '')}`} onClick={() => startOproep(contact.id)}>
               📞 Bel {t.nummer}
             </a>
           ),

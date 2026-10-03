@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.1] — 2026-10-03 — Minder handwerk bij het registreren
+
+### Gewijzigd
+- **Eén optionele tik na het bellen**: bel je via de app, dan vraagt die bij terugkomst "gesproken / geen antwoord / terugbellen / later". Negeren = niets gelogd. Bij testdata simuleert de belknop de oproep.
+- **ERAForce is de bron** voor gesprekken en inhoud; logging in de app is optioneel (PLAN.md §6.4).
+- "Reactie ontvangen" verwijderd uit het resultaatpaneel (een reactie komt via ERAForce binnen).
+- Avondoverzicht voor Donna uit het menu gehaald (code bewaard).
+
 ## [0.4.0] — 2026-10-03 — Fase 3b: contactstrategie "altijd aanwezig, nooit opdringerig" (ossenpikker)
 
 ### Toegevoegd

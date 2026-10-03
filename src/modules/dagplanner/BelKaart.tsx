@@ -11,7 +11,7 @@ import { BerichtPaneel } from './BerichtPaneel';
 import { haakLabel } from '../../domain/haken';
 
 export function BelKaart({ k, nummer, opLijst = true }: { k: Kandidaat; nummer?: number; opLijst?: boolean }) {
-  const { gegevens, instellingen, klok } = useApp();
+  const { gegevens, instellingen, klok, startOproep } = useApp();
   const [uitleg, setUitleg] = useState(false);
   const [paneel, setPaneel] = useState<'geen' | 'resultaat' | 'meer' | 'sms' | 'whatsapp' | 'mail'>('geen');
   const c = k.contact;
@@ -108,12 +108,12 @@ export function BelKaart({ k, nummer, opLijst = true }: { k: Kandidaat; nummer?:
             {opLijst &&
               k.advies.kanaal === 'bellen' &&
               (tel && !c.isTestdata ? (
-                <a className="knop primair belknop" href={`tel:${tel.nummer.replace(/\s/g, '')}`}>
+                <a className="knop primair belknop" href={`tel:${tel.nummer.replace(/\s/g, '')}`} onClick={() => startOproep(c.id)}>
                   📞 Bel
                 </a>
               ) : (
-                <button className="knop primair belknop" disabled title="Testdata: verzonnen nummer">
-                  📞 Bel (testdata)
+                <button className="knop primair belknop" title="Testdata: er wordt niet echt gebeld" onClick={() => startOproep(c.id, true)}>
+                  📞 Bel (test: simulatie)
                 </button>
               ))}
             <button className="knop" onClick={() => setPaneel('resultaat')}>
@@ -128,9 +128,9 @@ export function BelKaart({ k, nummer, opLijst = true }: { k: Kandidaat; nummer?:
               <div className="knoppenrij kleine-knoppen">
                 {k.advies.kanaal !== 'bellen' && tel && (
                   c.isTestdata ? (
-                    <button className="knop" disabled>📞 Toch bellen (testdata)</button>
+                    <button className="knop" onClick={() => startOproep(c.id, true)}>📞 Toch bellen (simulatie)</button>
                   ) : (
-                    <a className="knop" href={`tel:${tel.nummer.replace(/\s/g, '')}`}>📞 Toch bellen</a>
+                    <a className="knop" href={`tel:${tel.nummer.replace(/\s/g, '')}`} onClick={() => startOproep(c.id)}>📞 Toch bellen</a>
                   )
                 )}
                 {k.advies.kanaal !== 'bericht' && tel && <button className="knop" onClick={() => setPaneel('sms')}>💬 Bericht</button>}

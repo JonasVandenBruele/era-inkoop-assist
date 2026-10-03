@@ -21,6 +21,14 @@ export interface NieuwContact {
   notitie: string | null;
 }
 
+/** Een oproep die vanuit de app gestart werd; bij terugkomst volgt de vraag "hoe ging het?". */
+export interface LopendeOproep {
+  contactId: string;
+  sinds: number;
+  /** true zodra de vraag getoond mag worden (na terugkeer in de app, of meteen bij een testsimulatie). */
+  vraag: boolean;
+}
+
 export interface AppStaat {
   store: Store;
   instellingen: Instellingen;
@@ -49,6 +57,12 @@ export interface AppStaat {
   bewaarHaak(h: Omit<Waardehaak, 'id' | 'aangemaaktOp' | 'isTestdata'>): Promise<void>;
   verwijderHaak(id: string): Promise<void>;
   bewaarVoorkeur(v: Omit<Contactvoorkeur, 'isTestdata'>): Promise<void>;
+
+  // ---- Eén tik na het bellen ----
+  oproep: LopendeOproep | null;
+  /** Aanroepen bij een tik op "Bel". Met simuleer=true (testdata) verschijnt de vraag meteen. */
+  startOproep(contactId: string, simuleer?: boolean): void;
+  sluitOproep(): void;
 }
 
 export const AppContext = createContext<AppStaat | null>(null);

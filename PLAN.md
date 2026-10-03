@@ -1,6 +1,6 @@
 # PLAN — Dagplanner (module 1 van ERA Inkoop Assist)
 
-Status: **fase 1–3b online (3b: contactstrategie). Databasewijzigingen gaan automatisch mee bij elke publicatie via GitHub.**
+Status: **fase 1–3b online. Registreren: ERAForce is de bron, in de app enkel een optionele tik na het bellen en "verstuurd" bij berichten.**
 Laatst bijgewerkt: 3 oktober 2026
 
 ---
@@ -275,12 +275,15 @@ Elke kaart heeft een knop **"Waarom?"** die deze opbouw in gewone taal toont, bv
 
 Vastpinnen · alleen vandaag van de lijst · uitstellen tot datum · bestaand contact toevoegen · tijdelijk lokaal contact aanmaken. Alles is te **herstellen** (ongedaan maken) — keuzes worden niet gewist maar gemarkeerd als ongedaan.
 
-### 6.4 Avondoverzicht voor Donna
+### 6.4 Registreren met zo weinig mogelijk handwerk (vastgelegd 3/10/2026)
 
-- Bundelt de belresultaten van de dag in korte, bewerkbare tekst.
-- Knop **Kopiëren**. Niets wordt automatisch verstuurd.
-- Status: *klaargezet* → *door mij doorgegeven* (jij tikt dit aan).
-- Elk item krijgt een korte referentie (bv. `DP-7F3K`). Als Donna die mee in ERAForce zet, kunnen we later de koppeling **aantoonbaar** bevestigen (§7.2). Dit is optioneel.
+- **ERAForce is de bron** voor gesprekken en wat er gezegd is. Jonas logt daar een gedane taak na een gesprek (zoals nu). Zodra de mirror er is, neemt de app die automatisch over.
+- **Berichten** worden niet in ERAForce gelogd; omdat ze vanuit de app vertrekken, registreert één tik "Verstuurd" ze.
+- **Eén optionele tik na het bellen:** bel je via de app, dan vraagt die bij terugkomst *gesproken / geen antwoord / terugbellen / later*. Negeren = niets gelogd. Zo past de lijst zich dezelfde dag aan, ook als de mirror maar 's nachts ververst.
+- **"Reactie ontvangen"** hoeft niet ingegeven te worden: een reactie die tot een gesprek of nuttige info leidt, staat in ERAForce en telt dan als inhoudelijk contact.
+- Een webapp op iOS kan belgeschiedenis, sms en WhatsApp niet lezen; automatische herkenning kan enkel via ERAForce, later via Plaud (gesprekken) en eventueel de Outlook-inbox (mailreacties, vraagt ERA-IT-toestemming).
+- Het **avondoverzicht voor Donna vervalt** (Jonas logt zelf in ERAForce). De code blijft bewaard voor als het later toch nodig is.
+- Herkenning van ERAForce-taken (fase 8): een vast begin maakt het betrouwbaar, bv. "Gebeld – gesproken", "Gebeld – geen antwoord", "Terugbellen 20/10"; vrije tekst wordt vanaf fase 4 door de AI gelezen. Dubbele registraties (snelle tik + ERAForce-taak) worden herkend volgens §7.2; voor de planning telt sowieso het recentste contact.
 
 ### 6.5 Gewichten bijsturen
 
@@ -511,7 +514,7 @@ Elke fase sluit af met: wat werkt · hoe je het zelf test · wat je moet regelen
 - Vijf uitkomsten met grote knoppen; notitie + volgende stap na "gesproken".
 - Herplanning na geen antwoord (§6.1) met werkdagen en stoplimiet.
 - Vastpinnen, overslaan vandaag, uitstellen, toevoegen, tijdelijk contact, herstellen.
-- Avondoverzicht: bewerkbaar, kopieerbaar, statussen klaargezet/doorgegeven.
+- ~~Avondoverzicht~~ vervallen (zie §6.4); vervangen door één optionele tik na het bellen.
 - **Acceptatie:** na "geen antwoord" verdwijnt het contact en verschijnt het op de juiste werkdag; na 3× staat het bij "Handmatig beoordelen". "Overslaan" is morgen terug, "Niet meer bellen" niet. Elke keuze is ongedaan te maken. Een lokaal resultaat telt meteen mee terwijl de fictieve mirror nog niets weet. Een nieuwe import overschrijft geen enkele lokale keuze (test).
 
 ### Fase 3b — Contactstrategie (ossenpikker), zonder AI

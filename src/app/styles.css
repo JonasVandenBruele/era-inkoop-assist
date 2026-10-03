@@ -313,3 +313,16 @@ p.label { display: block; white-space: normal; border-radius: 8px; }
 .kanaalkeuze .knop { flex: 1; min-height: 44px; }
 .voorkeur { margin-top: 14px; border-top: 1px solid var(--rand); padding-top: 10px; }
 .voorkeur h3 { margin: 0; font-size: 1rem; }
+
+/* ---------- Eén tik na het bellen ---------- */
+.blad-achtergrond { position: fixed; inset: 0; background: rgb(0 0 0 / 0.35); z-index: 30; display: flex; align-items: flex-end; }
+.blad {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  background: var(--kaart);
+  border-radius: 18px 18px 0 0;
+  padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+  display: grid;
+  gap: 10px;
+}

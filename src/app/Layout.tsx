@@ -31,10 +31,6 @@ export function Layout({ children, fout, melding, sluitMelding }: { children: Re
           <span aria-hidden>👥</span>
           Contacten
         </NavLink>
-        <NavLink to="/avond">
-          <span aria-hidden>🌙</span>
-          Avond
-        </NavLink>
         <NavLink to="/instellingen">
           <span aria-hidden>⚙️</span>
           Instellingen

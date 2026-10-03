@@ -11,7 +11,6 @@ const KNOPPEN: { uitkomst: BelUitkomst; label: string; klasse: string }[] = [
   { uitkomst: 'geen_antwoord', label: '📵 Geen antwoord', klasse: '' },
   { uitkomst: 'terugbellen', label: '🔁 Terugbellen op datum', klasse: '' },
   { uitkomst: 'afspraak', label: '📅 Afspraak gemaakt', klasse: 'goed' },
-  { uitkomst: 'reactie', label: '📩 Reactie ontvangen (bericht/mail)', klasse: 'goed' },
   { uitkomst: 'niet_meer_bellen', label: '⛔ Niet meer bellen', klasse: 'gevaar' },
 ];
 
