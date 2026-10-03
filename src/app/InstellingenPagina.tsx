@@ -69,6 +69,31 @@ export function InstellingenPagina() {
       <PlanningInstellingen />
 
       <section className="kaart">
+        <h2>ERAForce</h2>
+        <p className="zacht klein">
+          Contacten uit ERAForce krijgen een knop "Bel via ERAForce": die opent de prospect in de Salesforce-app, waar je via More → Maf Call belt en
+          meteen je evaluatie invult. Werkt zodra de ERAForce-gegevens gekoppeld zijn; testcontacten bellen gewoon (gesimuleerd).
+        </p>
+        <label className="vinkje">
+          <input
+            type="checkbox"
+            checked={instellingen.eraforce.belViaEraforce}
+            onChange={(e) => doe('eraf', () => wijzigInstellingen({ ...instellingen, eraforce: { ...instellingen.eraforce, belViaEraforce: e.target.checked } }), 'Bewaard.')}
+          />
+          Bellen via ERAForce (Maf Call)
+        </label>
+        <label className="vinkje">
+          <input
+            type="checkbox"
+            checked={instellingen.eraforce.vraagNaBellenViaEraforce}
+            onChange={(e) => doe('eraf', () => wijzigInstellingen({ ...instellingen, eraforce: { ...instellingen.eraforce, vraagNaBellenViaEraforce: e.target.checked } }), 'Bewaard.')}
+          />
+          Na bellen via ERAForce toch nog "hoe ging het?" vragen (voor een meteen bijgewerkte lijst)
+        </label>
+        {!import.meta.env.VITE_ERAFORCE_DOMEIN && <p className="klein zacht">ERAForce-domein nog niet ingesteld.</p>}
+      </section>
+
+      <section className="kaart">
         <h2>Account</h2>
         {store.soort === 'supabase' ? (
           <>

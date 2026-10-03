@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.2] — 2026-10-03 — Bellen via ERAForce (Maf Call)
+
+### Toegevoegd
+- Knop **Bel via ERAForce**: opent de prospect rechtstreeks in de Salesforce-app (getest op iPhone), waar je via More → Maf Call belt en je evaluatie invult. Ook "Open in ERAForce" op de contactpagina.
+- Instellingen: bellen via ERAForce aan/uit, en optioneel toch "hoe ging het?" vragen na bellen via ERAForce (standaard uit: de evaluatie staat dan al in ERAForce).
+- **DATA.md** met de eerste waarnemingen over ERAForce (Leads, Taken, Maf Call, deep links), zonder echte gegevens.
+- Werkt zodra de ERAForce-gegevens gekoppeld zijn; testcontacten bellen gesimuleerd.
+
 ## [0.4.1] — 2026-10-03 — Minder handwerk bij het registreren
 
 ### Gewijzigd

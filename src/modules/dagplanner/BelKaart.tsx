@@ -9,6 +9,7 @@ import { GROEP_LABEL, type Kandidaat } from '../../domain/prioriteit';
 import { KeuzeKnoppen, ResultaatPaneel } from './ResultaatPaneel';
 import { BerichtPaneel } from './BerichtPaneel';
 import { haakLabel } from '../../domain/haken';
+import { eraforceLink } from '../../domain/eraforce';
 
 export function BelKaart({ k, nummer, opLijst = true }: { k: Kandidaat; nummer?: number; opLijst?: boolean }) {
   const { gegevens, instellingen, klok, startOproep } = useApp();
@@ -30,6 +31,7 @@ export function BelKaart({ k, nummer, opLijst = true }: { k: Kandidaat; nummer?:
     vandaag,
   });
   const tel = c.telefoons[0];
+  const erafLink = instellingen.eraforce.belViaEraforce ? eraforceLink(c, import.meta.env.VITE_ERAFORCE_DOMEIN) : null;
   const geenAntwoordVandaag = gegevens.belpogingen.filter((p) => p.contactId === c.id && !p.ongedaanOp && p.uitkomst === 'geen_antwoord' && dagVan(p.tijdstip) === vandaag).length;
 
   return (
@@ -105,8 +107,19 @@ export function BelKaart({ k, nummer, opLijst = true }: { k: Kandidaat; nummer?:
                 ✉️ Mail
               </button>
             )}
+            {opLijst && k.advies.kanaal === 'bellen' && erafLink && (
+              <a
+                className="knop primair belknop"
+                href={erafLink}
+                onClick={() => instellingen.eraforce.vraagNaBellenViaEraforce && startOproep(c.id)}
+                title="Opent de prospect in ERAForce; bel daar via More → Maf Call"
+              >
+                📞 Bel via ERAForce
+              </a>
+            )}
             {opLijst &&
               k.advies.kanaal === 'bellen' &&
+              !erafLink &&
               (tel && !c.isTestdata ? (
                 <a className="knop primair belknop" href={`tel:${tel.nummer.replace(/\s/g, '')}`} onClick={() => startOproep(c.id)}>
                   📞 Bel

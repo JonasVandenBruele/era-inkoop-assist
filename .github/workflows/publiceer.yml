@@ -56,6 +56,7 @@ jobs:
           # Publieke Supabase-waarden (bedoeld om in de app te staan). Ingesteld als repository-variabelen.
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+          VITE_ERAFORCE_DOMEIN: ${{ vars.VITE_ERAFORCE_DOMEIN }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

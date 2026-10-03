@@ -65,6 +65,16 @@ export const InstellingenSchema = z.object({
     })
     .default({ start: '08:30', einde: '18:00', pauzes: [{ start: '12:30', einde: '13:15' }], belduurMinuten: 6, reisbufferMinuten: 20 }),
 
+  // ERAForce: bellen via "Maf Call" in de Salesforce-app (de app opent enkel het record).
+  eraforce: z
+    .object({
+      /** Bel via ERAForce als het contact een ERAForce-record heeft; anders gewoon via de telefoon. */
+      belViaEraforce: z.boolean().default(true),
+      /** Na bellen via ERAForce nog "hoe ging het?" vragen? Standaard niet: de evaluatie staat dan al in ERAForce. */
+      vraagNaBellenViaEraforce: z.boolean().default(false),
+    })
+    .default({ belViaEraforce: true, vraagNaBellenViaEraforce: false }),
+
   // AI (fase 4)
   ai: z
     .object({

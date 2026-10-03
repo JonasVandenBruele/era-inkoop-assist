@@ -1,6 +1,6 @@
 # PLAN — Dagplanner (module 1 van ERA Inkoop Assist)
 
-Status: **fase 1–3b online. Registreren: ERAForce is de bron, in de app enkel een optionele tik na het bellen en "verstuurd" bij berichten.**
+Status: **fase 1–3b online. Bellen en registreren via ERAForce (Maf Call); de Dagplanner zegt wie, waarom en met welk haakje, en opent de prospect met één tik.**
 Laatst bijgewerkt: 3 oktober 2026
 
 ---
@@ -547,6 +547,7 @@ Elke fase sluit af met: wat werkt · hoe je het zelf test · wat je moet regelen
 - **Acceptatie:** melding komt binnen op je geïnstalleerde iPhone-app; zonder toestemming werkt alles behalve meldingen.
 
 ### Fase 8 — ERAForce-mirror (zodra beschikbaar)
+Eerste waarnemingen staan al in [DATA.md](DATA.md): prospects zijn Salesforce-**Leads**, gesprekken zijn **Taken** (recordtype "ERAforce Taken algemeen", type "Uitgaande Oproep") die via **Maf Call** ontstaan. Bellen gebeurt via ERAForce; de Dagplanner opent het record met één tik (knop "Bel via ERAForce", gebouwd 3/10/2026).
 Volgt de 8 stappen uit je instructies: inventaris → DATA.md → mappingvoorstel → **jouw akkoord** → alleen-lezen adapter → tests (herhaalde import, wijzigingen, ontbrekende velden, verwijderingen, lokale resultaten) → 10 extractievoorbeelden beoordelen.
 
 ### Fase 9 — vervallen (agenda zit in ERAForce)
