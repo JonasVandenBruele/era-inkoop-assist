@@ -134,7 +134,7 @@ export function BelKaart({ k, nummer, opLijst = true }: { k: Kandidaat; nummer?:
                 </a>
               ) : (
                 <button className="knop primair belknop" title="Testdata: er wordt niet echt gebeld" onClick={() => startOproep(c.id, true)}>
-                  📞 Bel (test: simulatie)
+                  📞 Bel (test)
                 </button>
               ))}
             <button className="knop" onClick={() => setPaneel('resultaat')}>

@@ -332,3 +332,95 @@ p.label { display: block; white-space: normal; border-radius: 8px; }
 .blok { margin-bottom: 14px; }
 .blok h3 { font-size: 1rem; margin: 14px 0 0; }
 .blok > p { margin: 0 0 8px; }
+
+/* =====================================================================
+   ERA-huisstijl (afgeleid van era.be, 3/10/2026)
+   Blauw #000085 · rood #D60A29 · grijs #6E6F72 · achtergrond #F5F5F5
+   Titels vet en in hoofdletters; rechte hoeken; rode knop met donker schuin hoekje.
+   ===================================================================== */
+:root {
+  --blauw: #000085;
+  --blauw-licht: #e8e8f6;
+  --rood: #d60a29;
+  --rood-donker: #95103a;
+  --tekst: #2b2b2e;
+  --zacht: #6e6f72;
+  --rand: #e3e3e6;
+  --achtergrond: #f5f5f5;
+  --kaart: #ffffff;
+  --radius: 4px;
+  font-family: 'Montserrat', 'Gotham', Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --blauw: #8c8cff;
+    --blauw-licht: #15155a;
+    --rood: #ff4d66;
+    --rood-donker: #b0123f;
+    --tekst: #eeeef6;
+    --zacht: #a9a9bf;
+    --rand: #23236b;
+    --achtergrond: #00003d;
+    --kaart: #0a0a52;
+  }
+}
+h1, h2, h3, .appnaam { font-weight: 800; text-transform: uppercase; letter-spacing: 0.01em; color: var(--blauw); }
+h1 { font-size: 1.45rem; }
+h2 { font-size: 1.05rem; }
+.blok h3 { font-size: 0.9rem; color: var(--zacht); }
+.kaart { border-radius: var(--radius); }
+input, select, textarea, .knop { border-radius: var(--radius); }
+
+.knop.primair {
+  background: linear-gradient(135deg, var(--rood-donker) 0 16px, var(--rood) 16px);
+  border-color: var(--rood);
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-weight: 700;
+}
+.knop.primair:disabled { opacity: 0.45; }
+.knop.tekstknop { color: var(--rood); }
+a { color: var(--rood); }
+.belkaart-naam a, .contactrij { color: inherit; }
+
+.appbalk {
+  background: var(--blauw);
+  color: #fff;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 3px solid var(--rood);
+}
+.appbalk.zonder-strook { padding-top: calc(10px + env(safe-area-inset-top)); }
+@media (prefers-color-scheme: dark) { .appbalk { background: #000085; } }
+.appbalk .appnaam { color: #fff; font-size: 1.05rem; }
+.appondertitel { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.85; }
+.login-merk { display: grid; gap: 2px; margin-bottom: 20px; border-left: 4px solid var(--rood); padding-left: 12px; }
+.login-merk .appnaam { font-size: 1.8rem; }
+.login-merk .appondertitel { color: var(--zacht); opacity: 1; }
+
+.onderbalk a.active { color: var(--rood); }
+.volgnummer { background: var(--blauw); color: #fff; border-radius: 2px; }
+
+.belkaart.groep-A, .belkaart.groep-C { border-left-color: var(--rood); }
+.belkaart.groep-B { border-left-color: var(--blauw); }
+.belkaart.groep-pin { border-left-color: #5a5ad6; }
+.belkaart.groep-D { border-left-color: #b7b7c2; }
+.belkaart { border-left-width: 4px; }
+.groeplabel.groep-A, .groeplabel.groep-C { background: #fde7ea; color: #95103a; }
+.groeplabel.groep-B { background: var(--blauw-licht); color: var(--blauw); }
+.label { border-radius: 2px; }
+.label.lokaal { background: var(--blauw); color: #fff; }
+.advies { border-radius: var(--radius); border-left: 3px solid var(--blauw); }
+.advies-bericht, .advies-mail { border-left-color: #1d8a5a; }
+.openingszin { border-radius: var(--radius); border-left: 3px solid var(--rood); }
+.samenvatting strong { color: var(--blauw); text-transform: uppercase; font-size: 0.9rem; letter-spacing: 0.02em; }
+.testdata-strook { padding-top: calc(6px + env(safe-area-inset-top)); }
+.onderbalk a .icoon { width: 24px; height: 24px; }
+.onderbalk a { font-weight: 600; }
+.samenvatting strong { text-transform: none; font-size: 1rem; letter-spacing: 0; font-weight: 700; }
+.belkaart > .knoppenrij { flex-wrap: nowrap; }
+.belkaart > .knoppenrij .knop { padding-left: 12px; padding-right: 12px; }
+.belkaart > .knoppenrij .belknop { flex: 1 1 auto; min-width: 0; font-size: 0.92rem; }

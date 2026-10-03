@@ -2,10 +2,10 @@
 import { deflateSync } from 'node:zlib';
 import { writeFileSync } from 'node:fs';
 
-const BLAUW = [11, 61, 110];
+const BLAUW = [0, 0, 133]; // ERA-blauw #000085
 const WIT = [255, 255, 255];
-const LICHT = [196, 216, 238];
-const ORANJE = [242, 140, 40];
+const LICHT = [214, 10, 41]; // ERA-rood #D60A29
+const ORANJE = [0, 0, 133];
 
 function kleurOp(x, y) {
   // x, y in 0..1
@@ -80,6 +80,6 @@ writeFileSync('public/icon-512.png', png(512));
 writeFileSync('public/apple-touch-icon.png', png(180));
 writeFileSync(
   'public/icon.svg',
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="#0b3d6e"/><rect x="20" y="26" width="60" height="54" rx="6" fill="#fff"/><rect x="20" y="26" width="60" height="14" rx="6" fill="#c4d8ee"/><rect x="34" y="20" width="5" height="13" rx="2" fill="#fff"/><rect x="61" y="20" width="5" height="13" rx="2" fill="#fff"/><path d="M36 60 L46 70 L66 50" stroke="#f28c28" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>\n`,
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="#000085"/><rect x="20" y="26" width="60" height="54" rx="6" fill="#fff"/><rect x="20" y="26" width="60" height="14" rx="6" fill="#D60A29"/><rect x="34" y="20" width="5" height="13" rx="2" fill="#fff"/><rect x="61" y="20" width="5" height="13" rx="2" fill="#fff"/><path d="M36 60 L46 70 L66 50" stroke="#000085" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>\n`,
 );
 console.log('Iconen gemaakt in public/');

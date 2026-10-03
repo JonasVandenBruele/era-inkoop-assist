@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { supabase } from '../core/db/supabaseStore';
+import { MERK } from './merk';
 
 // Enkel aanmelden. Accounts worden aangemaakt in het Supabase-dashboard en zelfregistratie staat uit,
 // zodat niemand via het publieke adres een account kan maken.
@@ -20,8 +21,10 @@ export function Login() {
 
   return (
     <main className="pagina login">
-      <h1>Dagplanner</h1>
-      <p className="zacht">ERA Inkoop Assist</p>
+      <div className="login-merk">
+        <span className="appnaam">{MERK.naam}</span>
+        <span className="appondertitel">{MERK.ondertitel}</span>
+      </div>
       <form onSubmit={verstuur} className="formulier">
         <label>
           E-mail
