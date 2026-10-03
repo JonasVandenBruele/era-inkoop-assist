@@ -5,7 +5,7 @@ import { UITKOMST_LABEL } from '../../app/labels';
 import { datumUur, korteDag, langeDag, uurVan } from '../../core/dates';
 import { volledigeNaam, type Dagplan } from '../../domain/model';
 import { afsprakenVanDag } from '../../domain/overzicht';
-import { berekenBellijst, samenvattingNietOpLijst } from '../../domain/prioriteit';
+import { BLOK_VAN_GROEP, berekenBellijst, samenvattingNietOpLijst, type Kandidaat } from '../../domain/prioriteit';
 import { dagWeergave } from '../../domain/dagplan';
 import { BelKaart } from './BelKaart';
 
@@ -124,11 +124,7 @@ export function Vandaag() {
       <section>
         <h2>Bellijst ({actief.length})</h2>
         {actief.length === 0 && <p className="infomelding">Alles van je lijst is gebeld. 🎉 Wil je meer bellen? Kies hieronder bij "Niet op vandaag".</p>}
-        <ul className="lijst">
-          {actief.map((k, i) => (
-            <BelKaart key={k.contact.id} k={k} nummer={i + 1} />
-          ))}
-        </ul>
+        <Blokken actief={actief} />
 
         {weergave.nietOpLijst.length > 0 && (
           <details className="groep extra">
@@ -177,6 +173,12 @@ export function Vandaag() {
             ))}
           </ul>
         </section>
+      )}
+
+      {lijst.zonderTimeline.length > 0 && (
+        <p className="klein zacht">
+          📋 {lijst.zonderTimeline.length} {lijst.zonderTimeline.length === 1 ? 'prospect' : 'prospects'} zonder geplande opvolgtaak — koppel er een via je ERAForce-dashboard.
+        </p>
       )}
 
       <KeuzesVandaag />
@@ -285,5 +287,42 @@ function Bronstatus() {
         </li>
       ))}
     </ul>
+  );
+}
+
+const BLOKKEN: { sleutel: ReturnType<typeof blokVan>; titel: string; uitleg: string }[] = [
+  { sleutel: 'gepland', titel: 'Gepland vandaag', uitleg: 'Afgesproken met de klant of verlopen opvolgtaken.' },
+  { sleutel: 'vastgepind', titel: 'Vastgepind', uitleg: 'Door jou op de lijst gezet.' },
+  { sleutel: 'leads', titel: 'Nieuwe leads', uitleg: 'Nog niet bereikt.' },
+  { sleutel: 'aanvulling', titel: 'Aanvulling volgens ritme', uitleg: 'Geen opvolgtaak gepland, maar wel aan de beurt.' },
+];
+function blokVan(k: Kandidaat) {
+  return BLOK_VAN_GROEP[k.groep];
+}
+
+/** De bellijst in blokken ("timeline eerst"), met doorlopende nummering. */
+function Blokken({ actief }: { actief: Kandidaat[] }) {
+  let nummer = 0;
+  return (
+    <>
+      {BLOKKEN.map((b) => {
+        const items = actief.filter((k) => blokVan(k) === b.sleutel);
+        if (items.length === 0) return null;
+        return (
+          <div key={b.sleutel} className="blok">
+            <h3>
+              {b.titel} <span className="zacht">({items.length})</span>
+            </h3>
+            <p className="klein zacht">{b.uitleg}</p>
+            <ul className="lijst">
+              {items.map((k) => {
+                nummer += 1;
+                return <BelKaart key={k.contact.id} k={k} nummer={nummer} />;
+              })}
+            </ul>
+          </div>
+        );
+      })}
+    </>
   );
 }

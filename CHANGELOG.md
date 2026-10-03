@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.0] — 2026-10-03 — Timeline eerst, scores afgestemd
+
+### Gewijzigd
+- **Timeline eerst**: Vandaag toont blokken *Gepland vandaag* → *Vastgepind* → *Nieuwe leads* → *Aanvulling volgens ritme*. Bij elke geplande opvolging staat waar de datum vandaan komt. Geen scores meer op de kaart.
+- Prospects zonder opvolgtaak worden enkel geteld (werk je af via je ERAForce-dashboard).
+- Afgestemde regels: ritmes warm-zonder-timeline 7 / lauw 60 / koud 180 dagen; nieuwe lead 3 dagen voorrang; vergeten belofte vóór nieuwe lead; korte tijdshorizon +40; hook +20; voorrang voor Realo-sellerleads, zelf contact opgenomen en schattingsaanvragen (+10); geplande volgende stap in de toekomst = timeline.
+- Opgeslagen instellingen worden automatisch naar de nieuwe standaardwaarden omgezet (enkel waarden die nog op de oude standaard stonden).
+- "Haakje" heet voortaan **hook**.
+
+### Tests
+- 138 tests; de voorbeelden in PLAN.md §5.4 zijn herschreven naar de nieuwe regels.
+
 ## [0.4.2] — 2026-10-03 — Bellen via ERAForce (Maf Call)
 
 ### Toegevoegd

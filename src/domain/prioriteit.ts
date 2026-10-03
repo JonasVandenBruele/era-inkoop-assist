@@ -36,11 +36,20 @@ export interface BellijstInvoer {
 export type Groep = 'A' | 'pin' | 'B' | 'C' | 'D';
 
 export const GROEP_LABEL: Record<Groep, string> = {
-  A: 'Terugbelafspraak met uur',
+  A: 'Gepland met uur',
   pin: 'Vastgepind',
   B: 'Nieuwe lead',
-  C: 'Terugbellen',
-  D: 'Opvolging',
+  C: 'Gepland',
+  D: 'Aanvulling',
+};
+
+/** Blokken op de Vandaag-pagina ("timeline eerst", afgestemd met Jonas 3/10/2026). */
+export const BLOK_VAN_GROEP: Record<Groep, 'gepland' | 'vastgepind' | 'leads' | 'aanvulling'> = {
+  A: 'gepland',
+  C: 'gepland',
+  pin: 'vastgepind',
+  B: 'leads',
+  D: 'aanvulling',
 };
 
 export interface ScoreOnderdeel {
@@ -103,6 +112,8 @@ export interface Bellijst {
   /** Vastpinnen dat niet kon (bv. belverbod). */
   pinGeweigerd: { contact: Contact; reden: string }[];
   waarschuwingen: string[];
+  /** Actieve prospects zonder geplande volgende stap (enkel geteld; Jonas werkt die af via zijn ERAForce-dashboard). */
+  zonderTimeline: Contact[];
 }
 
 // ---------- Hulpfuncties ----------
@@ -156,6 +167,15 @@ export function volgendePogingDag(aantalOpRij: number, laatstePogingDag: DagKey,
   return plusWerkdagen(laatstePogingDag, wachtWerkdagen);
 }
 
+/** Bronnen die extra voorrang krijgen (afgestemd met Jonas, 3/10/2026). Geeft een leesbare naam of null. */
+export function bronMetVoorrang(herkomst: string | null | undefined): string | null {
+  if (!herkomst) return null;
+  if (/realo|sellerlead/i.test(herkomst)) return 'Realo-sellerlead';
+  if (/schatting|website/i.test(herkomst)) return 'schattingsaanvraag';
+  if (/zelf|kantoor|belde/i.test(herkomst)) return 'nam zelf contact op';
+  return null;
+}
+
 // ---------- Hoofdfunctie ----------
 
 export function berekenBellijst(invoer: BellijstInvoer): Bellijst {
@@ -165,7 +185,7 @@ export function berekenBellijst(invoer: BellijstInvoer): Bellijst {
   const verboden = new Set((invoer.belverboden ?? []).filter((b) => !b.ingetrokkenOp).map((b) => b.contactId));
   const afspraakVandaag = new Set(invoer.afspraken.filter((a) => a.contactId && dagVan(a.start) <= vandaag && vandaag <= dagVan(a.einde)).map((a) => a.contactId!));
 
-  const resultaat: Bellijst = { vandaag: [], nietOpLijst: [], nummerZoeken: [], handmatigBeoordelen: [], uitgesloten: [], pinGeweigerd: [], waarschuwingen: [] };
+  const resultaat: Bellijst = { vandaag: [], nietOpLijst: [], nummerZoeken: [], handmatigBeoordelen: [], uitgesloten: [], pinGeweigerd: [], waarschuwingen: [], zonderTimeline: [] };
   const kandidaten: Kandidaat[] = [];
   const pinVolgorde = new Map<string, number>();
 
@@ -185,10 +205,23 @@ export function berekenBellijst(invoer: BellijstInvoer): Bellijst {
     const terugbel = geldendeTerugbel(c.id, invoer, laatste);
     const pogingen = pogingenSindsContact(c.id, invoer.belpogingen, laatste);
 
+    const heeftTimeline =
+      Boolean(terugbel) ||
+      (invoer.opvolgacties ?? []).some((o) => o.contactId === c.id && o.status === 'open' && o.dag >= vandaag);
+    if (!heeftTimeline && c.statusBron !== 'nieuwe_lead') resultaat.zonderTimeline.push(c);
+
     if (!pin) {
       // Regel 2: toekomstige expliciete terugbeldatum wordt gerespecteerd.
       if (terugbel && terugbel.dag > vandaag) {
         sluitUit('terugbel_later', `Terugbellen op ${korteDag(terugbel.dag)}${terugbel.uur ? ` om ${terugbel.uur}` : ''}.`);
+        continue;
+      }
+      // Regel 2b: een geplande volgende stap in de toekomst is de afgesproken timeline.
+      const geplandeStap = (invoer.opvolgacties ?? [])
+        .filter((o) => o.contactId === c.id && o.soort === 'vervolgstap' && o.status === 'open' && o.dag > vandaag)
+        .sort((x, y) => x.dag.localeCompare(y.dag))[0];
+      if (geplandeStap) {
+        sluitUit('terugbel_later', `Volgende stap gepland op ${korteDag(geplandeStap.dag)}${geplandeStap.omschrijving ? `: ${geplandeStap.omschrijving}` : ''}.`);
         continue;
       }
       // Regel 3: uitgesteld tot een datum.
@@ -222,7 +255,7 @@ export function berekenBellijst(invoer: BellijstInvoer): Bellijst {
     if (verhouding !== null) {
       const punten = Math.min(Math.round(w.ritmePerVerhouding * verhouding), w.ritmeMax);
       onderdelen.push({
-        label: `${laatste ? 'Laatste gesprek' : 'Binnengekomen'} ${dagenSinds} dagen geleden (ritme ${faseTekst}: ${ritme} dagen)`,
+        label: `${laatste ? 'Laatste gesprek' : 'Binnengekomen'} ${dagenSinds} dagen geleden (ritme ${fase === 'warm' ? 'warm zonder timeline' : faseTekst}: ${ritme} dagen)`,
         punten,
       });
     } else {
@@ -242,6 +275,8 @@ export function berekenBellijst(invoer: BellijstInvoer): Bellijst {
     });
     const specifiek = specifiekeHaken(haken);
     if (specifiek.length > 0) onderdelen.push({ label: `Hook: ${specifiek[0]!.onderwerp}`, punten: w.waardehaak });
+    const bron = bronMetVoorrang(c.herkomstContact);
+    if (bron) onderdelen.push({ label: `Bron: ${bron}`, punten: w.bron });
     const vervolgstap = (invoer.opvolgacties ?? []).find((o) => o.contactId === c.id && o.soort === 'vervolgstap' && o.status === 'open' && o.dag <= vandaag);
     if (vervolgstap) onderdelen.push({ label: `Eigen vervolgstap gepland voor ${korteDag(vervolgstap.dag)}`, punten: w.eigenVervolgstap });
     const score = onderdelen.reduce((s, o) => s + o.punten, 0);
@@ -257,26 +292,30 @@ export function berekenBellijst(invoer: BellijstInvoer): Bellijst {
     } else if (pin) {
       groep = 'pin';
       reden = 'Door jou vastgepind voor vandaag';
-    } else if (isNieuweLead) {
-      groep = 'B';
-      const binnen = c.aangemaaktInBronOp ? relatief(dagVan(c.aangemaaktInBronOp), vandaag) : 'onlangs';
-      reden = `Nieuwe lead (binnengekomen ${binnen}), nog niet bereikt${pogingen.length ? ` — ${pogingen.length} ${pogingen.length === 1 ? 'poging' : 'pogingen'} zonder antwoord` : ''}`;
     } else if (terugbel && terugbel.dag <= vandaag) {
+      // Een (vergeten) belofte gaat net vóór een nieuwe lead (afgestemd met Jonas, 3/10/2026).
       groep = 'C';
       const verstreken = werkdagenTussen(terugbel.dag, vandaag);
       reden =
         terugbel.dag === vandaag
           ? 'Terugbelafspraak vandaag'
           : `Terugbelafspraak was voor ${korteDag(terugbel.dag)} — ${verstreken} ${verstreken === 1 ? 'werkdag' : 'werkdagen'} verstreken`;
+    } else if (isNieuweLead) {
+      groep = 'B';
+      const binnen = c.aangemaaktInBronOp ? relatief(dagVan(c.aangemaaktInBronOp), vandaag) : 'onlangs';
+      reden = `Nieuwe lead (binnengekomen ${binnen}), nog niet bereikt${pogingen.length ? ` — ${pogingen.length} ${pogingen.length === 1 ? 'poging' : 'pogingen'} zonder antwoord` : ''}`;
     } else if (!laatste && c.statusBron === 'nieuwe_lead') {
       // Een oudere lead die nooit bereikt werd, mag niet uit beeld verdwijnen.
       groep = 'D';
       reden = `Lead van ${dagenSinds ?? '?'} dagen geleden, nog nooit bereikt`;
     } else if (verhouding === null || verhouding >= 0.8) {
       groep = 'D';
-      reden = laatste
-        ? `Laatste gesprek ${dagenSinds} dagen geleden; ritme ${faseTekst} is ${ritme} dagen`
-        : `Sinds binnenkomst ${dagenSinds ?? '?'} dagen geen gesprek`;
+      reden =
+        fase === 'warm'
+          ? `Warm, maar geen opvolgtaak gepland (laatste gesprek ${dagenSinds ?? '?'} dagen geleden)`
+          : laatste
+            ? `Laatste gesprek ${dagenSinds} dagen geleden; ritme ${faseTekst} is ${ritme} dagen`
+            : `Sinds binnenkomst ${dagenSinds ?? '?'} dagen geen gesprek`;
     } else if (specifiek.length > 0 && verhouding >= 0.5) {
       // Altijd aanwezig: een nuttige hook haalt een contact naar voren, maar niet vóór de helft van het ritme.
       groep = 'D';
@@ -354,7 +393,7 @@ export function berekenBellijst(invoer: BellijstInvoer): Bellijst {
   }
 
   // ----- Volgorde -----
-  const groepRang: Record<Groep, number> = { A: 0, pin: 1, B: 2, C: 3, D: 4 };
+  const groepRang: Record<Groep, number> = { A: 0, pin: 1, C: 2, B: 3, D: 4 };
   const naam = (k: Kandidaat) => aanspreking(k.contact);
   kandidaten.sort((a, b) => {
     if (a.groep !== b.groep) return groepRang[a.groep] - groepRang[b.groep];

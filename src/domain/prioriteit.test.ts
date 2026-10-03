@@ -28,7 +28,7 @@ const vind = (ext: string): Kandidaat | undefined =>
 const uitgesloten = (ext: string) => lijst.uitgesloten.find((u) => u.contact.externId === ext);
 
 describe('voorbeelden uit PLAN.md §5.4', () => {
-  it('Mevr. Peeters: terugbelafspraak vandaag met uur → groep A, bovenaan', () => {
+  it('Mevr. Peeters: gepland vandaag met uur → groep A, bovenaan', () => {
     const k = vind(RANDGEVAL.terugbellenVandaagMetUur)!;
     expect(k.groep).toBe('A');
     expect(k.reden).toBe('Terugbelafspraak vandaag om 10:30');
@@ -47,27 +47,52 @@ describe('voorbeelden uit PLAN.md §5.4', () => {
     expect(k.reden).toBe('Terugbelafspraak was voor vr 9 okt — 2 werkdagen verstreken');
   });
 
-  it('Dhr. Wouters: warm, 21 dagen, horizon kort → 38 + 15 + 15 = 68', () => {
+  it('Dhr. Wouters: warm zonder opvolgtaak, 21 dagen, horizon kort → 60 + 15 + 40 = 115', () => {
     const k = vind(RANDGEVAL.warmOverRitme)!;
     expect(k.groep).toBe('D');
-    expect(k.onderdelen.map((o) => o.punten)).toEqual([38, 15, 15]);
-    expect(k.score).toBe(68);
+    expect(k.onderdelen.map((o) => o.punten)).toEqual([60, 15, 40]);
+    expect(k.score).toBe(115);
+    expect(k.reden).toContain('geen opvolgtaak');
   });
 
-  it('Mevr. Maes: koud, 200 dagen → 56', () => {
-    const k = vind(RANDGEVAL.koudLangGeleden)!;
-    expect(k.score).toBe(56);
+  it('Mevr. Maes: koud, 200 dagen (ritme 180) → 28', () => {
+    expect(vind(RANDGEVAL.koudLangGeleden)!.score).toBe(28);
   });
 
-  it('Dhr. Dubois: lauw, 50 dagen, horizon middel → 30 + 8 + 5 = 43', () => {
+  it('Dhr. Dubois: lauw, 50 dagen (ritme 60), horizon middel, Realo → 21 + 8 + 10 + 10 = 49', () => {
     const k = vind(RANDGEVAL.lauwOverRitme)!;
-    expect(k.onderdelen.map((o) => o.punten)).toEqual([30, 8, 5]);
-    expect(k.score).toBe(43);
+    expect(k.onderdelen.map((o) => o.punten)).toEqual([21, 8, 10, 10]);
+    expect(k.score).toBe(49);
   });
 
-  it('koude prospect die lang niets hoorde komt vóór lauwe die net over tijd is', () => {
+  it('zonder hook gaat een lauwe prospect vóór een koude die lang niets hoorde', () => {
     const d = alleKandidaten.filter((k) => k.groep === 'D').map((k) => k.contact.externId);
-    expect(d.indexOf(RANDGEVAL.koudLangGeleden)).toBeLessThan(d.indexOf(RANDGEVAL.lauwOverRitme));
+    expect(d.indexOf(RANDGEVAL.lauwOverRitme)).toBeLessThan(d.indexOf(RANDGEVAL.koudLangGeleden));
+  });
+
+  it('met een hook (+20) komt de koude prospect (28 + 20 = 48) vóór een lauwe die net aan de beurt is (25 + 8 + 10 = 43)', () => {
+    const maes = contact(RANDGEVAL.koudLangGeleden);
+    const haak = { id: 'h', contactId: maes.id, pandId: null, straat: null, gemeente: null, soort: 'buurt' as const, onderwerp: 'Verkoop in de straat', detail: null, bron: null, geldigVanaf: VANDAAG, geldigTot: null, gevoelig: false, aangemaaktOp: new Date() };
+    const k = berekenBellijst(invoer({ haken: [haak] })).vandaag.concat(berekenBellijst(invoer({ haken: [haak] })).nietOpLijst).find((x) => x.contact.id === maes.id)!;
+    expect(k.score).toBe(48);
+    expect(k.score).toBeGreaterThan(25 + 8 + 10);
+  });
+
+  it('een vergeten belofte (groep C) komt vóór een nieuwe lead (groep B)', () => {
+    const groepen = lijst.vandaag.map((k) => k.groep);
+    expect(groepen.indexOf('C')).toBeLessThan(groepen.indexOf('B'));
+  });
+
+  it('een nieuwe lead krijgt maar 3 dagen voorrang', () => {
+    const later = berekenBellijst(invoer({ vandaag: '2026-10-17' })); // Claes kwam binnen op 12/10
+    const k = [...later.vandaag, ...later.nietOpLijst, ...later.handmatigBeoordelen].find((x) => x.contact.externId === RANDGEVAL.nieuweLeadLokaalGeenAntwoord);
+    expect(k?.groep).not.toBe('B');
+  });
+
+  it('prospects zonder geplande volgende stap worden enkel geteld (Jonas werkt ze af via zijn dashboard)', () => {
+    expect(lijst.zonderTimeline.length).toBeGreaterThan(0);
+    expect(lijst.zonderTimeline.some((x) => x.externId === RANDGEVAL.terugbellenNaMaanden)).toBe(false); // heeft een terugbelafspraak
+    expect(lijst.zonderTimeline.some((x) => x.nietBellenBron)).toBe(false);
   });
 
   it('Mevr. Willems: koud, 60 dagen → nog niet aan de beurt', () => {

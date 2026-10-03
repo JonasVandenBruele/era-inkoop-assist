@@ -1,6 +1,6 @@
 # PLAN — Dagplanner (module 1 van ERA Inkoop Assist)
 
-Status: **fase 1–3b online. Bellen en registreren via ERAForce (Maf Call); de Dagplanner zegt wie, waarom en met welk hook, en opent de prospect met één tik.**
+Status: **fase 1–3b online, met "timeline eerst" (5.2). Bellen en registreren via ERAForce (Maf Call).**
 Laatst bijgewerkt: 3 oktober 2026
 
 ---
@@ -195,50 +195,50 @@ De interface toont bij elke waarde waar ze vandaan komt (bron / AI / jij).
 6. **Geen bruikbaar telefoonnummer** → niet op de bellijst, wel in een aparte lijst "Nummer zoeken".
 7. **Pauze na te veel onbeantwoorde pogingen** → in de lijst "Handmatig beoordelen" (zie §6).
 
-### 5.2 Voorrangsgroepen (jouw goedgekeurde keuze)
+### 5.2 Timeline eerst (afgestemd met Jonas, 3/10/2026)
 
-| Groep | Wie | Volgorde binnen groep |
+De afgesproken **volgende stap** (timeline) uit het gesprek stuurt de planning; het ritme is enkel het vangnet. Een timeline komt uit een ERAForce-opvolgtaak met vervaldatum, uit de evaluatietekst (AI, eerst door Jonas goedgekeurd), of uit de snelle tik "terugbellen op…" in de app.
+
+| Blok op Vandaag | Wie | Volgorde |
 |---|---|---|
-| **A** | Terugbelafspraak **vandaag met uur** | Op uur |
-| **📌** | Vastgepind door jou | Zoals gepind |
-| **B** | **Nieuwe lead, nog niet inhoudelijk bereikt** (standaard: binnengekomen ≤ 14 dagen, instelbaar) | Nieuwste eerst |
-| **C** | Terugbelafspraak **vandaag zonder uur**, of **verstreken** | Langst verstreken eerst |
-| **D** | Iedereen die "aan de beurt" is volgens ritme | Op score (§5.3) |
+| **Gepland vandaag** | Opvolging vandaag mét uur (A), daarna vandaag zonder uur of te laat (C) | A op uur; C langst te laat eerst |
+| **Vastgepind** | Door Jonas op de lijst gezet | Zoals gepind |
+| **Nieuwe leads** | Nog niet bereikt, maximaal **3 dagen** oud | Nieuwste eerst |
+| **Aanvulling volgens ritme** | Geen opvolgtaak gepland maar aan de beurt (of vroeger dankzij een hook) | Op score |
 
-Waarom: een verse lead koelt snel af, maar een afspraak met uur is een belofte. Een verstreken terugbelafspraak blijft hoog en wordt niet onzichtbaar.
+- Een vergeten belofte (C) gaat net vóór een nieuwe lead.
+- Prospects **zonder opvolgtaak** worden niet als taak getoond; enkel geteld in één regel. Jonas werkt ze af via zijn ERAForce-dashboard. Ze blijven wel als vangnet in "aanvulling" komen als ze lang niets hoorden.
+- "Warm" = er is een timeline afgesproken, of de klant kocht al iets anders. Een warme prospect zonder opvolgtaak komt na 7 dagen in de aanvulling.
+- Scores staan niet op de kaart; de reden in gewone taal wel. "Waarom?" toont de opbouw.
 
-### 5.3 Score binnen groep D (en als tiebreaker)
+### 5.3 Score (enkel voor de volgorde in "aanvulling" en bij gelijkstand)
 
-Alleen contacten met **ritme-verhouding ≥ 0,8** zijn "aan de beurt".
-`verhouding = dagen sinds laatste inhoudelijk contact ÷ ritme van de fase` (zonder ooit contact: dagen sinds aanmaak).
-
-| Onderdeel | Punten (startwaarde, instelbaar) |
+| Onderdeel | Punten (instelbaar) |
 |---|---|
-| Ritme-achterstand | 25 × verhouding (max 60) |
-| Fase | warm +15, lauw +8, koud 0, onbekend 0 (en ritme van koud) |
-| Tijdshorizon | < 3 maanden +15 · 3–12 maanden +5 · later/onbekend 0 |
-| Eigen geplande vervolgstap vandaag/verstreken | +20 |
-| Later (fase 5+): goedgekeurde AI-context, marktsignalen | apart gewicht, standaard uit |
+| Ritme-achterstand | 25 × (dagen sinds gesprek ÷ ritme), max 60 |
+| Fase | warm +15, lauw +8 |
+| Tijdshorizon | < 3 maanden **+40**, 3–12 maanden +10 |
+| Hook (specifiek, niet algemeen) | **+20** |
+| Bron: Realo-sellerlead, zelf contact opgenomen, schattingsaanvraag | +10 |
+| Eigen vervolgstap vandaag/verstreken | +20 |
 
-Ritmes: **warm 14 d · lauw 42 d · koud 90 d**. Max **15** per dag.
+Ritmes: **warm zonder timeline 7 d · lauw 60 d · koud 180 d**. Aan de beurt vanaf 80 % van het ritme; met een hook vanaf 50 %. De ERAForce-opvolgingsindicator wordt genegeerd (niet relevant).
 
 ### 5.4 Voorbeelden (testdatum dinsdag 13/10/2026)
 
 | Contact | Situatie | Resultaat |
 |---|---|---|
-| Mevr. Peeters (lauw) | "Bel me dinsdag om 10u30 terug" | **Groep A**, plek rond 10u30 |
-| Dhr. Claes | Nieuwe lead van gisteren, 1× geen antwoord | **Groep B** (nog niet bereikt) |
-| Fam. Janssens | Terugbellen was afgesproken op vrijdag 9/10 | **Groep C**, "2 werkdagen verstreken" |
-| Dhr. Wouters (warm, horizon < 3 m) | Laatste gesprek 21 d geleden → verhouding 1,5 | D: 38 + 15 + 15 = **68** |
-| Mevr. Maes (koud) | Laatste gesprek 200 d geleden → verhouding 2,2 | D: 56 + 0 + 0 = **56** |
-| Dhr. Dubois (lauw, horizon 3–12 m) | 50 d geleden → verhouding 1,19 | D: 30 + 8 + 5 = **43** |
-| Mevr. Willems (koud) | 60 d geleden → verhouding 0,67 | Nog niet aan de beurt |
-| Dhr. Mertens (warm) | "Wil niet meer gebeld worden", wel vastgepind | **Uitgesloten**, melding "belverbod" |
-| Fam. Goossens | Terugbellen "na de nieuwjaar" | Niet zichtbaar tot 4/1/2027, label "periode" |
+| Mevr. Peeters | Opvolging vandaag 10u30 | Gepland vandaag, bovenaan |
+| Fam. Janssens | Opvolging was vr 9/10 | Gepland vandaag, "2 werkdagen te laat" — vóór de nieuwe leads |
+| Dhr. Claes | Realo/website-lead van gisteren, 1× geen antwoord | Nieuwe leads |
+| Dhr. Wouters | Warm, 21 dagen, geen opvolgtaak, wil binnen 3 maanden verkopen | Aanvulling: 60 + 15 + 40 = **115** |
+| Dhr. Dubois | Lauw, 50 dagen (ritme 60), horizon volgend jaar, Realo | Aanvulling: 21 + 8 + 10 + 10 = **49** |
+| Mevr. Maes | Koud, 200 dagen (ritme 180) | Aanvulling: **28** — met een hook 48, dan vóór een lauwe die net aan de beurt is (43) |
+| Mevr. Willems | Koud, 60 dagen | Nog niet aan de beurt |
+| Dhr. Mertens | Wil niet meer gebeld worden | Uitgesloten, ook als vastgepind |
+| Fam. Goossens | Opvolging na nieuwjaar | Onzichtbaar tot 4/1/2027 |
 
-Bewust: de koude prospect die al 200 dagen niets hoorde (56) komt vóór de lauwe die net over tijd is (43). Dat pakt precies je probleem aan: langetermijnprospects zakken niet weg.
-
-Elke kaart heeft een knop **"Waarom?"** die deze opbouw in gewone taal toont, bv.: *"Warm · laatste gesprek 21 dagen geleden (ritme 14) +38 · fase warm +15 · wil binnen 3 maanden verkopen +15."*
+**Te valideren met echte data:** deze regels zijn afgestemd op Jonas' werkwijze, maar pas met echte evaluaties (fase 8) te toetsen. Eerst 10 echte voorbeelden samen bekijken.
 
 ### 5.5 Limiet van 15 zonder dingen te verstoppen
 

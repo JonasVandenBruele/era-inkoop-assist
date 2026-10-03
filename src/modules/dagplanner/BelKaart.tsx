@@ -46,12 +46,19 @@ export function BelKaart({ k, nummer, opLijst = true }: { k: Kandidaat; nummer?:
           <div className="zacht klein">{adres}</div>
         </div>
         <div className="labels rechts">
-          <span className={`label groeplabel groep-${k.groep}`}>{GROEP_LABEL[k.groep]}</span>
-          {k.fase ? <span className={`label fase-${k.fase}`}>{FASE_LABEL[k.fase]}</span> : <span className="label">Fase ?</span>}
+          {k.groep === 'A' && k.terugbel?.uur && <span className="label groeplabel groep-A">{k.terugbel.uur}</span>}
+          {!opLijst && <span className={`label groeplabel groep-${k.groep}`}>{GROEP_LABEL[k.groep]}</span>}
+          {k.fase && <span className={`label fase-${k.fase}`}>{FASE_LABEL[k.fase]}</span>}
         </div>
       </div>
 
       <p className="reden">{k.reden}</p>
+      {k.terugbel && (
+        <p className="klein zacht">
+          📅 {k.terugbel.herkomst === 'bron' ? (c.bron === 'eraforce_mirror' ? 'Uit je ERAForce-opvolgtaak' : 'Uit de opvolgtaak in de bron') : 'Jouw afspraak in de Dagplanner'}
+          {k.terugbel.tekst && <>: <span className="citaat">“{kort(k.terugbel.tekst, 80)}”</span></>}
+        </p>
+      )}
       {geenAntwoordVandaag > 0 && <p className="label waarschuwing">Vandaag al {geenAntwoordVandaag}× geen antwoord — later nog eens proberen</p>}
       {(k.advies.kanaal !== 'bellen' || k.advies.opmerking) && (
         <p className={`advies advies-${k.advies.kanaal}`}>

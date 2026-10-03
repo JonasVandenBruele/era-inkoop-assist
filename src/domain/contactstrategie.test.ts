@@ -112,7 +112,7 @@ describe('waardehaken', () => {
     const k = vind(RANDGEVAL.tweeKeerGeenAntwoord)!; // Koen: ouderlijke woning Lindenlaan, Melle
     const buurt = k.haken.find((h) => h.soort === 'buurt');
     expect(buurt?.onderwerp).toContain('Lindenlaan');
-    expect(k.onderdelen.some((o) => o.label.startsWith('Hook') && o.punten === 10)).toBe(true);
+    expect(k.onderdelen.some((o) => o.label.startsWith('Hook') && o.punten === 20)).toBe(true);
     expect(haakZin(buurt!, false)).toBe('Ik heb nieuws uit uw buurt: woning in de Lindenlaan verkocht na 3 weken.');
   });
 
@@ -127,14 +127,14 @@ describe('waardehaken', () => {
 
   it('een haak haalt niemand naar voren vlak na een gesprek (vóór de helft van het ritme)', () => {
     const l = berekenBellijst(invoer({ vandaag: '2026-10-13' }));
-    // Fam. Desmet: warm, 9 dagen geleden (ritme 14 → 0,64) heeft geen specifieke haak en blijft weg.
-    expect(l.uitgesloten.find((u) => u.contact.externId === RANDGEVAL.tegenstrijdig)?.reden).toBe('nog_niet_aan_de_beurt');
+    // Mevr. Willems: koud, 60 dagen geleden (ritme 180 → 0,33) heeft geen specifieke hook en blijft weg.
+    expect(l.uitgesloten.find((u) => u.contact.externId === RANDGEVAL.koudNogNietAanDeBeurt)?.reden).toBe('nog_niet_aan_de_beurt');
   });
 
   it('een verlopen haak telt niet', () => {
     const k = vind(RANDGEVAL.warmOverRitme)!;
     expect(k.haken.some((h) => h.onderwerp.includes('Opendeurdag'))).toBe(false);
-    expect(k.score).toBe(68); // ongewijzigd t.o.v. fase 2
+    expect(k.onderdelen.some((o) => o.label.startsWith('Hook'))).toBe(false);
   });
 
   it('een gevoelige haak wordt nooit gebruikt', () => {

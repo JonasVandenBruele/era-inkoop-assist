@@ -83,7 +83,7 @@ const GEMEENTEN = [
 ] as const;
 const STRATEN = ['Kerkstraat', 'Stationsstraat', 'Molenstraat', 'Dorpsstraat', 'Nieuwstraat', 'Schoolstraat', 'Kapelstraat', 'Veldstraat', 'Beekstraat', 'Lindenlaan', 'Kastanjelaan', 'Gentsesteenweg', 'Heirweg', 'Hoogstraat', 'Meersstraat', 'Populierenlaan', 'Kouterstraat', 'Bosstraat'] as const;
 const PAND_TYPES = ['woning', 'woning', 'woning', 'appartement', 'appartement', 'bouwgrond', 'handelspand'] as const;
-const HERKOMSTEN = ['website schattingsaanvraag', 'flyer bus', 'doorverwezen door notaris', 'via buurman (klant)', 'Immoweb particulier', 'open huis', 'bord aan de gevel', 'Bouwbeurs Gent'] as const;
+const HERKOMSTEN = ['website schattingsaanvraag', 'Realo.be – Sellerlead', 'doorverwezen door notaris', 'via buurman (klant)', 'belde zelf naar kantoor', 'open huis', 'bord aan de gevel', 'Bouwbeurs Gent'] as const;
 const HORIZON = {
   kort: ['binnen 3 mnd', 'asap', 'tegen eind dit jaar'],
   middel: ['tegen de zomer', 'volgend voorjaar', 'ergens volgend jaar'],
