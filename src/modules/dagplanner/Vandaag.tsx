@@ -103,7 +103,7 @@ export function Vandaag() {
                   {a.locatie && <div className="zacht">{a.locatie}</div>}
                   <div className="labels">
                     {overlapt && <span className="label waarschuwing">Overlapt</span>}
-                    {a.bron === 'lokaal' && <span className="label lokaal">Jij (niet in Outlook)</span>}
+                    {a.bron === 'lokaal' && <span className="label lokaal">Jij (niet in ERAForce)</span>}
                     {contact ? (
                       <Link to={`/contact/${contact.id}`} className="label link">
                         {volledigeNaam(contact)} →

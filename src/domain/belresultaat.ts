@@ -110,7 +110,7 @@ export function verwerkBelresultaat(i: BelresultaatInvoer): Belresultaat {
         locatie: leeg(a.locatie) ?? (i.contact.straat ? `${i.contact.straat}, ${i.contact.gemeente ?? ''}`.trim() : null),
         contactId: i.contact.id,
         koppelStatus: 'bevestigd',
-        omschrijving: 'Lokaal gemaakt in de Dagplanner (niet in Outlook).',
+        omschrijving: 'Lokaal gemaakt in de Dagplanner (staat niet in je ERAForce-agenda).',
       });
       break;
     }

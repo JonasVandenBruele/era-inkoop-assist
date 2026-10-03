@@ -1,6 +1,6 @@
 # PLAN — Dagplanner (module 1 van ERA Inkoop Assist)
 
-Status: **fase 1–2 online en getest op iPhone; fase 3 gebouwd en lokaal getest (wacht op databasemigratie 2).**
+Status: **fase 1–2 online en getest op iPhone; fase 3 gebouwd en lokaal getest. Databasewijzigingen worden voortaan automatisch via GitHub uitgevoerd (eenmalige sleutels nodig).**
 Laatst bijgewerkt: 3 oktober 2026
 
 ---
@@ -9,7 +9,7 @@ Laatst bijgewerkt: 3 oktober 2026
 
 1. Eén statische web-app (gewone HTML/JS/CSS, installeerbaar als PWA) met duidelijk gescheiden modules, plus **Supabase** voor database, login en serverwerk. Geen Vercel.
 2. Alle planningslogica (uitsluitingen, score, herplanning, belblokken) is gewone, geteste code — de AI levert alleen gestructureerde context en teksten en is nooit nodig om de dag te plannen.
-3. Externe bronnen (ERAForce-mirror, Outlook, Plaud) komen binnen via verwisselbare adapters; nu draait alles op ~60 reproduceerbare fictieve Belgische contacten.
+3. Externe bronnen (ERAForce-mirror — ook voor de agenda — en Plaud) komen binnen via verwisselbare adapters; nu draait alles op ~60 reproduceerbare fictieve Belgische contacten.
 4. Brongegevens, AI-interpretaties en jouw correcties worden apart bewaard, zodat een import nooit stilzwijgend jouw keuzes overschrijft.
 5. Elke fase eindigt met iets dat je op je iPhone kunt testen.
 
@@ -64,7 +64,7 @@ src/
     db/                     → Supabase-client, repositories
   adapters/
     crm/       fictief | eraforce-mirror (later)
-    agenda/    fictief | microsoft-graph (later)
+    agenda/    fictief | eraforce-mirror (later; de agenda staat in Salesforce/ERAForce)
     gesprekken/ handmatig | fictief | plaud (later)
 supabase/
   migrations/               → SQL-migraties
@@ -268,7 +268,7 @@ Elke kaart heeft een knop **"Waarom?"** die deze opbouw in gewone taal toont, bv
 
 - **Gesproken** → korte notitie + volgende stap (optioneel datum).
 - **Terugbellen op datum** → opvolgactie met datum (en uur indien gekozen).
-- **Afspraak gemaakt** → lokale afspraak. De app schrijft niet naar Outlook.
+- **Afspraak gemaakt** → lokale afspraak. De app schrijft niet naar de agenda in ERAForce.
 - **Niet meer bellen** → belverbod, met bevestigingsvraag en apart van "overslaan" (andere kleur, andere tekst).
 
 ### 6.3 Handmatige keuzes
@@ -368,7 +368,7 @@ Bij twijfel blijft de koppeling dus onbevestigd. Gevolg voor de planning is klei
 | Supabase Edge Functions | Technische logs **zonder** persoonsgegevens of prompts | Vanaf fase 4 |
 | Anthropic (Claude API) | Alleen noodzakelijke tekstfragmenten, ontdaan van telefoon/e-mail/adres | Vanaf fase 4 — enkel fictief |
 | GitHub (repository) | Code, migraties, fictieve fixtures. Geen echte data, geen sleutels | Vanaf fase 1 |
-| Microsoft Graph, ERAForce, Plaud | Pas na apart akkoord | Fase 8–10 |
+| ERAForce-mirror (CRM + agenda), Plaud | Pas na apart akkoord | Fase 8 en 10 |
 
 Regels:
 - Login verplicht; RLS op elke tabel; tests die nagaan dat gebruiker A niets van gebruiker B ziet.
@@ -392,7 +392,6 @@ Regels:
 | **Anthropic Console**: account, API-sleutel, kleine tegoedstorting, maandlimiet instellen | Fase 4 | Betalen per gebruik (raming hierboven) |
 | Apple Developer-account | Niet nodig voor webpush | — |
 | ERA-IT: toegang ERAForce-mirror | Fase 8 | n.t.b. |
-| ERA-IT: Microsoft Entra-app + beheerderstoestemming voor agenda | Fase 9 | Waarschijnlijk geen licentiekost; IT-goedkeuring nodig |
 | Plaud: nagaan of er een officiële export/API is | Fase 10 | Niet beloofd tot onderzocht |
 
 ### 10.2 Twee aandachtspunten die ik onderzocht heb
@@ -486,8 +485,8 @@ Elke fase sluit af met: wat werkt · hoe je het zelf test · wat je moet regelen
 ### Fase 8 — ERAForce-mirror (zodra beschikbaar)
 Volgt de 8 stappen uit je instructies: inventaris → DATA.md → mappingvoorstel → **jouw akkoord** → alleen-lezen adapter → tests (herhaalde import, wijzigingen, ontbrekende velden, verwijderingen, lokale resultaten) → 10 extractievoorbeelden beoordelen.
 
-### Fase 9 — Outlook-agenda via Microsoft Graph
-Alleen lezen. Eerst nagaan welke toestemming ERA-IT moet geven.
+### Fase 9 — vervallen (agenda zit in ERAForce)
+Je agenda staat in Salesforce/ERAForce, Outlook gebruik je enkel voor mail. Een Outlook-koppeling is dus niet nodig: afspraken komen mee met de ERAForce-mirror in fase 8. Blijkt de mirror de agenda niet (of te traag) te bevatten, dan bekijken we in fase 8 een alternatief.
 
 ### Fase 10 — Plaud-samenvattingen
 Eerst handmatige import (plakken/bestand), daarna enkel een officieel ondersteunde koppeling als die bestaat.
@@ -527,7 +526,7 @@ Fases 8–10 mogen in andere volgorde als een bron eerder beschikbaar is; dat be
 3. Wil je de referentiecode `DP-xxxx` in het Donna-overzicht? (Maakt koppeling aantoonbaar, maar vraagt dat Donna die mee overneemt.)
 4. ERAForce-mirror: vorm (database, export, API?) en verversingsfrequentie — pas bekend bij toegang.
 5. Plaud: bestaat er een officiële export of API voor jouw abonnement? — te onderzoeken in fase 10.
-6. Microsoft Graph: heeft ERA-IT een procedure voor app-registraties? — fase 9.
+6. Agenda: staat in Salesforce/ERAForce (vastgesteld 3/10/2026). Nagaan in fase 8 of afspraken (Events/Tasks of eigen objecten) in de mirror zitten en hoe vaak ze ververst worden — voor een dagplanner is de verversingsfrequentie van de agenda belangrijk.
 7. **Vóór Marktradar en VMA:** beslissen welke gegevensverzameling (bv. dagelijkse momentopnames van toegestane bronnen) eerder moet starten om historiek op te bouwen. Ik leg dit voor na fase 7, met de gebruiksvoorwaarden van mogelijke bronnen.
 
 ## 16. Roadmap (niet bouwen nu)

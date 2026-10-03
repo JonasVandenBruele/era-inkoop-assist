@@ -55,7 +55,7 @@ export function ResultaatPaneel({ contact, pogingenZonderAntwoord, onKlaar }: { 
           ? `Geen antwoord bewaard. Volgende poging: ${korteDag(volgende)}.`
           : `Geen antwoord bewaard. Dat is ${pogingenZonderAntwoord + 1}× op rij — staat nu bij "Handmatig beoordelen".`;
       } else if (gekozen === 'terugbellen') tekst = `Terugbellen op ${korteDag(terugbelDag)}${terugbelUur ? ` om ${terugbelUur}` : ''} bewaard.`;
-      else if (gekozen === 'afspraak') tekst = `Afspraak op ${korteDag(afspraakDag)} om ${afspraakUur} bewaard (niet in Outlook).`;
+      else if (gekozen === 'afspraak') tekst = `Afspraak op ${korteDag(afspraakDag)} om ${afspraakUur} bewaard (enkel in de app, niet in je ERAForce-agenda).`;
       else if (gekozen === 'niet_meer_bellen') tekst = 'Belverbod bewaard. Dit contact verschijnt niet meer op de lijst.';
       toon({ tekst, ongedaan: () => maakBelresultaatOngedaan(r.belpoging.id) });
       onKlaar();

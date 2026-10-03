@@ -1,4 +1,4 @@
-// Intern datamodel — los van de structuur van ERAForce, Outlook of Plaud.
+// Intern datamodel — los van de structuur van ERAForce of Plaud.
 // Adapters vertalen bronnen naar deze types. Velden komen overeen met de tabellen in supabase/migrations.
 
 export type BronSoort = 'crm' | 'agenda' | 'gesprekken';
