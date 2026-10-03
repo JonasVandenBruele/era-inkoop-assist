@@ -598,5 +598,8 @@ Fases 8–10 mogen in andere volgorde als een bron eerder beschikbaar is; dat be
 
 ## 16. Roadmap (niet bouwen nu)
 
+**Spraakbesturing (later, onderzocht 3/10/2026):** de spraakherkenning van de browser werkt niet in een app op het beginscherm van de iPhone. Werkbare opties voor later: (A) spraakknop in de app via het dicteermicrofoontje van het toetsenbord + AI-interpretatie met bevestiging; (B) "Hé Siri" via een iPhone-opdracht die naar de server gaat en hardop antwoordt (handenvrij, voor in de auto); (C) voorlezen van lijst en briefings. Vraagt de Claude API. Een echte iPhone-app (volledige Siri) is nu niet de moeite.
+
+
 Dagafsluiting · Leadmelder · Prospectiekaart · Marktradar · Uitgebreide langetermijnopvolging · Vergelijkende marktanalyse (VMA).
 De VMA-principes uit je instructies (gerealiseerde vs. vraagprijzen gescheiden, geen willekeurige korting, onzekerheid tonen, berekening in code, AI alleen voor toelichting) blijven gelden en worden in een eigen plan uitgewerkt wanneer we daar komen.
