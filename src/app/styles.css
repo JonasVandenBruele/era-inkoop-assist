@@ -427,3 +427,50 @@ a { color: var(--rood); }
 .appbalk { align-items: center; }
 .appmerk { border-radius: 6px; flex: none; }
 .login-icoon { border-radius: 16px; margin-bottom: 14px; display: block; }
+
+/* =====================================================================
+   ERA Brand Guide 2021 (officieel) — vervangt de afleiding van era.be
+   p.23-26: blauw digitaal #000086 · rood #D70A28 · donkerrood #960E34 (enkel accent, geen volvlak)
+            grijs #6D6E71 (leestekst) · lichtgrijs #E6E7E8
+   p.23: rood en blauw nooit tegen elkaar → witte appbalk, geen rode lijn op blauw
+   p.27: rood is de hoofdkleur, wit geeft rust
+   p.29: Gotham (Ultra/Black/Bold/Book) → Montserrat 900/700/400 tot er een weblicentie is
+   ===================================================================== */
+:root {
+  --blauw: #000086;
+  --blauw-licht: #ececf7;
+  --rood: #d70a28;
+  --rood-donker: #960e34;
+  --tekst: #262628;
+  --zacht: #6d6e71;
+  --rand: #e6e7e8;
+  --achtergrond: #f4f4f5;
+  --kaart: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --blauw: #a3a3ff;
+    --blauw-licht: #26263a;
+    --rood: #ff3b55;
+    --rood-donker: #b0123f;
+    --tekst: #f2f2f3;
+    --zacht: #a5a6aa;
+    --rand: #303034;
+    --achtergrond: #121214;
+    --kaart: #1c1c1f;
+  }
+}
+h1, .appnaam { font-weight: 900; }
+.appbalk {
+  background: var(--kaart);
+  color: var(--blauw);
+  border-bottom: 1px solid var(--rand);
+  padding: 8px 16px;
+  gap: 10px;
+}
+@media (prefers-color-scheme: dark) { .appbalk { background: var(--kaart); } }
+.appbalk .appnaam { color: var(--blauw); font-size: 1.1rem; letter-spacing: 0.03em; }
+.appbalk .appondertitel { color: var(--zacht); opacity: 1; font-weight: 600; }
+.appmerk { border-radius: 7px; }
+.login-merk { border-left-color: var(--rood); }
+.login-merk .appnaam { font-size: 2rem; }

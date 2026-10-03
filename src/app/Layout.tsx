@@ -17,7 +17,7 @@ export function Layout({ children, fout, melding, sluitMelding }: { children: Re
         </div>
       )}
       <header className={`appbalk ${heeftTestdata ? '' : 'zonder-strook'}`}>
-        <img className="appmerk" src={`${import.meta.env.BASE_URL}icon.svg`} alt="" width="28" height="28" />
+        <img className="appmerk" src={`${import.meta.env.BASE_URL}icon.svg`} alt="" width="32" height="32" />
         <span className="appnaam">{MERK.naam}</span>
         <span className="appondertitel">{MERK.ondertitel}</span>
       </header>

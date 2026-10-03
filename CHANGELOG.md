@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.7.0] — 2026-10-03 — Volgens de officiële ERA Brand Guide
+
+### Gewijzigd
+- **Beeldmerk (optie 3, gekozen door Jonas):** ERA brand system "rood, wijzend naar boven" — rood vlak, witte negatieve pijl met de punt in het midden, donkerrode plooi — met een witte ossenpikker in lijnstijl op de punt. Het logodak van ERA wordt niet apart gebruikt (Brand Guide p.14). Bron: `scripts/logo.mjs`, iconen via `node scripts/maak-iconen.mjs`.
+- **Officiële kleuren** (p.23–26): blauw digitaal #000086, rood #D70A28, donkerrood #960E34 (enkel accent), grijs #6D6E71, lichtgrijs #E6E7E8.
+- **Witte appbalk** met beeldmerk, OXPECKER en DAGPLANNER — rood en blauw raken elkaar niet meer (p.23).
+- Titels in Montserrat Black (Gotham-vervanger tot er een weblicentie bevestigd is).
+- Officiële ERA-bestanden staan in een aparte map buiten de repository en komen niet op GitHub.
+
 ## [0.6.0] — 2026-10-03 — Oxpecker en ERA-huisstijl
 
 ### Gewijzigd

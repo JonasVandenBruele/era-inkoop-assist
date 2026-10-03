@@ -1,1 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="#000085"/><path d="M12 74 L50 54 L50 65 L22 80 L22 90 L12 90 Z" fill="#D60A29"/><path d="M88 74 L50 54 L50 65 L78 80 L78 90 L88 90 Z" fill="#95103A"/><path d="M32 30 L33 42 L16 48 Z" fill="#fff"/><ellipse cx="47" cy="35" rx="18" ry="12" fill="#fff"/><circle cx="58" cy="21" r="10" fill="#fff"/><path d="M66 17 L66 25 L84 23 Z" fill="#D60A29"/><circle cx="60" cy="18" r="4.5" fill="#D60A29"/><circle cx="60" cy="18" r="2.8" fill="#000085"/><rect x="46" y="44" width="2.4" height="10" fill="#fff"/><rect x="52" y="44" width="2.4" height="10" fill="#fff"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+<defs>
+<clipPath id="vorm"><rect width="100" height="100" rx="20"/></clipPath></defs>
+<g clip-path="url(#vorm)">
+<rect width="100" height="100" fill="#D70A28"/>
+<path d="M0.00 56.00 L3.52 55.58 L3.52 79.74 L0.00 82.00 Z" fill="#960e34"/><path d="M3.13 55.63 L6.65 55.20 L6.65 77.74 L3.13 80.00 Z" fill="#9a0e33"/><path d="M6.25 55.25 L9.78 54.83 L9.78 75.74 L6.25 78.00 Z" fill="#9f0d32"/><path d="M9.38 54.88 L12.90 54.45 L12.90 73.74 L9.38 76.00 Z" fill="#a30d32"/><path d="M12.50 54.50 L16.02 54.08 L16.02 71.74 L12.50 74.00 Z" fill="#a70d31"/><path d="M15.63 54.13 L19.15 53.70 L19.15 69.74 L15.63 72.00 Z" fill="#ac0d30"/><path d="M18.75 53.75 L22.27 53.33 L22.27 67.74 L18.75 70.00 Z" fill="#b00c2f"/><path d="M21.88 53.38 L25.40 52.95 L25.40 65.74 L21.88 68.00 Z" fill="#b40c2e"/><path d="M25.00 53.00 L28.52 52.58 L28.52 63.74 L25.00 66.00 Z" fill="#b90c2e"/><path d="M28.13 52.63 L31.65 52.20 L31.65 61.74 L28.13 64.00 Z" fill="#bd0c2d"/><path d="M31.25 52.25 L34.77 51.83 L34.77 59.74 L31.25 62.00 Z" fill="#c10b2c"/><path d="M34.38 51.88 L37.90 51.45 L37.90 57.74 L34.38 60.00 Z" fill="#c60b2b"/><path d="M37.50 51.50 L41.02 51.08 L41.02 55.74 L37.50 58.00 Z" fill="#ca0b2a"/><path d="M40.63 51.13 L44.15 50.70 L44.15 53.74 L40.63 56.00 Z" fill="#ce0b2a"/><path d="M43.75 50.75 L47.27 50.33 L47.27 51.74 L43.75 54.00 Z" fill="#d30a29"/><path d="M46.88 50.38 L50.00 50.00 L50.00 50.00 L46.88 52.00 Z" fill="#d70a28"/>
+<path d="M0 100 L0 82 L50 50 L100 82 L100 100 Z" fill="#FFFFFF"/>
+<g transform="translate(16.4 -1.8) scale(0.7)" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+<path d="M70 40 C70 33 64 29 58 30 C53 31 50 35 50 39 C44 38 34 39 28 46 L14 54 L28 55 C32 62 42 65 52 63 C62 61 70 52 70 40 Z"/>
+</g>
+<path d="M47.2 42 L46.4 49.6 M52.6 42 L53 49.6" fill="none" stroke="#FFFFFF" stroke-width="3.6" stroke-linecap="round"/>
+<path d="M65.4 23 L77 25.6 L65.4 28.3 Z" fill="#FFFFFF"/>
+<circle cx="57.6" cy="24.6" r="1.7" fill="#FFFFFF"/>
+</g>
+</svg>

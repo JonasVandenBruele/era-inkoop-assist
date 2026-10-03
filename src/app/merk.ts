@@ -2,5 +2,5 @@
 // "Oxpecker" — de ossenpikker op de neushoorn: altijd aanwezig, nooit opdringerig.
 export const MERK = {
   naam: 'Oxpecker',
-  ondertitel: 'ERA · Dagplanner',
+  ondertitel: 'Dagplanner',
 } as const;
