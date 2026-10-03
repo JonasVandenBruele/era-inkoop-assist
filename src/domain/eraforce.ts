@@ -25,14 +25,14 @@ export function eraforceLink(
   const object = OBJECT_VOOR_PREFIX[id.slice(0, 3)];
   // Prospects (Leads): een "quick action"-link opent de VOLLEDIGE recordpagina met "More" (getest 3/10/2026);
   // een gewone recordlink opent in de mobiele app de compacte weergave zonder "More".
-  // Met de juiste technische actienaam zou Maf Call mogelijk meteen openen (nog niet bekend).
+  // De actienaam Lead.Maf_Call is bevestigd; de mobiele app start de actie niet via de link, maar opent wel de volledige pagina.
   if (object === 'Lead') {
     return `https://${host}/lightning/action/quick/Lead.${encodeURIComponent(actie)}?objectApiName=Lead&context=RECORD_DETAIL&recordId=${id}`;
   }
   return object ? `https://${host}/lightning/r/${object}/${id}/view` : `https://${host}/lightning/r/${id}/view`;
 }
 
-/** Vermoede technische naam van de actie "Maf Call". Aan te passen zodra de echte API-naam bekend is. */
+/** Technische naam van de actie "Maf Call" in ERAForce (bevestigd 3/10/2026). */
 export const MAF_CALL_ACTIE = 'Maf_Call';
 
 /** Haalt het Salesforce-ID uit een geplakte ERAForce-link (of een los ID). Null als er geen geldig ID in zit. */

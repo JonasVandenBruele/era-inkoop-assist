@@ -21,9 +21,9 @@ Status: **eerste waarnemingen** (3 oktober 2026), op basis van screenshots van d
 |---|---|
 | `https://<domein>/lightning/r/Lead/<LeadId>/view` (ook met `?target=detailTab__body`) | Compacte weergave (Related/Details/Chatter) — **geen** "More" |
 | `salesforce1://sObject/<LeadId>/view` | Compacte weergave |
-| `https://<domein>/lightning/action/quick/Lead.<Actie>?objectApiName=Lead&context=RECORD_DETAIL&recordId=<LeadId>` | **Volledige pagina met "More"** ← **gebruikt**. Met de geraden namen `Maf_Call` / `MAF_Call` opent de actie zelf niet. |
+| `https://<domein>/lightning/action/quick/Lead.Maf_Call?objectApiName=Lead&context=RECORD_DETAIL&recordId=<LeadId>` | **Volledige pagina met "More"** ← **gebruikt**. De actie zelf opent niet. |
 
-Met de echte technische naam van de actie "Maf Call" zou die mogelijk meteen openen (te vragen aan de ERAForce-beheerder, of zichtbaar in het adres bij een klik op Maf Call op een computer). De knop vooraan zetten in de mobiele layout is geen optie.
+De technische naam is bevestigd via de browser op een pc: **`Lead.Maf_Call`** (`data-target-selection-name="sfdc:QuickAction.Lead.Maf_Call"`), een Lightning-componentactie (`runtime_platform_actions-executor-lightning-component`). De mobiele Salesforce-app start zulke acties niet via een link, dus op de iPhone blijft het: Dagplanner → volledige pagina → More → Maf Call. De knop vooraan zetten in de mobiele layout is geen optie. Andere acties op de prospect hebben namen als `Lead.ERA_Workflow_Toevoegen_action`.
 
 ## Open vragen voor fase 8
 
