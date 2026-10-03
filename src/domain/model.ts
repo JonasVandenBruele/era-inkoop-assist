@@ -84,6 +84,8 @@ export interface Bronactiviteit extends Herkomst {
 
 export interface Afspraak extends Herkomst {
   id: string;
+  /** Lokale afspraak die ontstond uit een belresultaat. */
+  belpogingId?: string | null;
   titel: string;
   start: Date;
   einde: Date;
@@ -105,6 +107,61 @@ export interface Belpoging {
   notitie: string | null;
   volgendeStap: string | null;
   ongedaanOp: Date | null;
+  isTestdata: boolean;
+}
+
+export interface Planningskeuze {
+  id: string;
+  contactId: string;
+  soort: 'vastpinnen' | 'vandaag_overslaan' | 'uitstellen';
+  /** Voor vastpinnen en vandaag_overslaan: de dag waarvoor de keuze geldt. */
+  voorDag: string | null;
+  /** Voor uitstellen: het contact verschijnt pas weer vanaf deze dag. */
+  totDag: string | null;
+  aangemaaktOp?: Date;
+  ongedaanOp: Date | null;
+  isTestdata?: boolean;
+}
+
+/** Lokale terugbelafspraak of vervolgstap. De bron levert terugbeltaken via bronactiviteiten. */
+export interface Opvolgactie {
+  id: string;
+  contactId: string;
+  soort: 'terugbellen' | 'vervolgstap';
+  dag: string;
+  uur: string | null;
+  omschrijving: string | null;
+  aangemaaktOp: Date;
+  status: 'open' | 'afgehandeld' | 'vervallen';
+  belpogingId?: string | null;
+  isTestdata?: boolean;
+}
+
+export interface Belverbod {
+  id?: string;
+  contactId: string;
+  reden?: string | null;
+  belpogingId?: string | null;
+  aangemaaktOp?: Date;
+  ingetrokkenOp: Date | null;
+  isTestdata?: boolean;
+}
+
+/** De bellijst zoals ze bij de eerste opening van de dag werd vastgelegd. */
+export interface Dagplan {
+  dag: string;
+  contactIds: string[];
+  aangemaaktOp: Date;
+  isTestdata: boolean;
+}
+
+export interface DonnaOverzicht {
+  dag: string;
+  tekst: string;
+  belpogingIds: string[];
+  status: 'klaargezet' | 'doorgegeven';
+  klaargezetOp: Date;
+  doorgegevenOp: Date | null;
   isTestdata: boolean;
 }
 

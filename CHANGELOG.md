@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.3.0] — 2026-10-03 — Fase 3: belresultaten, keuzes, herplanning en Donna-overzicht
+
+### Toegevoegd
+- Knop **Resultaat** per contact met vijf grote uitkomsten: gesproken (notitie + volgende stap), geen antwoord (één tik), terugbellen op datum (met optioneel uur), afspraak gemaakt (lokaal, niet in Outlook), niet meer bellen (met bevestiging).
+- Melding na elk resultaat met **Ongedaan maken**; ook achteraf via "Gebeld vandaag". Ongedaan maken draait ook de gekoppelde terugbelafspraak, afspraak of het belverbod terug.
+- **Vastpinnen**, **vandaag overslaan** en **uitstellen tot datum** (menu ⋯), met overzicht "Jouw keuzes" en knop Herstellen. "Overslaan" en "niet meer bellen" zijn duidelijk verschillend.
+- **Dagplan**: de lijst wordt bij de eerste opening van de dag vastgelegd. Gebelde contacten verdwijnen naar "Gebeld vandaag"; de lijst wordt niet vanzelf aangevuld of herschikt. Terugbellen met uur, vastgepinde contacten en nieuwe leads die later binnenkomen worden wel toegevoegd.
+- **Tijdelijk lokaal contact** aanmaken (Contacten → ＋), meteen vastgepind voor vandaag.
+- Contactpagina: belresultaat ingeven, keuzes, en jouw lokale gegevens (belverbod intrekken, open terugbelafspraken).
+- **Avondoverzicht** voor Donna: bewerkbare tekst, kopiëren, status *klaargezet* / *door mij doorgegeven* (herstelbaar), optionele referentiecode per gesprek. Wordt nooit automatisch verstuurd.
+- Migratie `20261003000002_lokale_resultaten.sql`: belverboden, opvolgacties, planningskeuzes, dagplannen, donna_overzichten — allemaal met RLS.
+
+### Tests
+- 103 tests, o.a.: elk belresultaat en het effect op de lijst, nieuwe lead mag dezelfde dag nog eens, lokale terugbelafspraak vervangt een oudere uit de bron, ongedaan maken, dagplan blijft stabiel, Donna-tekst, toegangsregels voor de nieuwe tabellen, en een herimport van de bron die geen enkele lokale keuze of belpoging overschrijft.
+
 ## [0.2.0] — 2026-10-03 — Fase 2: bellijst met deterministische score en uitleg
 
 ### Toegevoegd

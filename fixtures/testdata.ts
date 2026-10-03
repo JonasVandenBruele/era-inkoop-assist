@@ -251,6 +251,7 @@ export function genereerTestdata(opties: TestdataOpties): Testdataset {
       contactId: contact?.id ?? null,
       koppelStatus: contact ? 'bevestigd' : 'geen',
       omschrijving: null,
+      belpogingId: null,
       ...extra,
     });
   };

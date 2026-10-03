@@ -1,5 +1,19 @@
 // Eén toegangspunt voor gegevens. De schermen weten niet of de data uit Supabase of uit de lokale demo komt.
-import type { Afspraak, Belpoging, Bronactiviteit, Bronstatus, Contact, ContactPand, Pand } from '../../domain/model';
+import type {
+  Afspraak,
+  Belpoging,
+  Belverbod,
+  Bronactiviteit,
+  Bronstatus,
+  Contact,
+  ContactPand,
+  Dagplan,
+  DonnaOverzicht,
+  Opvolgactie,
+  Pand,
+  Planningskeuze,
+} from '../../domain/model';
+import type { Belresultaat } from '../../domain/belresultaat';
 import type { Instellingen } from '../settings/schema';
 
 export interface Gegevens {
@@ -10,6 +24,10 @@ export interface Gegevens {
   afspraken: Afspraak[];
   belpogingen: Belpoging[];
   bronnen: Bronstatus[];
+  // Lokaal (fase 3)
+  opvolgacties: Opvolgactie[];
+  keuzes: Planningskeuze[];
+  belverboden: Belverbod[];
 }
 
 export interface Store {
@@ -20,8 +38,22 @@ export interface Store {
   bewaarInstellingen(i: Instellingen): Promise<void>;
   /** Verwijdert alle testgegevens van deze gebruiker en laadt ze opnieuw voor de testdatum. Echte gegevens blijven onaangeroerd. */
   herlaadTestdata(testdatum: string): Promise<void>;
+
+  // ---- Lokale resultaten (fase 3). Een import raakt deze nooit aan. ----
+  bewaarBelresultaat(r: Belresultaat): Promise<void>;
+  /** Draait een belresultaat terug: de belpoging wordt gemarkeerd als ongedaan, gekoppelde records vervallen. */
+  maakBelresultaatOngedaan(belpogingId: string, op: Date): Promise<void>;
+  bewaarKeuze(k: Planningskeuze): Promise<void>;
+  maakKeuzeOngedaan(keuzeId: string, op: Date): Promise<void>;
+  trekBelverbodIn(belverbodId: string, op: Date): Promise<void>;
+  maakContact(c: Contact): Promise<void>;
+  laadDagplan(dag: string): Promise<Dagplan | null>;
+  /** Bewaart het dagplan enkel als er voor die dag nog geen is (eerste opening wint). */
+  bewaarDagplan(p: Dagplan): Promise<void>;
+  laadDonnaOverzicht(dag: string): Promise<DonnaOverzicht | null>;
+  bewaarDonnaOverzicht(o: DonnaOverzicht): Promise<void>;
 }
 
 export function leegGegevens(): Gegevens {
-  return { contacten: [], panden: [], contactPanden: [], activiteiten: [], afspraken: [], belpogingen: [], bronnen: [] };
+  return { contacten: [], panden: [], contactPanden: [], activiteiten: [], afspraken: [], belpogingen: [], bronnen: [], opvolgacties: [], keuzes: [], belverboden: [] };
 }

@@ -1,8 +1,8 @@
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
-import { useApp } from './context';
+import { useApp, type Melding } from './context';
 
-export function Layout({ children, fout }: { children: ReactNode; fout: string | null }) {
+export function Layout({ children, fout, melding, sluitMelding }: { children: ReactNode; fout: string | null; melding: Melding | null; sluitMelding: () => void }) {
   const { store, gegevens, klok } = useApp();
   const heeftTestdata = gegevens.contacten.some((c) => c.isTestdata) || store.soort === 'demo';
 
@@ -21,6 +21,7 @@ export function Layout({ children, fout }: { children: ReactNode; fout: string |
         </div>
       )}
       <main className="pagina">{children}</main>
+      {melding && <Toast melding={melding} sluit={sluitMelding} />}
       <nav className="onderbalk" aria-label="Hoofdmenu">
         <NavLink to="/" end>
           <span aria-hidden>📅</span>
@@ -30,11 +31,48 @@ export function Layout({ children, fout }: { children: ReactNode; fout: string |
           <span aria-hidden>👥</span>
           Contacten
         </NavLink>
+        <NavLink to="/avond">
+          <span aria-hidden>🌙</span>
+          Avond
+        </NavLink>
         <NavLink to="/instellingen">
           <span aria-hidden>⚙️</span>
           Instellingen
         </NavLink>
       </nav>
+    </div>
+  );
+}
+
+function Toast({ melding, sluit }: { melding: Melding; sluit: () => void }) {
+  const [bezig, setBezig] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(sluit, melding.ongedaan ? 10_000 : 5_000);
+    return () => clearTimeout(t);
+  }, [melding, sluit]);
+
+  return (
+    <div className={`toast ${melding.fout ? 'fout' : ''}`} role="status" aria-live="polite">
+      <span>{melding.tekst}</span>
+      {melding.ongedaan && (
+        <button
+          className="knop tekstknop"
+          disabled={bezig}
+          onClick={async () => {
+            setBezig(true);
+            try {
+              await melding.ongedaan!();
+            } finally {
+              sluit();
+            }
+          }}
+        >
+          Ongedaan maken
+        </button>
+      )}
+      <button className="knop tekstknop sluit" onClick={sluit} aria-label="Sluiten">
+        ✕
+      </button>
     </div>
   );
 }

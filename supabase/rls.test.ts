@@ -109,3 +109,34 @@ describe('migraties en toegangsregels', () => {
     });
   });
 });
+
+describe('toegangsregels voor lokale resultaten (fase 3)', () => {
+  it('gebruiker B ziet geen keuzes, belverboden, opvolgacties, dagplannen of Donna-overzichten van A', async () => {
+    await als(A, async () => {
+      const { rows } = await db.query<{ id: string }>(`insert into public.contacten (achternaam) values ('Lokaal') returning id`);
+      const id = rows[0]!.id;
+      await db.query(`insert into public.planningskeuzes (contact_id, soort, voor_dag) values ($1, 'vastpinnen', '2026-10-13')`, [id]);
+      await db.query(`insert into public.belverboden (contact_id) values ($1)`, [id]);
+      await db.query(`insert into public.opvolgacties (contact_id, soort, dag) values ($1, 'terugbellen', '2026-10-20')`, [id]);
+      await db.query(`insert into public.dagplannen (dag, contact_ids) values ('2026-10-13', array[$1::uuid])`, [id]);
+      await db.query(`insert into public.donna_overzichten (dag, tekst) values ('2026-10-13', 'Overzicht')`);
+    });
+    for (const t of ['planningskeuzes', 'belverboden', 'opvolgacties', 'dagplannen', 'donna_overzichten']) {
+      const r = await als(B, () => db.query(`select * from public.${t}`));
+      expect(r.rows, t).toEqual([]);
+      const eigen = await als(A, () => db.query(`select * from public.${t}`));
+      expect(eigen.rows.length, t).toBe(1);
+    }
+  });
+
+  it('per gebruiker maximaal één dagplan per dag', async () => {
+    await expect(als(A, () => db.query(`insert into public.dagplannen (dag, contact_ids) values ('2026-10-13', '{}')`))).rejects.toThrow();
+  });
+
+  it('uitstellen vereist een einddatum', async () => {
+    await als(A, async () => {
+      const { rows } = await db.query<{ id: string }>(`select id from public.contacten limit 1`);
+      await expect(db.query(`insert into public.planningskeuzes (contact_id, soort) values ($1, 'uitstellen')`, [rows[0]!.id])).rejects.toThrow();
+    });
+  });
+});

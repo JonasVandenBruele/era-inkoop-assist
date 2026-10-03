@@ -2,40 +2,13 @@
 // Pure functie: alle gegevens, instellingen en "vandaag" komen binnen als parameter. De AI speelt hier geen rol.
 import { dagVan, dagenTussen, korteDag, relatief, type DagKey } from '../core/dates';
 import type { Instellingen } from '../core/settings/schema';
-import type { Afspraak, Belpoging, Bronactiviteit, Contact, Fase } from './model';
+import type { Afspraak, Belpoging, Belverbod, Bronactiviteit, Contact, Fase, Opvolgactie, Planningskeuze } from './model';
+export type { Belverbod, Opvolgactie, Planningskeuze } from './model';
 import { heeftTelefoon, laatsteInhoudelijkContact, type LaatsteContact } from './overzicht';
 import { horizonCategorie, HORIZON_LABEL, type HorizonCategorie } from './horizon';
 import { plusWerkdagen, werkdagenTussen } from './werkdagen';
 
 // ---------- Invoer ----------
-
-export interface Planningskeuze {
-  id: string;
-  contactId: string;
-  soort: 'vastpinnen' | 'vandaag_overslaan' | 'uitstellen';
-  /** Voor vastpinnen en vandaag_overslaan: de dag waarvoor de keuze geldt. */
-  voorDag: DagKey | null;
-  /** Voor uitstellen: het contact verschijnt pas weer vanaf deze dag. */
-  totDag: DagKey | null;
-  ongedaanOp: Date | null;
-}
-
-/** Lokale opvolgactie of terugbelafspraak (fase 3); de bron levert terugbeltaken via bronactiviteiten. */
-export interface Opvolgactie {
-  id: string;
-  contactId: string;
-  soort: 'terugbellen' | 'vervolgstap';
-  dag: DagKey;
-  uur: string | null;
-  omschrijving: string | null;
-  aangemaaktOp: Date;
-  status: 'open' | 'afgehandeld' | 'vervallen';
-}
-
-export interface Belverbod {
-  contactId: string;
-  ingetrokkenOp: Date | null;
-}
 
 export interface BellijstInvoer {
   contacten: Contact[];
@@ -130,7 +103,7 @@ export function effectieveFase(c: Contact): Fase | null {
 }
 
 /** Onbeantwoorde, niet-ongedane pogingen sinds het laatste inhoudelijke contact, nieuwste eerst. */
-function pogingenSindsContact(contactId: string, belpogingen: Belpoging[], laatste: LaatsteContact | null): Belpoging[] {
+export function pogingenSindsContact(contactId: string, belpogingen: Belpoging[], laatste: LaatsteContact | null): Belpoging[] {
   return belpogingen
     .filter((p) => p.contactId === contactId && actief(p) && !p.isInhoudelijk && (!laatste || p.tijdstip > laatste.tijdstip))
     .sort((a, b) => b.tijdstip.getTime() - a.tijdstip.getTime());
@@ -158,6 +131,17 @@ function geldendeTerugbel(contactId: string, invoer: BellijstInvoer, laatste: La
 
 function aanspreking(c: Contact): string {
   return [c.aanhef, c.voornaam, c.achternaam].filter(Boolean).join(' ');
+}
+
+/**
+ * Vroegste dag voor een nieuwe poging na `aantalOpRij` keer geen antwoord, of null als de app
+ * zelf geen poging meer plant (maximum bereikt → handmatig beoordelen).
+ */
+export function volgendePogingDag(aantalOpRij: number, laatstePogingDag: DagKey, inst: Instellingen): DagKey | null {
+  if (aantalOpRij >= inst.geenAntwoord.maxPogingenOpRij) return null;
+  const tussen = inst.geenAntwoord.werkdagenTussenPogingen;
+  const wachtWerkdagen = tussen[Math.min(aantalOpRij, tussen.length) - 1] ?? 1;
+  return plusWerkdagen(laatstePogingDag, wachtWerkdagen);
 }
 
 // ---------- Hoofdfunctie ----------
@@ -311,10 +295,8 @@ export function berekenBellijst(invoer: BellijstInvoer): Bellijst {
         continue;
       }
       const laatstePoging = dagVan(pogingen[0]!.tijdstip);
-      const tussen = inst.geenAntwoord.werkdagenTussenPogingen;
-      const wachtWerkdagen = tussen[Math.min(pogingen.length, tussen.length) - 1] ?? 1;
       const zelfdeDagOpnieuw = groep === 'B' && pogingen.length === 1 && laatstePoging === vandaag && inst.geenAntwoord.nieuweLeadZelfdeDagOpnieuw;
-      const volgende = plusWerkdagen(laatstePoging, wachtWerkdagen);
+      const volgende = volgendePogingDag(pogingen.length, laatstePoging, inst)!;
       if (!zelfdeDagOpnieuw && volgende > vandaag) {
         sluitUit('wacht_na_geen_antwoord', `Geen antwoord op ${korteDag(laatstePoging)}; volgende poging ${korteDag(volgende)}.`);
         continue;

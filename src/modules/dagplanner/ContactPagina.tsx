@@ -1,14 +1,17 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useApp } from '../../app/context';
 import { ACTIVITEIT_LABEL, FASE_LABEL, ROL_LABEL, STATUS_LABEL, UITKOMST_LABEL } from '../../app/labels';
 import { datumUur, korteDag } from '../../core/dates';
 import { volledigeNaam } from '../../domain/model';
 import { historiek, laatsteInhoudelijkContact } from '../../domain/overzicht';
+import { pogingenSindsContact } from '../../domain/prioriteit';
+import { KeuzeKnoppen, ResultaatPaneel } from './ResultaatPaneel';
 
 export function ContactPagina() {
   const { id } = useParams();
-  const { gegevens } = useApp();
+  const { gegevens, klok, trekBelverbodIn, herstelKeuze } = useApp();
+  const [resultaat, setResultaat] = useState(false);
   const contact = gegevens.contacten.find((c) => c.id === id);
 
   const panden = useMemo(() => {
@@ -36,6 +39,12 @@ export function ContactPagina() {
   const items = historiek(contact.id, gegevens.activiteiten, gegevens.belpogingen);
   const laatste = laatsteInhoudelijkContact(contact.id, gegevens.activiteiten, gegevens.belpogingen);
   const openTaken = gegevens.activiteiten.filter((a) => a.contactId === contact.id && a.type === 'taak' && !a.taakAfgerond);
+  const pogingen = pogingenSindsContact(contact.id, gegevens.belpogingen, laatste).length;
+  const belverboden = gegevens.belverboden.filter((b) => b.contactId === contact.id && !b.ingetrokkenOp);
+  const opvolgacties = gegevens.opvolgacties.filter((o) => o.contactId === contact.id && o.status === 'open' && o.dag >= klok.vandaag());
+  const keuzes = gegevens.keuzes.filter(
+    (k) => k.contactId === contact.id && !k.ongedaanOp && (k.soort === 'uitstellen' ? k.totDag! > klok.vandaag() : k.voorDag === klok.vandaag()),
+  );
 
   return (
     <>
@@ -47,6 +56,7 @@ export function ContactPagina() {
           {contact.faseBron ? <span className={`label fase-${contact.faseBron}`}>{FASE_LABEL[contact.faseBron]}</span> : <span className="label">Fase onbekend</span>}
           {contact.nietBellenBron && <span className="label gevaar">Niet meer bellen</span>}
           {contact.isTestdata && <span className="label test">Testdata</span>}
+          {contact.isLokaalTijdelijk && <span className="label lokaal">Tijdelijk lokaal contact</span>}
         </div>
       </header>
 
@@ -76,6 +86,43 @@ export function ContactPagina() {
           <dt>Herkomst</dt>
           <dd>{contact.herkomstContact ?? 'onbekend'}</dd>
         </dl>
+      </section>
+
+      <section className="kaart">
+        <h2>Acties</h2>
+        {resultaat ? (
+          <ResultaatPaneel contact={contact} pogingenZonderAntwoord={pogingen} onKlaar={() => setResultaat(false)} />
+        ) : (
+          <>
+            <button className="knop primair groot" onClick={() => setResultaat(true)}>
+              Belresultaat ingeven
+            </button>
+            <KeuzeKnoppen contactId={contact.id} toonVastpinnen />
+          </>
+        )}
+        {(belverboden.length > 0 || opvolgacties.length > 0 || keuzes.length > 0) && (
+          <ul className="lijst compact lokaal-lijst">
+            {belverboden.map((b) => (
+              <li key={b.id}>
+                <span className="label lokaal">Jij</span> ⛔ Niet meer bellen{b.reden ? ` — ${b.reden}` : ''}{' '}
+                <button className="knop tekstknop" onClick={() => trekBelverbodIn(b.id!)}>Intrekken</button>
+              </li>
+            ))}
+            {opvolgacties.map((o) => (
+              <li key={o.id}>
+                <span className="label lokaal">Jij</span> {o.soort === 'terugbellen' ? '🔁 Terugbellen' : '➡️ Vervolgstap'} op {korteDag(o.dag)}
+                {o.uur ? ` om ${o.uur}` : ''}{o.omschrijving ? ` — ${o.omschrijving}` : ''}
+              </li>
+            ))}
+            {keuzes.map((k) => (
+              <li key={k.id}>
+                <span className="label lokaal">Jij</span>{' '}
+                {k.soort === 'vastpinnen' ? '📌 Vastgepind vandaag' : k.soort === 'vandaag_overslaan' ? '⏭ Vandaag overgeslagen' : `⏸ Uitgesteld tot ${korteDag(k.totDag!)}`}{' '}
+                <button className="knop tekstknop" onClick={() => herstelKeuze(k.id)}>Herstellen</button>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       {openTaken.length > 0 && (

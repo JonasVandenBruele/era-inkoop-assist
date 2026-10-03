@@ -6,7 +6,10 @@ import { maakDemoStore } from '../core/db/demoStore';
 import { leegGegevens, type Gegevens, type Store } from '../core/db/store';
 import { maakSupabaseStore, supabase, supabaseGeconfigureerd } from '../core/db/supabaseStore';
 import type { Instellingen } from '../core/settings/schema';
-import { AppContext, type AppStaat } from './context';
+import { AppContext, type AppStaat, type Melding as MeldingType } from './context';
+import { verwerkBelresultaat } from '../domain/belresultaat';
+import type { Contact } from '../domain/model';
+import { Avondoverzicht } from '../modules/dagplanner/Avondoverzicht';
 import { Layout } from './Layout';
 import { Login } from './Login';
 import { InstellingenPagina } from './InstellingenPagina';
@@ -40,6 +43,8 @@ function IngelogdeApp({ store, email }: { store: Store; email: string | null }) 
   const [gegevens, setGegevens] = useState<Gegevens>(leegGegevens());
   const [fout, setFout] = useState<string | null>(null);
   const [bezig, setBezig] = useState(true);
+  const [melding, setMelding] = useState<MeldingType | null>(null);
+  const [dataVersie, setDataVersie] = useState(0);
 
   const herlaad = useCallback(async () => {
     try {
@@ -86,23 +91,102 @@ function IngelogdeApp({ store, email }: { store: Store; email: string | null }) 
       },
       async herlaadTestdata() {
         await store.herlaadTestdata(instellingen.testdatum ?? klok.nu().toISOString().slice(0, 16));
+        setDataVersie((v) => v + 1);
         await herlaad();
       },
       async afmelden() {
         if (store.soort === 'supabase') await supabase().auth.signOut();
       },
+
+      dataVersie,
+      async registreerBelresultaat(invoer) {
+        const r = verwerkBelresultaat({ ...invoer, tijdstip: klok.nu(), maakId: () => crypto.randomUUID() });
+        await store.bewaarBelresultaat(r);
+        await herlaad();
+        return r;
+      },
+      async maakBelresultaatOngedaan(id) {
+        await store.maakBelresultaatOngedaan(id, klok.nu());
+        await herlaad();
+      },
+      async kies(contactId, soort, totDag) {
+        const contact = gegevens.contacten.find((c) => c.id === contactId);
+        const id = crypto.randomUUID();
+        await store.bewaarKeuze({
+          id,
+          contactId,
+          soort,
+          voorDag: soort === 'uitstellen' ? null : klok.vandaag(),
+          totDag: soort === 'uitstellen' ? (totDag ?? null) : null,
+          aangemaaktOp: klok.nu(),
+          ongedaanOp: null,
+          isTestdata: contact?.isTestdata ?? false,
+        });
+        await herlaad();
+        const tekst = { vastpinnen: 'Vastgepind voor vandaag', vandaag_overslaan: 'Vandaag overgeslagen — morgen weer zichtbaar', uitstellen: `Uitgesteld tot ${totDag}` }[soort];
+        setMelding({
+          tekst,
+          ongedaan: async () => {
+            await store.maakKeuzeOngedaan(id, klok.nu());
+            await herlaad();
+          },
+        });
+      },
+      async herstelKeuze(id) {
+        await store.maakKeuzeOngedaan(id, klok.nu());
+        await herlaad();
+      },
+      async trekBelverbodIn(id) {
+        await store.trekBelverbodIn(id, klok.nu());
+        await herlaad();
+      },
+      async maakTijdelijkContact(n) {
+        const nu = klok.nu();
+        const contact: Contact = {
+          id: crypto.randomUUID(),
+          bron: 'lokaal',
+          externId: null,
+          gebeurdOp: nu,
+          gewijzigdInBronOp: null,
+          geimporteerdOp: nu,
+          // Tot echte data is goedgekeurd, telt alles als testdata (wordt mee opgeruimd bij een reset).
+          isTestdata: true,
+          aanhef: n.aanhef,
+          voornaam: n.voornaam,
+          achternaam: n.achternaam,
+          telefoons: n.telefoon ? [{ nummer: n.telefoon, label: 'gsm' }] : [],
+          email: null,
+          straat: null,
+          postcode: null,
+          gemeente: n.gemeente,
+          statusBron: 'nieuwe_lead',
+          faseBron: null,
+          tijdshorizonBron: null,
+          aanspreekvormBron: null,
+          herkomstContact: n.notitie,
+          nietBellenBron: false,
+          aangemaaktInBronOp: nu,
+          isLokaalTijdelijk: true,
+        };
+        await store.maakContact(contact);
+        await store.bewaarKeuze({ id: crypto.randomUUID(), contactId: contact.id, soort: 'vastpinnen', voorDag: klok.vandaag(), totDag: null, aangemaaktOp: nu, ongedaanOp: null, isTestdata: true });
+        await herlaad();
+        return contact;
+      },
+      toon: setMelding,
     };
-  }, [store, instellingen, klok, gegevens, email, herlaad]);
+  }, [store, instellingen, klok, gegevens, email, herlaad, dataVersie]);
 
   if (bezig || !staat) return <Melding tekst={fout ? `Er ging iets mis: ${fout}` : 'Gegevens laden…'} />;
 
   return (
     <AppContext.Provider value={staat}>
-      <Layout fout={fout}>
+      <Layout fout={fout} melding={melding} sluitMelding={() => setMelding(null)}>
         <Routes>
           <Route path="/" element={<Vandaag />} />
           <Route path="/contacten" element={<Contacten />} />
           <Route path="/contact/:id" element={<ContactPagina />} />
+          <Route path="/avond" element={<Avondoverzicht />} />
           <Route path="/instellingen" element={<InstellingenPagina />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

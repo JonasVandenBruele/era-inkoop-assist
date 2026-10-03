@@ -1,5 +1,5 @@
 // Vertaling tussen databaserijen (snake_case) en het interne model (camelCase).
-import type { Afspraak, Belpoging, Bronactiviteit, Bronstatus, Contact, ContactPand, Pand } from '../../domain/model';
+import type { Afspraak, Belpoging, Belverbod, Bronactiviteit, Bronstatus, Contact, ContactPand, Dagplan, DonnaOverzicht, Opvolgactie, Pand, Planningskeuze } from '../../domain/model';
 
 type Rij = Record<string, unknown>;
 const d = (v: unknown): Date | null => (v ? new Date(v as string) : null);
@@ -126,6 +126,7 @@ export const afspraakNaarModel = (r: Rij): Afspraak => ({
   contactId: s(r.contact_id),
   koppelStatus: r.koppel_status as Afspraak['koppelStatus'],
   omschrijving: s(r.omschrijving),
+  belpogingId: s(r.belpoging_id),
 });
 export const afspraakNaarRij = (a: Afspraak) => ({
   ...herkomstNaarRij(a),
@@ -137,6 +138,7 @@ export const afspraakNaarRij = (a: Afspraak) => ({
   contact_id: a.contactId,
   koppel_status: a.koppelStatus,
   omschrijving: a.omschrijving,
+  belpoging_id: a.belpogingId ?? null,
 });
 
 export const belpogingNaarModel = (r: Rij): Belpoging => ({
@@ -179,4 +181,98 @@ export const bronNaarRij = (b: Bronstatus) => ({
   is_testdata: b.isTestdata,
   laatst_succesvol_op: b.laatstSuccesvolOp?.toISOString() ?? null,
   laatste_fout: b.laatsteFout,
+});
+
+// ---------- Fase 3: lokale resultaten ----------
+
+export const opvolgactieNaarModel = (r: Rij): Opvolgactie => ({
+  id: r.id as string,
+  contactId: r.contact_id as string,
+  soort: r.soort as Opvolgactie['soort'],
+  dag: dagKolom(r.dag)!,
+  uur: r.uur ? String(r.uur).slice(0, 5) : null,
+  omschrijving: s(r.omschrijving),
+  aangemaaktOp: new Date(r.aangemaakt_op as string),
+  status: r.status as Opvolgactie['status'],
+  belpogingId: s(r.belpoging_id),
+  isTestdata: Boolean(r.is_testdata),
+});
+export const opvolgactieNaarRij = (o: Opvolgactie) => ({
+  id: o.id,
+  contact_id: o.contactId,
+  soort: o.soort,
+  dag: o.dag,
+  uur: o.uur,
+  omschrijving: o.omschrijving,
+  aangemaakt_op: o.aangemaaktOp.toISOString(),
+  status: o.status,
+  belpoging_id: o.belpogingId ?? null,
+  is_testdata: o.isTestdata ?? false,
+});
+
+export const keuzeNaarModel = (r: Rij): Planningskeuze => ({
+  id: r.id as string,
+  contactId: r.contact_id as string,
+  soort: r.soort as Planningskeuze['soort'],
+  voorDag: dagKolom(r.voor_dag),
+  totDag: dagKolom(r.tot_dag),
+  aangemaaktOp: new Date(r.aangemaakt_op as string),
+  ongedaanOp: d(r.ongedaan_op),
+  isTestdata: Boolean(r.is_testdata),
+});
+export const keuzeNaarRij = (k: Planningskeuze) => ({
+  id: k.id,
+  contact_id: k.contactId,
+  soort: k.soort,
+  voor_dag: k.voorDag,
+  tot_dag: k.totDag,
+  aangemaakt_op: (k.aangemaaktOp ?? new Date()).toISOString(),
+  ongedaan_op: k.ongedaanOp?.toISOString() ?? null,
+  is_testdata: k.isTestdata ?? false,
+});
+
+export const belverbodNaarModel = (r: Rij): Belverbod => ({
+  id: r.id as string,
+  contactId: r.contact_id as string,
+  reden: s(r.reden),
+  belpogingId: s(r.belpoging_id),
+  aangemaaktOp: new Date(r.aangemaakt_op as string),
+  ingetrokkenOp: d(r.ingetrokken_op),
+  isTestdata: Boolean(r.is_testdata),
+});
+export const belverbodNaarRij = (b: Belverbod) => ({
+  id: b.id,
+  contact_id: b.contactId,
+  reden: b.reden ?? null,
+  belpoging_id: b.belpogingId ?? null,
+  aangemaakt_op: (b.aangemaaktOp ?? new Date()).toISOString(),
+  ingetrokken_op: b.ingetrokkenOp?.toISOString() ?? null,
+  is_testdata: b.isTestdata ?? false,
+});
+
+export const dagplanNaarModel = (r: Rij): Dagplan => ({
+  dag: dagKolom(r.dag)!,
+  contactIds: (r.contact_ids as string[]) ?? [],
+  aangemaaktOp: new Date(r.aangemaakt_op as string),
+  isTestdata: Boolean(r.is_testdata),
+});
+export const dagplanNaarRij = (p: Dagplan) => ({ dag: p.dag, contact_ids: p.contactIds, aangemaakt_op: p.aangemaaktOp.toISOString(), is_testdata: p.isTestdata });
+
+export const donnaNaarModel = (r: Rij): DonnaOverzicht => ({
+  dag: dagKolom(r.dag)!,
+  tekst: r.tekst as string,
+  belpogingIds: (r.belpoging_ids as string[]) ?? [],
+  status: r.status as DonnaOverzicht['status'],
+  klaargezetOp: new Date(r.klaargezet_op as string),
+  doorgegevenOp: d(r.doorgegeven_op),
+  isTestdata: Boolean(r.is_testdata),
+});
+export const donnaNaarRij = (o: DonnaOverzicht) => ({
+  dag: o.dag,
+  tekst: o.tekst,
+  belpoging_ids: o.belpogingIds,
+  status: o.status,
+  klaargezet_op: o.klaargezetOp.toISOString(),
+  doorgegeven_op: o.doorgegevenOp?.toISOString() ?? null,
+  is_testdata: o.isTestdata,
 });

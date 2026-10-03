@@ -60,3 +60,44 @@ describe('testdata in het databaseschema', () => {
     expect((await lees('bronnen')).map(m.bronNaarModel)).toEqual(opId(data.bronnen));
   });
 });
+
+describe('een nieuwe import overschrijft geen lokale gegevens', () => {
+  it('lokale belpoging, keuze, opvolgactie en belverbod blijven ongewijzigd na herimport van de bron', async () => {
+    const contact = data.contacten[3]!;
+    const lokaal = `
+      insert into public.belpogingen (id, eigenaar_id, contact_id, uitkomst, is_inhoudelijk, notitie)
+        values ('00000000-0000-4000-a000-0000000000b1', '${A}', '${contact.id}', 'terugbellen', true, 'Mijn notitie');
+      insert into public.opvolgacties (eigenaar_id, contact_id, soort, dag, belpoging_id)
+        values ('${A}', '${contact.id}', 'terugbellen', '2026-10-20', '00000000-0000-4000-a000-0000000000b1');
+      insert into public.planningskeuzes (eigenaar_id, contact_id, soort, voor_dag) values ('${A}', '${contact.id}', 'vastpinnen', '2026-10-13');
+      insert into public.belverboden (eigenaar_id, contact_id, reden) values ('${A}', '${contact.id}', 'Mijn keuze');
+    `;
+    await db.exec(lokaal);
+    const tel = async () =>
+      (
+        await db.query<{ n: number }>(
+          `select (select count(*) from public.belpogingen) + (select count(*) from public.opvolgacties)
+             + (select count(*) from public.planningskeuzes) + (select count(*) from public.belverboden) as n`,
+        )
+      ).rows[0]!.n;
+    const voor = await tel();
+
+    // Herimport: dezelfde bronrecords, met gewijzigde inhoud, via upsert op (eigenaar, bron, extern_id).
+    const gewijzigd = data.contacten.map((c) => ({ ...m.contactNaarRij(c), tijdshorizon_bron: 'gewijzigd in bron', eigenaar_id: A }));
+    const kolommen = Object.keys(gewijzigd[0]!).filter((k) => k !== 'id');
+    await db.query(
+      `insert into public.contacten (${kolommen.join(', ')}) select ${kolommen.join(', ')} from json_populate_recordset(null::public.contacten, $1)
+       on conflict (eigenaar_id, bron, extern_id) where extern_id is not null do update set ${kolommen.map((k) => `${k} = excluded.${k}`).join(', ')}`,
+      [JSON.stringify(gewijzigd)],
+    );
+
+    expect(await tel()).toBe(Number(voor));
+    const c = await db.query<{ tijdshorizon_bron: string; n: number }>(
+      `select tijdshorizon_bron, (select count(*)::int from public.contacten) as n from public.contacten where id = $1`,
+      [contact.id],
+    );
+    expect(c.rows[0]).toEqual({ tijdshorizon_bron: 'gewijzigd in bron', n: data.contacten.length });
+    const notitie = await db.query<{ notitie: string }>(`select notitie from public.belpogingen where id = '00000000-0000-4000-a000-0000000000b1'`);
+    expect(notitie.rows[0]!.notitie).toBe('Mijn notitie');
+  });
+});

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useApp } from '../../app/context';
+import { Link, useNavigate } from 'react-router-dom';
+import { useApp, type NieuwContact } from '../../app/context';
 import { FASE_LABEL, STATUS_LABEL } from '../../app/labels';
 import { dagVan, relatief } from '../../core/dates';
 import { volledigeNaam, type ContactStatus } from '../../domain/model';
@@ -43,6 +43,7 @@ export function Contacten() {
       <header className="paginakop">
         <h1>Contacten</h1>
       </header>
+      <NieuwContactFormulier />
       <input type="search" placeholder="Zoek op naam, straat of gemeente" value={zoek} onChange={(e) => setZoek(e.target.value)} aria-label="Zoeken" />
       {groepen.map((g) => (
         <details key={g.status} open={Boolean(zoek) || g.status === 'nieuwe_lead'} className="groep">
@@ -72,5 +73,87 @@ export function Contacten() {
         </details>
       ))}
     </>
+  );
+}
+
+/** Tijdelijk lokaal contact, bv. een lead die nog niet in ERAForce staat. Komt meteen op de lijst van vandaag. */
+function NieuwContactFormulier() {
+  const { maakTijdelijkContact, toon } = useApp();
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const [v, setV] = useState<NieuwContact>({ aanhef: 'Dhr.', voornaam: '', achternaam: '', telefoon: '', gemeente: '', notitie: '' });
+  const [bezig, setBezig] = useState(false);
+  const zet = (k: keyof NieuwContact) => (e: { target: { value: string } }) => setV({ ...v, [k]: e.target.value });
+
+  if (!open) {
+    return (
+      <button className="knop groot" onClick={() => setOpen(true)}>
+        ＋ Tijdelijk contact toevoegen
+      </button>
+    );
+  }
+  return (
+    <section className="kaart formulier">
+      <h2>Tijdelijk contact</h2>
+      <p className="klein zacht">Voor iemand die nog niet in ERAForce staat. Komt meteen op je lijst van vandaag. Gebruik voorlopig enkel verzonnen gegevens.</p>
+      <div className="tweekoloms">
+        <label>
+          Aanhef
+          <select value={v.aanhef ?? ''} onChange={zet('aanhef')}>
+            <option>Dhr.</option>
+            <option>Mevr.</option>
+            <option>Fam.</option>
+          </select>
+        </label>
+        <label>
+          Voornaam
+          <input value={v.voornaam ?? ''} onChange={zet('voornaam')} />
+        </label>
+      </div>
+      <label>
+        Achternaam *
+        <input value={v.achternaam} onChange={zet('achternaam')} required />
+      </label>
+      <label>
+        Telefoon
+        <input type="tel" value={v.telefoon ?? ''} onChange={zet('telefoon')} placeholder="+32 4.. .. .. .." />
+      </label>
+      <label>
+        Gemeente
+        <input value={v.gemeente ?? ''} onChange={zet('gemeente')} />
+      </label>
+      <label>
+        Herkomst / notitie
+        <input value={v.notitie ?? ''} onChange={zet('notitie')} placeholder="bv. belde naar kantoor" />
+      </label>
+      <div className="knoppenrij">
+        <button
+          className="knop primair"
+          disabled={bezig || !v.achternaam.trim()}
+          onClick={async () => {
+            setBezig(true);
+            try {
+              const c = await maakTijdelijkContact({
+                aanhef: v.aanhef,
+                voornaam: v.voornaam?.trim() || null,
+                achternaam: v.achternaam.trim(),
+                telefoon: v.telefoon?.trim() || null,
+                gemeente: v.gemeente?.trim() || null,
+                notitie: v.notitie?.trim() || null,
+              });
+              toon({ tekst: `${c.achternaam} toegevoegd en vastgepind voor vandaag.` });
+              navigate(`/contact/${c.id}`);
+            } catch (e) {
+              toon({ tekst: e instanceof Error ? e.message : String(e), fout: true });
+            } finally {
+              setBezig(false);
+            }
+          }}
+        >
+          Toevoegen
+        </button>
+        <button className="knop tekstknop" onClick={() => setOpen(false)}>Annuleren</button>
+      </div>
+    </section>
   );
 }

@@ -36,5 +36,8 @@ export default defineConfig({
   ],
   test: {
     include: ['src/**/*.test.ts', 'fixtures/**/*.test.ts', 'supabase/**/*.test.ts'],
+    // De databasetests starten een volledige Postgres in het geheugen; dat duurt soms even.
+    hookTimeout: 60_000,
+    testTimeout: 30_000,
   },
 });

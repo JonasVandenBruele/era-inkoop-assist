@@ -6,10 +6,12 @@ import { dagVan, relatief, uurVan } from '../../core/dates';
 import { volledigeNaam } from '../../domain/model';
 import { standaardOpeningszin } from '../../domain/openingszin';
 import { GROEP_LABEL, type Kandidaat } from '../../domain/prioriteit';
+import { KeuzeKnoppen, ResultaatPaneel } from './ResultaatPaneel';
 
-export function BelKaart({ k, nummer }: { k: Kandidaat; nummer?: number }) {
+export function BelKaart({ k, nummer, opLijst = true }: { k: Kandidaat; nummer?: number; opLijst?: boolean }) {
   const { gegevens, instellingen, klok } = useApp();
   const [uitleg, setUitleg] = useState(false);
+  const [paneel, setPaneel] = useState<'geen' | 'resultaat' | 'meer'>('geen');
   const c = k.contact;
 
   const pand = gegevens.contactPanden
@@ -26,6 +28,7 @@ export function BelKaart({ k, nummer }: { k: Kandidaat; nummer?: number }) {
     vandaag,
   });
   const tel = c.telefoons[0];
+  const geenAntwoordVandaag = gegevens.belpogingen.filter((p) => p.contactId === c.id && !p.ongedaanOp && p.uitkomst === 'geen_antwoord' && dagVan(p.tijdstip) === vandaag).length;
 
   return (
     <li className={`kaart belkaart groep-${k.groep}`}>
@@ -44,6 +47,7 @@ export function BelKaart({ k, nummer }: { k: Kandidaat; nummer?: number }) {
       </div>
 
       <p className="reden">{k.reden}</p>
+      {geenAntwoordVandaag > 0 && <p className="label waarschuwing">Vandaag al {geenAntwoordVandaag}× geen antwoord — later nog eens proberen</p>}
 
       <p className="klein zacht">
         {k.laatste ? (
@@ -56,26 +60,46 @@ export function BelKaart({ k, nummer }: { k: Kandidaat; nummer?: number }) {
         )}
       </p>
 
-      <p className="openingszin">
-        <span className="klein zacht">Openingszin (standaard)</span>
-        <br />
-        {zin}
-      </p>
+      {opLijst && (
+        <p className="openingszin">
+          <span className="klein zacht">Openingszin (standaard)</span>
+          <br />
+          {zin}
+        </p>
+      )}
 
-      <div className="knoppenrij">
-        {tel && !c.isTestdata ? (
-          <a className="knop primair belknop" href={`tel:${tel.nummer.replace(/\s/g, '')}`}>
-            📞 Bel
-          </a>
-        ) : (
-          <button className="knop primair belknop" disabled title="Testdata: verzonnen nummer">
-            📞 Bel (testdata)
-          </button>
-        )}
-        <button className="knop" onClick={() => setUitleg(!uitleg)} aria-expanded={uitleg}>
-          {uitleg ? 'Verberg' : 'Waarom?'}
-        </button>
-      </div>
+      {paneel === 'resultaat' ? (
+        <ResultaatPaneel contact={c} pogingenZonderAntwoord={k.pogingenZonderAntwoord} onKlaar={() => setPaneel('geen')} />
+      ) : (
+        <>
+          <div className="knoppenrij">
+            {opLijst &&
+              (tel && !c.isTestdata ? (
+                <a className="knop primair belknop" href={`tel:${tel.nummer.replace(/\s/g, '')}`}>
+                  📞 Bel
+                </a>
+              ) : (
+                <button className="knop primair belknop" disabled title="Testdata: verzonnen nummer">
+                  📞 Bel (testdata)
+                </button>
+              ))}
+            <button className="knop" onClick={() => setPaneel('resultaat')}>
+              Resultaat
+            </button>
+            <button className="knop" onClick={() => setPaneel(paneel === 'meer' ? 'geen' : 'meer')} aria-expanded={paneel === 'meer'}>
+              ⋯
+            </button>
+          </div>
+          {paneel === 'meer' && (
+            <div className="meer">
+              <KeuzeKnoppen contactId={c.id} toonVastpinnen={!opLijst} />
+              <button className="knop tekstknop" onClick={() => setUitleg(!uitleg)} aria-expanded={uitleg}>
+                {uitleg ? 'Verberg uitleg' : 'Waarom staat dit contact hier?'}
+              </button>
+            </div>
+          )}
+        </>
+      )}
 
       {uitleg && (
         <div className="uitleg">
