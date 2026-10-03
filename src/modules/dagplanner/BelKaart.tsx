@@ -31,7 +31,8 @@ export function BelKaart({ k, nummer, opLijst = true }: { k: Kandidaat; nummer?:
     vandaag,
   });
   const tel = c.telefoons[0];
-  const erafLink = instellingen.eraforce.belViaEraforce ? eraforceLink(c, import.meta.env.VITE_ERAFORCE_DOMEIN) : null;
+  const gekoppeld = gegevens.koppelingen.find((x) => x.contactId === c.id)?.salesforceId;
+  const erafLink = instellingen.eraforce.belViaEraforce ? eraforceLink(c, import.meta.env.VITE_ERAFORCE_DOMEIN, gekoppeld) : null;
   const geenAntwoordVandaag = gegevens.belpogingen.filter((p) => p.contactId === c.id && !p.ongedaanOp && p.uitkomst === 'geen_antwoord' && dagVan(p.tijdstip) === vandaag).length;
 
   return (

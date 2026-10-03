@@ -1,5 +1,5 @@
 // Vertaling tussen databaserijen (snake_case) en het interne model (camelCase).
-import type { Afspraak, Belpoging, Belverbod, Bronactiviteit, Bronstatus, Contact, ContactPand, Contactvoorkeur, Dagplan, DonnaOverzicht, Opvolgactie, Pand, Planningskeuze, Waardehaak } from '../../domain/model';
+import type { Afspraak, Belpoging, Belverbod, Bronactiviteit, Bronstatus, Contact, ContactPand, Contactvoorkeur, Dagplan, DonnaOverzicht, EraforceKoppeling, Opvolgactie, Pand, Planningskeuze, Waardehaak } from '../../domain/model';
 
 type Rij = Record<string, unknown>;
 const d = (v: unknown): Date | null => (v ? new Date(v as string) : null);
@@ -330,3 +330,6 @@ export const haakNaarRij = (h: Waardehaak) => ({
   aangemaakt_op: h.aangemaaktOp.toISOString(),
   is_testdata: h.isTestdata ?? false,
 });
+
+export const koppelingNaarModel = (r: Rij): EraforceKoppeling => ({ contactId: r.contact_id as string, salesforceId: r.salesforce_id as string, isTestdata: Boolean(r.is_testdata) });
+export const koppelingNaarRij = (k: EraforceKoppeling) => ({ contact_id: k.contactId, salesforce_id: k.salesforceId, is_testdata: k.isTestdata ?? false });

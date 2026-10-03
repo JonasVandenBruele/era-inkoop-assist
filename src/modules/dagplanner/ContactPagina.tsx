@@ -8,7 +8,7 @@ import { historiek, laatsteInhoudelijkContact } from '../../domain/overzicht';
 import { pogingenSindsContact } from '../../domain/prioriteit';
 import { KeuzeKnoppen, ResultaatPaneel } from './ResultaatPaneel';
 import { HakenEnVoorkeur } from './HakenEnVoorkeur';
-import { eraforceLink } from '../../domain/eraforce';
+import { EraforceKoppeling } from './EraforceKoppeling';
 
 export function ContactPagina() {
   const { id } = useParams();
@@ -64,14 +64,7 @@ export function ContactPagina() {
 
       <section className="kaart">
         <h2>Contact</h2>
-        {(() => {
-          const link = eraforceLink(contact, import.meta.env.VITE_ERAFORCE_DOMEIN);
-          return link ? (
-            <a className="knop primair groot" href={link}>
-              Open in ERAForce (bel via Maf Call)
-            </a>
-          ) : null;
-        })()}
+        <EraforceKoppeling contactId={contact.id} bron={contact.bron} externId={contact.externId} />
         {contact.telefoons.length === 0 && <p className="waarschuwingstekst">Geen telefoonnummer bekend.</p>}
         {contact.telefoons.map((t) =>
           contact.isTestdata ? (

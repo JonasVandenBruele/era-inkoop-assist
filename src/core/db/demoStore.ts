@@ -95,6 +95,12 @@ export function maakDemoStore(): Store {
     async verwijderHaak(id) {
       g.haken = g.haken.filter((x) => x.id !== id);
     },
+    async bewaarKoppeling(k) {
+      g.koppelingen = [...g.koppelingen.filter((x) => x.contactId !== k.contactId), k];
+    },
+    async verwijderKoppeling(contactId) {
+      g.koppelingen = g.koppelingen.filter((x) => x.contactId !== contactId);
+    },
     async bewaarVoorkeur(v) {
       g.voorkeuren = [...g.voorkeuren.filter((x) => x.contactId !== v.contactId), v];
     },

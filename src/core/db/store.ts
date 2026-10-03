@@ -10,6 +10,7 @@ import type {
   Contactvoorkeur,
   Dagplan,
   DonnaOverzicht,
+  EraforceKoppeling,
   Opvolgactie,
   Pand,
   Planningskeuze,
@@ -33,6 +34,7 @@ export interface Gegevens {
   // Contactstrategie (fase 3b)
   haken: Waardehaak[];
   voorkeuren: Contactvoorkeur[];
+  koppelingen: EraforceKoppeling[];
 }
 
 export interface Store {
@@ -61,8 +63,10 @@ export interface Store {
   verwijderHaak(id: string): Promise<void>;
   /** Eén voorkeur per contact; overschrijft de vorige. */
   bewaarVoorkeur(v: Contactvoorkeur): Promise<void>;
+  bewaarKoppeling(k: EraforceKoppeling): Promise<void>;
+  verwijderKoppeling(contactId: string): Promise<void>;
 }
 
 export function leegGegevens(): Gegevens {
-  return { contacten: [], panden: [], contactPanden: [], activiteiten: [], afspraken: [], belpogingen: [], bronnen: [], opvolgacties: [], keuzes: [], belverboden: [], haken: [], voorkeuren: [] };
+  return { contacten: [], panden: [], contactPanden: [], activiteiten: [], afspraken: [], belpogingen: [], bronnen: [], opvolgacties: [], keuzes: [], belverboden: [], haken: [], voorkeuren: [], koppelingen: [] };
 }

@@ -58,6 +58,8 @@ export interface AppStaat {
   verwijderHaak(id: string): Promise<void>;
   bewaarVoorkeur(v: Omit<Contactvoorkeur, 'isTestdata'>): Promise<void>;
 
+  koppelAanEraforce(contactId: string, salesforceId: string | null): Promise<void>;
+
   // ---- Eén tik na het bellen ----
   oproep: LopendeOproep | null;
   /** Aanroepen bij een tik op "Bel". Met simuleer=true (testdata) verschijnt de vraag meteen. */

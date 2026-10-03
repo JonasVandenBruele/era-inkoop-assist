@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { eraforceLink } from './eraforce';
+import { eraforceLink, salesforceIdUitLink } from './eraforce';
 
 const DOMEIN = 'voorbeeld.lightning.force.com';
 
@@ -26,5 +26,22 @@ describe('ERAForce-link', () => {
     expect(eraforceLink({ bron: 'eraforce_mirror', externId: '00QAA00000AbCdE' }, `https://${DOMEIN}/lightning/page/home`)).toBe(
       'https://voorbeeld.lightning.force.com/lightning/r/Lead/00QAA00000AbCdE/view',
     );
+  });
+});
+
+describe('handmatige koppeling', () => {
+  it('een gekoppeld ID geeft ook testcontacten een ERAForce-link', () => {
+    expect(eraforceLink({ bron: 'fictief', externId: 'FIC-C-004' }, DOMEIN, '00QAA00000AbCdEFGH')).toBe(
+      'https://voorbeeld.lightning.force.com/lightning/r/Lead/00QAA00000AbCdEFGH/view',
+    );
+  });
+
+  it('haalt het ID uit allerlei geplakte links', () => {
+    expect(salesforceIdUitLink('https://x.lightning.force.com/lightning/r/Lead/00QAA00000AbCdEFGH/view?target=detailTab__body')).toBe('00QAA00000AbCdEFGH');
+    expect(salesforceIdUitLink('https://x.lightning.force.com/lightning/r/00QAA00000AbCdE/view')).toBe('00QAA00000AbCdE');
+    expect(salesforceIdUitLink('salesforce1://sObject/00QAA00000AbCdEFGH/view')).toBe('00QAA00000AbCdEFGH');
+    expect(salesforceIdUitLink('  00QAA00000AbCdEFGH ')).toBe('00QAA00000AbCdEFGH');
+    expect(salesforceIdUitLink('https://www.google.com')).toBeNull();
+    expect(salesforceIdUitLink('')).toBeNull();
   });
 });

@@ -199,6 +199,12 @@ function IngelogdeApp({ store, email }: { store: Store; email: string | null }) 
         await store.verwijderHaak(id);
         await herlaad();
       },
+      async koppelAanEraforce(contactId, salesforceId) {
+        const contact = gegevens.contacten.find((c) => c.id === contactId);
+        if (salesforceId) await store.bewaarKoppeling({ contactId, salesforceId, isTestdata: contact?.isTestdata ?? false });
+        else await store.verwijderKoppeling(contactId);
+        await herlaad();
+      },
       oproep,
       startOproep(contactId, simuleer = false) {
         setOproep(bewaarOproep({ contactId, sinds: Date.now(), vraag: simuleer }));

@@ -6,7 +6,7 @@
 - Knop **Bel via ERAForce**: opent de prospect rechtstreeks in de Salesforce-app (getest op iPhone), waar je via More → Maf Call belt en je evaluatie invult. Ook "Open in ERAForce" op de contactpagina.
 - Instellingen: bellen via ERAForce aan/uit, en optioneel toch "hoe ging het?" vragen na bellen via ERAForce (standaard uit: de evaluatie staat dan al in ERAForce).
 - **DATA.md** met de eerste waarnemingen over ERAForce (Leads, Taken, Maf Call, deep links), zonder echte gegevens.
-- Werkt zodra de ERAForce-gegevens gekoppeld zijn; testcontacten bellen gesimuleerd.
+- **Koppel aan ERAForce** op de contactpagina: plak de link van een prospect uit de Salesforce-app; enkel het ID wordt bewaard (migratie `20261003000004_eraforce_koppeling.sql`, met RLS). Zo werkt "Bel via ERAForce" al vóór de mirror, ook voor testcontacten.
 
 ## [0.4.1] — 2026-10-03 — Minder handwerk bij het registreren
 

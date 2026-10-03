@@ -200,6 +200,13 @@ export interface Waardehaak {
   afgeleid?: boolean;
 }
 
+/** Handmatige koppeling van een contact aan een ERAForce-record (enkel het Salesforce-ID). */
+export interface EraforceKoppeling {
+  contactId: string;
+  salesforceId: string;
+  isTestdata?: boolean;
+}
+
 export interface Bronstatus {
   id: string;
   soort: BronSoort;

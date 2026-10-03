@@ -29,7 +29,7 @@ function controleer<T>(r: { data: T | null; error: { message: string; code?: str
 
 /** Testdata-tabellen in volgorde van afhankelijkheid (ouders eerst). */
 const BRONTABELLEN = ['bronnen', 'contacten', 'panden', 'contact_pand', 'bronactiviteiten', 'afspraken', 'belpogingen'] as const;
-const LOKALE_TABELLEN = ['belverboden', 'opvolgacties', 'planningskeuzes', 'dagplannen', 'donna_overzichten', 'waardehaken', 'contactvoorkeuren'] as const;
+const LOKALE_TABELLEN = ['belverboden', 'opvolgacties', 'planningskeuzes', 'dagplannen', 'donna_overzichten', 'waardehaken', 'contactvoorkeuren', 'eraforce_koppelingen'] as const;
 
 export function maakSupabaseStore(gebruikerId: string): Store {
   const sb = supabase();
@@ -44,8 +44,8 @@ export function maakSupabaseStore(gebruikerId: string): Store {
     soort: 'supabase',
 
     async laadGegevens(): Promise<Gegevens> {
-      const tabellen = ['contacten', 'panden', 'contact_pand', 'bronactiviteiten', 'afspraken', 'belpogingen', 'bronnen', 'opvolgacties', 'planningskeuzes', 'belverboden', 'waardehaken', 'contactvoorkeuren'];
-      const [contacten, panden, contactPanden, activiteiten, afspraken, belpogingen, bronnen, opvolgacties, keuzes, belverboden, haken, voorkeuren] = await Promise.all(tabellen.map(alles));
+      const tabellen = ['contacten', 'panden', 'contact_pand', 'bronactiviteiten', 'afspraken', 'belpogingen', 'bronnen', 'opvolgacties', 'planningskeuzes', 'belverboden', 'waardehaken', 'contactvoorkeuren', 'eraforce_koppelingen'];
+      const [contacten, panden, contactPanden, activiteiten, afspraken, belpogingen, bronnen, opvolgacties, keuzes, belverboden, haken, voorkeuren, koppelingen] = await Promise.all(tabellen.map(alles));
       return {
         contacten: contacten!.map(m.contactNaarModel),
         panden: panden!.map(m.pandNaarModel),
@@ -59,6 +59,7 @@ export function maakSupabaseStore(gebruikerId: string): Store {
         belverboden: belverboden!.map(m.belverbodNaarModel),
         haken: haken!.map(m.haakNaarModel),
         voorkeuren: voorkeuren!.map(m.voorkeurNaarModel),
+        koppelingen: koppelingen!.map(m.koppelingNaarModel),
       };
     },
 
@@ -102,6 +103,14 @@ export function maakSupabaseStore(gebruikerId: string): Store {
 
     async verwijderHaak(id) {
       controleer(await sb.from('waardehaken').delete().eq('id', id), 'Verwijderen van haak');
+    },
+
+    async bewaarKoppeling(k) {
+      controleer(await sb.from('eraforce_koppelingen').upsert(m.koppelingNaarRij(k), { onConflict: 'eigenaar_id,contact_id' }), 'Koppelen aan ERAForce');
+    },
+
+    async verwijderKoppeling(contactId) {
+      controleer(await sb.from('eraforce_koppelingen').delete().eq('contact_id', contactId), 'Ontkoppelen van ERAForce');
     },
 
     async bewaarVoorkeur(v) {
