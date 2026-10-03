@@ -93,16 +93,16 @@ export function maakSupabaseStore(gebruikerId: string): Store {
         // upsert: een onderbroken vorige poging geeft geen dubbele rijen.
         controleer(await sb.from(tabel).upsert(rijen[tabel]), `Laden van testdata in ${tabel}`);
       }
-      controleer(await sb.from('waardehaken').upsert(t.haken.map(m.haakNaarRij)), 'Laden van testhaken');
+      controleer(await sb.from('waardehaken').upsert(t.haken.map(m.haakNaarRij)), 'Laden van test-hooks');
       controleer(await sb.from('contactvoorkeuren').upsert(t.voorkeuren.map(m.voorkeurNaarRij), { onConflict: 'eigenaar_id,contact_id' }), 'Laden van testvoorkeuren');
     },
 
     async bewaarHaak(h) {
-      controleer(await sb.from('waardehaken').upsert(m.haakNaarRij(h)), 'Bewaren van haak');
+      controleer(await sb.from('waardehaken').upsert(m.haakNaarRij(h)), 'Bewaren van hook');
     },
 
     async verwijderHaak(id) {
-      controleer(await sb.from('waardehaken').delete().eq('id', id), 'Verwijderen van haak');
+      controleer(await sb.from('waardehaken').delete().eq('id', id), 'Verwijderen van hook');
     },
 
     async bewaarKoppeling(k) {

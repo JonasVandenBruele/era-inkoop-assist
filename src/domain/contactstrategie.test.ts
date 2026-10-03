@@ -112,7 +112,7 @@ describe('waardehaken', () => {
     const k = vind(RANDGEVAL.tweeKeerGeenAntwoord)!; // Koen: ouderlijke woning Lindenlaan, Melle
     const buurt = k.haken.find((h) => h.soort === 'buurt');
     expect(buurt?.onderwerp).toContain('Lindenlaan');
-    expect(k.onderdelen.some((o) => o.label.startsWith('Haakje') && o.punten === 10)).toBe(true);
+    expect(k.onderdelen.some((o) => o.label.startsWith('Hook') && o.punten === 10)).toBe(true);
     expect(haakZin(buurt!, false)).toBe('Ik heb nieuws uit uw buurt: woning in de Lindenlaan verkocht na 3 weken.');
   });
 
@@ -120,7 +120,7 @@ describe('waardehaken', () => {
     // Dhr. Verstraete: lauw, 33 dagen geleden (ritme 42 → nog niet aan de beurt zonder haak).
     const k = vind(RANDGEVAL.huurcontractLooptAf)!;
     expect(k.haken.some((h) => h.soort === 'dossier' && h.onderwerp.includes('Huurcontract'))).toBe(true);
-    expect(k.reden).toContain('Haakje: Huurcontract');
+    expect(k.reden).toContain('Hook: Huurcontract');
     const zonderPanden = berekenBellijst(invoer({ panden: [], contactPanden: [] }));
     expect(zonderPanden.uitgesloten.find((u) => u.contact.externId === RANDGEVAL.huurcontractLooptAf)?.reden).toBe('nog_niet_aan_de_beurt');
   });
@@ -147,7 +147,7 @@ describe('waardehaken', () => {
   it('algemene haken gelden voor iedereen, maar geven geen bonus', () => {
     const k = vind(RANDGEVAL.lauwOverRitme)!;
     expect(k.haken.some((h) => h.soort === 'algemeen')).toBe(true);
-    expect(k.onderdelen.some((o) => o.label.startsWith('Haakje'))).toBe(false);
+    expect(k.onderdelen.some((o) => o.label.startsWith('Hook'))).toBe(false);
   });
 
   it('persoonlijke haken zijn enkel een tip, nooit tekst', () => {

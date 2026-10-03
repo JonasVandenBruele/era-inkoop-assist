@@ -18,7 +18,7 @@ export function HakenEnVoorkeur({ contact }: { contact: Contact }) {
 
   return (
     <section className="kaart">
-      <h2>Haakjes en voorkeur</h2>
+      <h2>Hooks en voorkeur</h2>
       <p className="klein zacht">Altijd aanwezig, nooit opdringerig: geef bij elk contact iets nuttigs. Tip: kijk zelf even op sociale media of in de buurt en noteer hier wat bruikbaar is.</p>
       <HakenLijst haken={haken} />
       <NieuweHaak contact={contact} />
@@ -29,7 +29,7 @@ export function HakenEnVoorkeur({ contact }: { contact: Contact }) {
 
 function HakenLijst({ haken }: { haken: ReturnType<typeof hakenVoorContact> }) {
   const { verwijderHaak, toon } = useApp();
-  if (haken.length === 0) return <p className="klein">Nog geen geldige haakjes.</p>;
+  if (haken.length === 0) return <p className="klein">Nog geen geldige hooks.</p>;
   return (
     <ul className="lijst compact lokaal-lijst">
       {haken.map((h) => (
@@ -43,7 +43,7 @@ function HakenLijst({ haken }: { haken: ReturnType<typeof hakenVoorContact> }) {
               className="knop tekstknop"
               onClick={async () => {
                 await verwijderHaak(h.id);
-                toon({ tekst: 'Haakje verwijderd.' });
+                toon({ tekst: 'Hook verwijderd.' });
               }}
             >
               Verwijderen
@@ -66,7 +66,7 @@ function NieuweHaak({ contact }: { contact: Contact }) {
   const pand = gegevens.contactPanden.filter((cp) => cp.contactId === contact.id).map((cp) => gegevens.panden.find((p) => p.id === cp.pandId)).find(Boolean);
   const gevoelig = isGevoelig(onderwerp);
 
-  if (!open) return <button className="knop" onClick={() => setOpen(true)}>＋ Haakje toevoegen</button>;
+  if (!open) return <button className="knop" onClick={() => setOpen(true)}>＋ Hook toevoegen</button>;
 
   return (
     <div className="formulier resultaat">
@@ -83,7 +83,7 @@ function NieuweHaak({ contact }: { contact: Contact }) {
         Wat?
         <input value={onderwerp} onChange={(e) => setOnderwerp(e.target.value)} placeholder={soort === 'persoonlijk' ? 'bv. verjaardag 14/10' : 'bv. woning nr. 12 verkocht'} />
       </label>
-      {gevoelig && <p className="foutmelding klein">Dit lijkt een gevoelig onderwerp. Zulke onderwerpen gebruikt de app nooit als haakje.</p>}
+      {gevoelig && <p className="foutmelding klein">Dit lijkt een gevoelig onderwerp. Zulke onderwerpen gebruikt de app nooit als hook.</p>}
       {soort === 'buurt' && pand && (
         <label className="vinkje">
           <input type="checkbox" checked={voorStraat} onChange={(e) => setVoorStraat(e.target.checked)} />
@@ -120,7 +120,7 @@ function NieuweHaak({ contact }: { contact: Contact }) {
                 geldigTot: geldigTot || null,
                 gevoelig: false,
               });
-              toon({ tekst: 'Haakje bewaard.' });
+              toon({ tekst: 'Hook bewaard.' });
               setOnderwerp('');
               setOpen(false);
             } catch (e) {

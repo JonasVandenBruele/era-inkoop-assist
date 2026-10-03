@@ -241,7 +241,7 @@ export function berekenBellijst(invoer: BellijstInvoer): Bellijst {
       vandaag,
     });
     const specifiek = specifiekeHaken(haken);
-    if (specifiek.length > 0) onderdelen.push({ label: `Haakje: ${specifiek[0]!.onderwerp}`, punten: w.waardehaak });
+    if (specifiek.length > 0) onderdelen.push({ label: `Hook: ${specifiek[0]!.onderwerp}`, punten: w.waardehaak });
     const vervolgstap = (invoer.opvolgacties ?? []).find((o) => o.contactId === c.id && o.soort === 'vervolgstap' && o.status === 'open' && o.dag <= vandaag);
     if (vervolgstap) onderdelen.push({ label: `Eigen vervolgstap gepland voor ${korteDag(vervolgstap.dag)}`, punten: w.eigenVervolgstap });
     const score = onderdelen.reduce((s, o) => s + o.punten, 0);
@@ -278,9 +278,9 @@ export function berekenBellijst(invoer: BellijstInvoer): Bellijst {
         ? `Laatste gesprek ${dagenSinds} dagen geleden; ritme ${faseTekst} is ${ritme} dagen`
         : `Sinds binnenkomst ${dagenSinds ?? '?'} dagen geen gesprek`;
     } else if (specifiek.length > 0 && verhouding >= 0.5) {
-      // Altijd aanwezig: een nuttig haakje haalt een contact naar voren, maar niet vóór de helft van het ritme.
+      // Altijd aanwezig: een nuttige hook haalt een contact naar voren, maar niet vóór de helft van het ritme.
       groep = 'D';
-      reden = `Haakje: ${specifiek[0]!.onderwerp} (laatste gesprek ${dagenSinds} dagen geleden)`;
+      reden = `Hook: ${specifiek[0]!.onderwerp} (laatste gesprek ${dagenSinds} dagen geleden)`;
     }
 
     if (groep === null) {
