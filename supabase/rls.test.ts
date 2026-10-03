@@ -1,0 +1,111 @@
+// Test de migraties en toegangsregels tegen een echte Postgres (PGlite, in het geheugen).
+// We bootsen het stukje Supabase na dat RLS nodig heeft: schema auth, auth.uid() en de rollen.
+import { PGlite } from '@electric-sql/pglite';
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { beforeAll, describe, expect, it } from 'vitest';
+
+const A = '11111111-1111-4111-a111-111111111111';
+const B = '22222222-2222-4222-a222-222222222222';
+
+const SUPABASE_NABOOTSING = `
+  create role anon nologin;
+  create role authenticated nologin;
+  create schema auth;
+  create table auth.users (id uuid primary key);
+  create function auth.uid() returns uuid language sql stable as
+    $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
+  grant usage on schema auth to anon, authenticated;
+  grant usage on schema public to anon, authenticated;
+  alter default privileges in schema public grant all on tables to anon, authenticated;
+`;
+
+let db: PGlite;
+
+async function als<T>(gebruiker: string | null, fn: () => Promise<T>): Promise<T> {
+  await db.exec(`set role ${gebruiker ? 'authenticated' : 'anon'}`);
+  await db.query(`select set_config('request.jwt.claim.sub', $1, false)`, [gebruiker ?? '']);
+  try {
+    return await fn();
+  } finally {
+    await db.exec('reset role');
+  }
+}
+
+beforeAll(async () => {
+  db = new PGlite();
+  await db.exec(SUPABASE_NABOOTSING);
+  const map = join(import.meta.dirname, 'migrations');
+  for (const bestand of readdirSync(map).filter((f) => f.endsWith('.sql')).sort()) {
+    await db.exec(readFileSync(join(map, bestand), 'utf8'));
+  }
+  await db.query('insert into auth.users (id) values ($1), ($2)', [A, B]);
+});
+
+describe('migraties en toegangsregels', () => {
+  it('gebruiker A kan eigen contact aanmaken en lezen', async () => {
+    await als(A, async () => {
+      await db.query(`insert into public.contacten (achternaam, bron, extern_id, is_testdata) values ('Peeters', 'fictief', 'FIC-1', true)`);
+      const r = await db.query<{ achternaam: string; eigenaar_id: string }>('select achternaam, eigenaar_id from public.contacten');
+      expect(r.rows).toEqual([{ achternaam: 'Peeters', eigenaar_id: A }]);
+    });
+  });
+
+  it('gebruiker B ziet niets van gebruiker A', async () => {
+    const r = await als(B, () => db.query('select * from public.contacten'));
+    expect(r.rows).toEqual([]);
+  });
+
+  it('gebruiker B kan gegevens van A niet wijzigen of verwijderen', async () => {
+    await als(B, async () => {
+      await db.query(`update public.contacten set achternaam = 'Gehackt'`);
+      await db.query('delete from public.contacten');
+    });
+    const r = await als(A, () => db.query<{ achternaam: string }>('select achternaam from public.contacten'));
+    expect(r.rows).toEqual([{ achternaam: 'Peeters' }]);
+  });
+
+  it('gebruiker B kan geen rij aanmaken op naam van A', async () => {
+    await expect(als(B, () => db.query(`insert into public.contacten (eigenaar_id, achternaam) values ($1, 'X')`, [A]))).rejects.toThrow();
+  });
+
+  it('gebruiker B kan niet verwijzen naar een contact van A', async () => {
+    const { rows } = await als(A, () => db.query<{ id: string }>('select id from public.contacten limit 1'));
+    const contactVanA = rows[0]!.id;
+    await expect(
+      als(B, () => db.query(`insert into public.belpogingen (contact_id, uitkomst, is_inhoudelijk) values ($1, 'gesproken', true)`, [contactVanA])),
+    ).rejects.toThrow();
+  });
+
+  it('niet-ingelogde bezoekers zien niets', async () => {
+    await expect(als(null, () => db.query('select * from public.contacten'))).rejects.toThrow();
+  });
+
+  it('dezelfde import twee keer geeft geen dubbel record (uniek op bron + extern_id)', async () => {
+    await als(A, async () => {
+      await db.query(
+        `insert into public.contacten (achternaam, bron, extern_id) values ('Peeters bijgewerkt', 'fictief', 'FIC-1')
+         on conflict (eigenaar_id, bron, extern_id) where extern_id is not null do update set achternaam = excluded.achternaam`,
+      );
+      const r = await db.query<{ n: number }>(`select count(*)::int as n from public.contacten where extern_id = 'FIC-1'`);
+      expect(r.rows[0]!.n).toBe(1);
+    });
+  });
+
+  it('verwijderen van een contact verwijdert ook zijn belpogingen, maar laat afspraken staan zonder koppeling', async () => {
+    await als(A, async () => {
+      const c = await db.query<{ id: string }>(`insert into public.contacten (achternaam) values ('Tijdelijk') returning id`);
+      const id = c.rows[0]!.id;
+      await db.query(`insert into public.belpogingen (contact_id, uitkomst, is_inhoudelijk) values ($1, 'geen_antwoord', false)`, [id]);
+      await db.query(
+        `insert into public.afspraken (titel, start_op, einde_op, contact_id, koppel_status) values ('Test', now(), now() + interval '1 hour', $1, 'bevestigd')`,
+        [id],
+      );
+      await db.query('delete from public.contacten where id = $1', [id]);
+      const p = await db.query<{ n: number }>('select count(*)::int as n from public.belpogingen where contact_id = $1', [id]);
+      expect(p.rows[0]!.n).toBe(0);
+      const a = await db.query<{ contact_id: string | null; eigenaar_id: string }>(`select contact_id, eigenaar_id from public.afspraken where titel = 'Test'`);
+      expect(a.rows[0]).toEqual({ contact_id: null, eigenaar_id: A });
+    });
+  });
+});
