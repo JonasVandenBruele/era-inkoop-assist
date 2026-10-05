@@ -15,6 +15,16 @@ Status: **eerste waarnemingen** (3 oktober 2026), op basis van screenshots van d
 | Taak na Maf Call | Recordtype **"ERAforce Taken algemeen"**, Type **"Uitgaande Oproep"**, Vervaldatum, Herinnering, Prioriteit, Toegewezen aan, Uitgevoerd op, In verkoopverslag, + evaluatievelden | Gesprekken in de mirror herkennen via recordtype + type, zonder vaste tekst. Evaluatie = brontekst voor AI-extractie (fase 4). |
 | Agenda | In Salesforce (niet Outlook) | Afspraken via de mirror (Events/Tasks?) — te inventariseren. |
 
+## ERAForce-mirror (sinds 5/10/2026)
+
+- **Code:** `../eraforce-mirror` (lokale git, geen remote).
+- **Data:** in een versleutelde kluis op de SanDisk-SSD (`mirror.sqlite`). Nooit in deze repo.
+- **Updates:** om 07:00 en 19:00 via launchd. Elke run haalt enkel de wijzigingen op; om de 28 dagen wordt alles volledig herladen.
+- **Scope:** alles wat Jonas' gebruiker mag zien van Lead, Contact, Account, Opportunity, Event, de ERA-objecten (panden en hun details, workflow, documenten als metadata, zoekopdrachten, publicaties, VMA) en de wijzigingsgeschiedenis van leads en kansen. Daarbij komen de taken van het kantoor plus alle taken op leads, en de gelogde mails van het kantoor (zonder HTML).
+- **Niet opgenomen:** bestanden, bijlagen, foto's en downloadlinks.
+- **Omvang na de eerste import:** ±5 miljoen records en ±4–5 GB. Details staan in `MIRROR-VOORSTEL.md`.
+- Elke tabel heeft `_verwijderd` en `_bijgewerkt`. `_velden` bevat de labels en keuzelijsten, `_sync` en `_runs` de technische status. Zoekindex: `zoek_Task`, `zoek_Lead`, ….
+
 ## Deep links (getest op iPhone, 3/10/2026)
 
 | Link | Resultaat in de Salesforce-app |

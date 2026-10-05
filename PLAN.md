@@ -2,7 +2,7 @@
 
 > Naam gekozen op 3/10/2026: **Oxpecker**, naar de ossenpikker op de neushoorn — altijd aanwezig, nooit opdringerig.
 
-Status: **fase 1–3b, 6 (belmomenten) en 7 (pushmeldingen) online. Oxpecker in ERA-huisstijl. Wacht op: ERAForce-mirror (fase 8), Claude API (fase 4).**
+Status: **fase 1–3b, 6 (belmomenten) en 7 (pushmeldingen) online. Oxpecker in ERA-huisstijl. ERAForce-mirror draait sinds 5/10/2026 (SSD, 07:00/19:00); volgende stap fase 8: Oxpecker leest de mirror. Wacht op: Claude API (fase 4).**
 Laatst bijgewerkt: 3 oktober 2026
 
 ---
