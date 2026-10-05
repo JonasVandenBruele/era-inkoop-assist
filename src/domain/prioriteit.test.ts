@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { genereerTestdata, RANDGEVAL } from '../../fixtures/testdata';
 import { STANDAARD_INSTELLINGEN, type Instellingen } from '../core/settings/schema';
-import type { Belpoging, Contact } from './model';
+import type { Belpoging, Bronactiviteit, Contact } from './model';
 import { berekenBellijst, type BellijstInvoer, type Kandidaat, type Planningskeuze } from './prioriteit';
 import { standaardOpeningszin } from './openingszin';
 
@@ -265,5 +265,57 @@ describe('standaard-openingszin', () => {
   it('neemt nooit notitietekst over (geen gevoelige aanleiding)', () => {
     // De notitie van mevr. Peeters vermeldt een overlijden; dat mag nooit in de openingszin komen.
     expect(zin(RANDGEVAL.terugbellenVandaagMetUur)).not.toMatch(/overleden|man|dochter/i);
+  });
+});
+
+describe('echte ERAForce-data (fase 8)', () => {
+  const basis = contact(RANDGEVAL.koudLangGeleden);
+  const taak = (contactId: string, extra: Partial<Bronactiviteit>): Bronactiviteit => ({
+    id: `t-${contactId}`, bron: 'eraforce_mirror', externId: `00T-${contactId}`, gebeurdOp: new Date('2026-10-01T08:00:00Z'), gewijzigdInBronOp: null,
+    geimporteerdOp: new Date(), isTestdata: false, type: 'taak', contactId, pandId: null, taakSoort: 'algemeen', vervaltOp: '2026-10-20', vervaltUur: null,
+    taakAfgerond: false, auteur: null, tekst: 'Dossier vervolledigen', ...extra,
+  });
+
+  it('een beëindigde lead of relatie komt niet op de lijst en telt niet als "zonder timeline"', () => {
+    for (const statusBron of ['beeindigd', 'relatie'] as const) {
+      const c: Contact = { ...basis, id: `x-${statusBron}`, statusBron };
+      const r = berekenBellijst(invoer({ contacten: [c] }));
+      expect([...r.vandaag, ...r.nietOpLijst, ...r.nummerZoeken, ...r.handmatigBeoordelen]).toEqual([]);
+      expect(r.zonderTimeline).toEqual([]);
+    }
+  });
+
+  it('… behalve met een open terugbeltaak die vandaag of eerder vervalt', () => {
+    const c: Contact = { ...basis, id: 'x-relatie', statusBron: 'relatie' };
+    const r = berekenBellijst(invoer({ contacten: [c], activiteiten: [taak(c.id, { taakSoort: 'terugbellen', vervaltOp: VANDAAG, tekst: 'terugbellen' })] }));
+    expect(r.vandaag.map((k) => k.groep)).toEqual(['C']);
+  });
+
+  it('een andere open taak in de toekomst is een geplande volgende stap', () => {
+    const c: Contact = { ...basis, id: 'x-prospect' };
+    const r = berekenBellijst(invoer({ contacten: [c], activiteiten: [taak(c.id, {})] }));
+    expect(r.zonderTimeline).toEqual([]);
+    expect(r.uitgesloten[0]).toMatchObject({ reden: 'terugbel_later', detail: 'Volgende stap in ERAForce op di 20 okt: Dossier vervolledigen.' });
+  });
+});
+
+describe('achterstand in ERAForce', () => {
+  const c = contact(RANDGEVAL.koudLangGeleden);
+  const oud = (dag: string): Bronactiviteit => ({
+    id: 'oud', bron: 'eraforce_mirror', externId: '00T-oud', gebeurdOp: new Date('2026-01-01T08:00:00Z'), gewijzigdInBronOp: null, geimporteerdOp: new Date(),
+    isTestdata: false, type: 'taak', contactId: c.id, pandId: null, taakSoort: 'terugbellen', vervaltOp: dag, vervaltUur: null, taakAfgerond: false, auteur: null, tekst: 'Opvolgtaak',
+  });
+
+  it('een terugbeltaak die meer dan 10 werkdagen verlopen is, staat niet op de daglijst maar bij de achterstand', () => {
+    const r = berekenBellijst(invoer({ contacten: [c], activiteiten: [oud('2026-09-01')] }));
+    expect([...r.vandaag, ...r.nietOpLijst]).toEqual([]);
+    expect(r.achterstand).toMatchObject([{ dag: '2026-09-01', tekst: 'Opvolgtaak' }]);
+    expect(r.zonderTimeline).toEqual([]);
+  });
+
+  it('binnen 10 werkdagen blijft het groep C', () => {
+    const r = berekenBellijst(invoer({ contacten: [c], activiteiten: [oud('2026-10-01')] }));
+    expect(r.vandaag.map((k) => k.groep)).toEqual(['C']);
+    expect(r.achterstand).toEqual([]);
   });
 });

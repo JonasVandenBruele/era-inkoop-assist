@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.9.0] — 2026-10-05 — Echte gegevens uit de ERAForce-mirror (fase 8)
+
+### Toegevoegd
+- **Import uit de ERAForce-mirror.** `scripts/mirror-naar-oxpecker.ts` draait op de Mac na elke mirror-run (07:00 en 19:00). Het stuurt enkel door wat op Jonas van toepassing is (besluit 5/10/2026): zijn leads, de contacten waarmee hij taken of afspraken heeft, zijn taken (plus taken van collega's op zijn leads) en zijn afspraken.
+- **Vertaling** (`src/adapters/crm/eraforce.ts`):
+  - Een lead wordt een prospect, nieuwe lead, langetermijnprospect of beëindigde lead. Een geconverteerde lead wordt overgeslagen, want zijn contact neemt het over.
+  - Een open beltaak wordt een terugbelafspraak (met uur als er een herinnering op die dag staat). Een andere open taak is een geplande volgende stap.
+  - Een afgesloten oproep is een gesprek, tenzij de evaluatie zegt dat er niemand opnam. Een voorbije afspraak met iemand telt ook als contact.
+- **Achterstand:** een terugbeltaak uit ERAForce die meer dan 10 werkdagen verlopen is, komt niet meer op de daglijst. Ze staat apart als "achterstand in ERAForce" (instelbaar bij Planning).
+- **Instelling "Gegevens":** automatisch, echt of test. Echte data en testdata worden nooit gemengd, en met echte data geldt altijd de echte datum.
+- **Migratie `20261005000006_eraforce_mirror.sql`:**
+  - nieuwe statussen "beëindigd" en "relatie", plus de oorspronkelijke ERAForce-labels
+  - de importrol `oxpecker_import`, die via RLS enkel ERAForce-rijen kan lezen en schrijven
+  - de tabel `eraforce_koppelingen` verdwijnt
+- Gegevens worden per 1000 rijen geladen (de bovengrens van Supabase).
+
+### Verwijderd
+- De tijdelijke "Koppel aan ERAForce" en "Testlink voor alle contacten", zoals afgesproken. De ERAForce-ID's komen nu uit de mirror.
+
+### Tests
+- 174 tests, o.a. de vertaling, de bellijst op echte data (beëindigd, relatie, achterstand) en de toegangsregels van de importrol.
+
 ## [0.8.0] — 2026-10-03 — Belmomenten en pushmeldingen
 
 ### Toegevoegd

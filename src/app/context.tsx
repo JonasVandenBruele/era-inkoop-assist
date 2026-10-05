@@ -35,6 +35,8 @@ export interface AppStaat {
   klok: Klok;
   gegevens: Gegevens;
   gebruikerEmail: string | null;
+  /** true = echte ERAForce-gegevens, false = testdata. */
+  echteData: boolean;
   /** Verhoogt bij elke testdata-reset, zodat schermen hun dagplan opnieuw ophalen. */
   dataVersie: number;
   /** Gegevens opnieuw ophalen. */
@@ -57,8 +59,6 @@ export interface AppStaat {
   bewaarHaak(h: Omit<Waardehaak, 'id' | 'aangemaaktOp' | 'isTestdata'>): Promise<void>;
   verwijderHaak(id: string): Promise<void>;
   bewaarVoorkeur(v: Omit<Contactvoorkeur, 'isTestdata'>): Promise<void>;
-
-  koppelAanEraforce(contactId: string, salesforceId: string | null): Promise<void>;
 
   // ---- Eén tik na het bellen ----
   oproep: LopendeOproep | null;

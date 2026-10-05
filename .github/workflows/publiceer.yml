@@ -50,6 +50,24 @@ jobs:
           supabase migration repair --status applied 20261003000001 --db-url "$DB_URL"
           yes | supabase db push --db-url "$DB_URL"
 
+      # Importgebruiker voor de ERAForce-mirror (fase 8): aanmelden met het geheim MIRROR_IMPORT_PASSWORD.
+      # De rol zelf (enkel ERAForce-rijen) komt uit migratie 20261005000006.
+      - name: Importgebruiker ERAForce-mirror
+        env:
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          MIRROR_IMPORT_PASSWORD: ${{ secrets.MIRROR_IMPORT_PASSWORD }}
+          SUPABASE_PROJECT_ID: ${{ vars.SUPABASE_PROJECT_ID }}
+          SUPABASE_DB_HOST: ${{ vars.SUPABASE_DB_HOST }}
+        run: |
+          if [ -z "$MIRROR_IMPORT_PASSWORD" ] || [ -z "$SUPABASE_DB_PASSWORD" ]; then
+            echo "::notice::Geen MIRROR_IMPORT_PASSWORD; importgebruiker niet ingesteld."
+            exit 0
+          fi
+          echo "::add-mask::$MIRROR_IMPORT_PASSWORD"
+          export PGPASSWORD="$SUPABASE_DB_PASSWORD"
+          echo "alter role oxpecker_import with login password :'pw';" | psql -q -v ON_ERROR_STOP=1 -v pw="$MIRROR_IMPORT_PASSWORD" \
+            "host=$SUPABASE_DB_HOST port=5432 dbname=postgres user=postgres.$SUPABASE_PROJECT_ID sslmode=require"
+
       - run: npm run build
         env:
           BASE_PATH: /${{ github.event.repository.name }}/

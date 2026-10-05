@@ -10,7 +10,6 @@ import type {
   Contactvoorkeur,
   Dagplan,
   DonnaOverzicht,
-  EraforceKoppeling,
   Opvolgactie,
   Pand,
   Planningskeuze,
@@ -34,7 +33,6 @@ export interface Gegevens {
   // Contactstrategie (fase 3b)
   haken: Waardehaak[];
   voorkeuren: Contactvoorkeur[];
-  koppelingen: EraforceKoppeling[];
 }
 
 export interface Store {
@@ -63,13 +61,36 @@ export interface Store {
   verwijderHaak(id: string): Promise<void>;
   /** Eén voorkeur per contact; overschrijft de vorige. */
   bewaarVoorkeur(v: Contactvoorkeur): Promise<void>;
-  bewaarKoppeling(k: EraforceKoppeling): Promise<void>;
   /** Pushabonnement van dit toestel bewaren (enkel met Supabase; de demo kan geen meldingen ontvangen). */
   bewaarPushAbonnement(a: { endpoint: string; p256dh: string; auth: string; toestel: string }): Promise<void>;
   verwijderPushAbonnement(endpoint: string): Promise<void>;
-  verwijderKoppeling(contactId: string): Promise<void>;
 }
 
 export function leegGegevens(): Gegevens {
-  return { contacten: [], panden: [], contactPanden: [], activiteiten: [], afspraken: [], belpogingen: [], bronnen: [], opvolgacties: [], keuzes: [], belverboden: [], haken: [], voorkeuren: [], koppelingen: [] };
+  return { contacten: [], panden: [], contactPanden: [], activiteiten: [], afspraken: [], belpogingen: [], bronnen: [], opvolgacties: [], keuzes: [], belverboden: [], haken: [], voorkeuren: [] };
+}
+
+/** Toont de app echte (ERAForce) gegevens? Bij 'auto' zodra er minstens één ERAForce-contact is. */
+export function gebruiktEchteData(g: Gegevens, i: Pick<Instellingen, 'gegevens'>): boolean {
+  if (i.gegevens !== 'auto') return i.gegevens === 'echt';
+  return g.contacten.some((c) => !c.isTestdata && c.bron === 'eraforce_mirror');
+}
+
+/** Enkel de echte of enkel de testgegevens: nooit door elkaar. */
+export function kiesGegevens(g: Gegevens, echt: boolean): Gegevens {
+  const ok = <T extends { isTestdata?: boolean }>(xs: T[]) => xs.filter((x) => Boolean(x.isTestdata) !== echt);
+  return {
+    contacten: ok(g.contacten),
+    panden: ok(g.panden),
+    contactPanden: ok(g.contactPanden),
+    activiteiten: ok(g.activiteiten),
+    afspraken: ok(g.afspraken),
+    belpogingen: ok(g.belpogingen),
+    bronnen: ok(g.bronnen),
+    opvolgacties: ok(g.opvolgacties),
+    keuzes: ok(g.keuzes),
+    belverboden: ok(g.belverboden),
+    haken: ok(g.haken),
+    voorkeuren: ok(g.voorkeuren),
+  };
 }

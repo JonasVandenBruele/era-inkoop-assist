@@ -3,13 +3,12 @@ import { useApp } from './context';
 import { langeDag } from '../core/dates';
 import { PlanningInstellingen } from './PlanningInstellingen';
 import { MeldingenInstellingen } from './MeldingenInstellingen';
-import { salesforceIdUitLink } from '../domain/eraforce';
 
 export function InstellingenPagina() {
-  const { instellingen, wijzigInstellingen, herlaadTestdata, store, gebruikerEmail, afmelden, klok } = useApp();
+  const { instellingen, wijzigInstellingen, herlaadTestdata, store, gebruikerEmail, afmelden, klok, echteData, gegevens } = useApp();
   const [testdatum, setTestdatum] = useState(instellingen.testdatum ?? '');
-  const [testLink, setTestLink] = useState('');
   const [bezig, setBezig] = useState<string | null>(null);
+  const mirror = gegevens.bronnen.find((b) => b.adapter === 'eraforce_mirror');
   const [bericht, setBericht] = useState<string | null>(null);
 
   async function doe(wat: string, actie: () => Promise<void>, klaar: string) {
@@ -33,6 +32,35 @@ export function InstellingenPagina() {
 
       {bericht && <p className="infomelding">{bericht}</p>}
 
+      <section className="kaart">
+        <h2>Gegevens</h2>
+        <p className="zacht klein">
+          {echteData ? (
+            <>
+              Je ziet je echte gegevens uit ERAForce
+              {mirror?.laatstSuccesvolOp ? `, laatst bijgewerkt ${mirror.laatstSuccesvolOp.toLocaleString('nl-BE', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Brussels' })}` : ''}. De mirror op je Mac werkt ze bij om 07:00 en
+              19:00.
+            </>
+          ) : (
+            'Je ziet fictieve testdata. Echte gegevens verschijnen automatisch zodra de ERAForce-mirror ze heeft doorgestuurd.'
+          )}
+        </p>
+        <label className="formulier">
+          Toon
+          <select
+            value={instellingen.gegevens}
+            disabled={bezig !== null}
+            onChange={(e) => doe('gegevens', () => wijzigInstellingen({ ...instellingen, gegevens: e.target.value as typeof instellingen.gegevens }), 'Bewaard.')}
+          >
+            <option value="auto">Automatisch (echt zodra beschikbaar)</option>
+            <option value="echt">Echte gegevens (ERAForce)</option>
+            <option value="test">Testdata</option>
+          </select>
+        </label>
+      </section>
+
+      {!echteData && (
+      <>
       <section className="kaart">
         <h2>Testdatum</h2>
         <p className="zacht klein">
@@ -68,6 +96,8 @@ export function InstellingenPagina() {
           {bezig === 'reset' ? 'Bezig…' : 'Testdata opnieuw laden'}
         </button>
       </section>
+      </>
+      )}
 
       <MeldingenInstellingen />
 
@@ -77,7 +107,7 @@ export function InstellingenPagina() {
         <h2>ERAForce</h2>
         <p className="zacht klein">
           Contacten uit ERAForce krijgen een knop "Bel via ERAForce": die opent de prospect in de Salesforce-app, waar je via More → Maf Call belt en
-          meteen je evaluatie invult. Werkt zodra de ERAForce-gegevens gekoppeld zijn; testcontacten bellen gewoon (gesimuleerd).
+          meteen je evaluatie invult. Testcontacten bellen gewoon (gesimuleerd).
         </p>
         <label className="vinkje">
           <input
@@ -97,35 +127,6 @@ export function InstellingenPagina() {
         </label>
         {!import.meta.env.VITE_ERAFORCE_DOMEIN && <p className="klein zacht">ERAForce-domein nog niet ingesteld.</p>}
 
-        <h3>Testlink voor alle contacten (tijdelijk)</h3>
-        <p className="zacht klein">
-          Tot de ERAForce-mirror er is: plak de link van één prospect, dan opent "Bel via ERAForce" bij elk contact die prospect. Verdwijnt zodra de mirror er is.
-        </p>
-        {instellingen.eraforce.testIdVoorIedereen ? (
-          <p>
-            Actief ✓{' '}
-            <button
-              className="knop tekstknop"
-              onClick={() => doe('eraf', () => wijzigInstellingen({ ...instellingen, eraforce: { ...instellingen.eraforce, testIdVoorIedereen: null } }), 'Testlink verwijderd.')}
-            >
-              Verwijderen
-            </button>
-          </p>
-        ) : (
-          <div className="formulier">
-            <input value={testLink} onChange={(e) => setTestLink(e.target.value)} placeholder="https://…lightning.force.com/lightning/r/Lead/…/view" aria-label="Testlink" />
-            {testLink && !salesforceIdUitLink(testLink) && <p className="foutmelding klein">Daar vind ik geen ERAForce-ID in.</p>}
-            <button
-              className="knop"
-              disabled={!salesforceIdUitLink(testLink)}
-              onClick={() =>
-                doe('eraf', () => wijzigInstellingen({ ...instellingen, eraforce: { ...instellingen.eraforce, testIdVoorIedereen: salesforceIdUitLink(testLink) } }), 'Testlink actief voor alle contacten.')
-              }
-            >
-              Testlink bewaren
-            </button>
-          </div>
-        )}
       </section>
 
       <section className="kaart">

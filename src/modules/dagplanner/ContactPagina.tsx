@@ -8,7 +8,6 @@ import { historiek, laatsteInhoudelijkContact } from '../../domain/overzicht';
 import { pogingenSindsContact } from '../../domain/prioriteit';
 import { KeuzeKnoppen, ResultaatPaneel } from './ResultaatPaneel';
 import { HakenEnVoorkeur } from './HakenEnVoorkeur';
-import { EraforceKoppeling } from './EraforceKoppeling';
 
 export function ContactPagina() {
   const { id } = useParams();
@@ -64,7 +63,6 @@ export function ContactPagina() {
 
       <section className="kaart">
         <h2>Contact</h2>
-        <EraforceKoppeling contactId={contact.id} bron={contact.bron} externId={contact.externId} />
         {contact.telefoons.length === 0 && <p className="waarschuwingstekst">Geen telefoonnummer bekend.</p>}
         {contact.telefoons.map((t) =>
           contact.isTestdata ? (

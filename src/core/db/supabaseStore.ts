@@ -29,23 +29,28 @@ function controleer<T>(r: { data: T | null; error: { message: string; code?: str
 
 /** Testdata-tabellen in volgorde van afhankelijkheid (ouders eerst). */
 const BRONTABELLEN = ['bronnen', 'contacten', 'panden', 'contact_pand', 'bronactiviteiten', 'afspraken', 'belpogingen'] as const;
-const LOKALE_TABELLEN = ['belverboden', 'opvolgacties', 'planningskeuzes', 'dagplannen', 'donna_overzichten', 'waardehaken', 'contactvoorkeuren', 'eraforce_koppelingen'] as const;
+const LOKALE_TABELLEN = ['belverboden', 'opvolgacties', 'planningskeuzes', 'dagplannen', 'donna_overzichten', 'waardehaken', 'contactvoorkeuren'] as const;
 
 export function maakSupabaseStore(gebruikerId: string): Store {
   const sb = supabase();
 
   const alles = async (tabel: string) => {
-    // Kleine dataset (één gebruiker): alles in één keer, met een ruime bovengrens.
-    const r = await sb.from(tabel).select('*').limit(10000);
-    return controleer(r, `Laden van ${tabel}`) as Record<string, unknown>[];
+    // Per 1000 rijen (de bovengrens van Supabase per aanvraag), tot alles binnen is.
+    const uit: Record<string, unknown>[] = [];
+    for (let van = 0; ; van += 1000) {
+      const r = await sb.from(tabel).select('*').order('id').range(van, van + 999);
+      const rijen = controleer(r, `Laden van ${tabel}`) as Record<string, unknown>[];
+      uit.push(...rijen);
+      if (rijen.length < 1000) return uit;
+    }
   };
 
   return {
     soort: 'supabase',
 
     async laadGegevens(): Promise<Gegevens> {
-      const tabellen = ['contacten', 'panden', 'contact_pand', 'bronactiviteiten', 'afspraken', 'belpogingen', 'bronnen', 'opvolgacties', 'planningskeuzes', 'belverboden', 'waardehaken', 'contactvoorkeuren', 'eraforce_koppelingen'];
-      const [contacten, panden, contactPanden, activiteiten, afspraken, belpogingen, bronnen, opvolgacties, keuzes, belverboden, haken, voorkeuren, koppelingen] = await Promise.all(tabellen.map(alles));
+      const tabellen = ['contacten', 'panden', 'contact_pand', 'bronactiviteiten', 'afspraken', 'belpogingen', 'bronnen', 'opvolgacties', 'planningskeuzes', 'belverboden', 'waardehaken', 'contactvoorkeuren'];
+      const [contacten, panden, contactPanden, activiteiten, afspraken, belpogingen, bronnen, opvolgacties, keuzes, belverboden, haken, voorkeuren] = await Promise.all(tabellen.map(alles));
       return {
         contacten: contacten!.map(m.contactNaarModel),
         panden: panden!.map(m.pandNaarModel),
@@ -59,7 +64,6 @@ export function maakSupabaseStore(gebruikerId: string): Store {
         belverboden: belverboden!.map(m.belverbodNaarModel),
         haken: haken!.map(m.haakNaarModel),
         voorkeuren: voorkeuren!.map(m.voorkeurNaarModel),
-        koppelingen: koppelingen!.map(m.koppelingNaarModel),
       };
     },
 
@@ -103,14 +107,6 @@ export function maakSupabaseStore(gebruikerId: string): Store {
 
     async verwijderHaak(id) {
       controleer(await sb.from('waardehaken').delete().eq('id', id), 'Verwijderen van hook');
-    },
-
-    async bewaarKoppeling(k) {
-      controleer(await sb.from('eraforce_koppelingen').upsert(m.koppelingNaarRij(k), { onConflict: 'eigenaar_id,contact_id' }), 'Koppelen aan ERAForce');
-    },
-
-    async verwijderKoppeling(contactId) {
-      controleer(await sb.from('eraforce_koppelingen').delete().eq('contact_id', contactId), 'Ontkoppelen van ERAForce');
     },
 
     async bewaarPushAbonnement(a) {

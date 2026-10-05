@@ -114,6 +114,8 @@ export interface Bellijst {
   waarschuwingen: string[];
   /** Actieve prospects zonder geplande volgende stap (enkel geteld; Jonas werkt die af via zijn ERAForce-dashboard). */
   zonderTimeline: Contact[];
+  /** Terugbeltaken in de bron die al lang verlopen zijn: niet op de daglijst, maar opruimen in ERAForce (oudste eerst). */
+  achterstand: { contact: Contact; dag: DagKey; tekst: string | null }[];
 }
 
 // ---------- Hulpfuncties ----------
@@ -185,7 +187,7 @@ export function berekenBellijst(invoer: BellijstInvoer): Bellijst {
   const verboden = new Set((invoer.belverboden ?? []).filter((b) => !b.ingetrokkenOp).map((b) => b.contactId));
   const afspraakVandaag = new Set(invoer.afspraken.filter((a) => a.contactId && dagVan(a.start) <= vandaag && vandaag <= dagVan(a.einde)).map((a) => a.contactId!));
 
-  const resultaat: Bellijst = { vandaag: [], nietOpLijst: [], nummerZoeken: [], handmatigBeoordelen: [], uitgesloten: [], pinGeweigerd: [], waarschuwingen: [], zonderTimeline: [] };
+  const resultaat: Bellijst = { vandaag: [], nietOpLijst: [], nummerZoeken: [], handmatigBeoordelen: [], uitgesloten: [], pinGeweigerd: [], waarschuwingen: [], zonderTimeline: [], achterstand: [] };
   const kandidaten: Kandidaat[] = [];
   const pinVolgorde = new Map<string, number>();
 
@@ -205,8 +207,22 @@ export function berekenBellijst(invoer: BellijstInvoer): Bellijst {
     const terugbel = geldendeTerugbel(c.id, invoer, laatste);
     const pogingen = pogingenSindsContact(c.id, invoer.belpogingen, laatste);
 
+    // Beëindigde leads en relaties (geen prospect) komen enkel op de lijst met een terugbelafspraak of als je ze vastpint.
+    if ((c.statusBron === 'beeindigd' || c.statusBron === 'relatie') && !pin && !(terugbel && terugbel.dag <= vandaag)) continue;
+
+    // Een terugbeltaak uit de bron die al lang verlopen is, is achterstand: die verdringt de actuele beloftes niet.
+    if (!pin && terugbel?.herkomst === 'bron' && terugbel.dag < vandaag && werkdagenTussen(terugbel.dag, vandaag) > inst.achterstandNaWerkdagen) {
+      resultaat.achterstand.push({ contact: c, dag: terugbel.dag, tekst: terugbel.tekst });
+      continue;
+    }
+
+    // Open taak met vervaldatum in de bron (bv. "Dossier vervolledigen" in ERAForce): ook dat is een geplande volgende stap.
+    const bronStap = invoer.activiteiten
+      .filter((a) => a.contactId === c.id && a.type === 'taak' && a.taakSoort !== 'terugbellen' && !a.taakAfgerond && a.vervaltOp && a.vervaltOp >= vandaag)
+      .sort((x, y) => x.vervaltOp!.localeCompare(y.vervaltOp!))[0];
     const heeftTimeline =
       Boolean(terugbel) ||
+      Boolean(bronStap) ||
       (invoer.opvolgacties ?? []).some((o) => o.contactId === c.id && o.status === 'open' && o.dag >= vandaag);
     if (!heeftTimeline && c.statusBron !== 'nieuwe_lead') resultaat.zonderTimeline.push(c);
 
@@ -222,6 +238,10 @@ export function berekenBellijst(invoer: BellijstInvoer): Bellijst {
         .sort((x, y) => x.dag.localeCompare(y.dag))[0];
       if (geplandeStap) {
         sluitUit('terugbel_later', `Volgende stap gepland op ${korteDag(geplandeStap.dag)}${geplandeStap.omschrijving ? `: ${geplandeStap.omschrijving}` : ''}.`);
+        continue;
+      }
+      if (bronStap && bronStap.vervaltOp! > vandaag) {
+        sluitUit('terugbel_later', `Volgende stap in ERAForce op ${korteDag(bronStap.vervaltOp!)}: ${bronStap.tekst.split('\n')[0]}.`);
         continue;
       }
       // Regel 3: uitgesteld tot een datum.
@@ -416,6 +436,7 @@ export function berekenBellijst(invoer: BellijstInvoer): Bellijst {
   const groepA = kandidaten.filter((k) => k.groep === 'A');
   const rest = kandidaten.filter((k) => k.groep !== 'A');
   const plaats = Math.max(0, max - groepA.length);
+  resultaat.achterstand.sort((a, b) => a.dag.localeCompare(b.dag));
   resultaat.vandaag = [...groepA, ...rest.slice(0, plaats)];
   resultaat.nietOpLijst = rest.slice(plaats);
   if (groepA.length > max) {

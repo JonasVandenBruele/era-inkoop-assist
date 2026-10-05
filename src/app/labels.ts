@@ -4,6 +4,8 @@ export const STATUS_LABEL: Record<ContactStatus, string> = {
   nieuwe_lead: 'Nieuwe lead',
   prospect: 'Prospect',
   langetermijn: 'Langetermijn',
+  beeindigd: 'Beëindigd',
+  relatie: 'Relatie',
 };
 export const FASE_LABEL: Record<Fase, string> = { warm: 'Warm', lauw: 'Lauw', koud: 'Koud' };
 export const ROL_LABEL: Record<PandRol, string> = {

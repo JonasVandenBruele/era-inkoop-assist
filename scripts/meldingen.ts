@@ -5,7 +5,7 @@ import pg from 'pg';
 import webpush from 'web-push';
 import * as m from '../src/core/db/mappers';
 import { leesInstellingen } from '../src/core/settings/schema';
-import type { Gegevens } from '../src/core/db/store';
+import { gebruiktEchteData, kiesGegevens, type Gegevens } from '../src/core/db/store';
 import { teVersturenMeldingen, type Pushmelding } from '../src/domain/meldingen';
 
 const vereist = (naam: string) => {
@@ -51,7 +51,6 @@ async function gegevensVan(eigenaar: string): Promise<Gegevens> {
     belverboden: belverboden!.map(m.belverbodNaarModel),
     haken: haken!.map(m.haakNaarModel),
     voorkeuren: voorkeuren!.map(m.voorkeurNaarModel),
-    koppelingen: [],
   };
 }
 
@@ -90,8 +89,11 @@ async function main() {
       continue;
     }
     const doc = (await rijen('select document from public.instellingen where eigenaar_id = $1', [eigenaar]))[0]?.document;
-    const inst = leesInstellingen(doc);
-    const meldingen = teVersturenMeldingen(await gegevensVan(eigenaar), inst, new Date());
+    const alles = await gegevensVan(eigenaar);
+    const echt = gebruiktEchteData(alles, leesInstellingen(doc));
+    // Met echte gegevens geldt altijd de echte datum (een oude testdatum telt dan niet).
+    const inst = { ...leesInstellingen(doc), ...(echt ? { testdatum: null } : {}) };
+    const meldingen = teVersturenMeldingen(kiesGegevens(alles, echt), inst, new Date());
     for (const melding of meldingen) {
       // Eerst vastleggen: zo vertrekt elke melding maar één keer, ook als de taak dubbel loopt.
       const nieuw = await db.query('insert into public.verstuurde_meldingen (eigenaar_id, sleutel) values ($1, $2) on conflict do nothing returning id', [eigenaar, melding.sleutel]);

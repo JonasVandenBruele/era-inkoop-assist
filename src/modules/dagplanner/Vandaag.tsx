@@ -178,6 +178,23 @@ export function Vandaag() {
         </section>
       )}
 
+      {lijst.achterstand.length > 0 && (
+        <details className="klein zacht">
+          <summary>
+            ⏰ {lijst.achterstand.length} {lijst.achterstand.length === 1 ? 'terugbeltaak' : 'terugbeltaken'} in ERAForce langer dan {instellingen.achterstandNaWerkdagen} werkdagen verlopen
+            (oudste {korteDag(lijst.achterstand[0]!.dag)}) — sluit of verplaats ze in ERAForce.
+          </summary>
+          <ul className="achterstand">
+            {lijst.achterstand.map((a) => (
+              <li key={a.contact.id}>
+                <Link to={`/contact/${a.contact.id}`}>{[a.contact.aanhef, volledigeNaam(a.contact)].filter(Boolean).join(' ')}</Link> · {korteDag(a.dag)}
+                {a.tekst ? ` · ${a.tekst.split('\n')[0]}` : ''}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+
       {lijst.zonderTimeline.length > 0 && (
         <p className="klein zacht">
           📋 {lijst.zonderTimeline.length} {lijst.zonderTimeline.length === 1 ? 'prospect' : 'prospects'} zonder geplande opvolgtaak — koppel er een via je ERAForce-dashboard.

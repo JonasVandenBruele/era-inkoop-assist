@@ -1,5 +1,5 @@
 // Vertaling tussen databaserijen (snake_case) en het interne model (camelCase).
-import type { Afspraak, Belpoging, Belverbod, Bronactiviteit, Bronstatus, Contact, ContactPand, Contactvoorkeur, Dagplan, DonnaOverzicht, EraforceKoppeling, Opvolgactie, Pand, Planningskeuze, Waardehaak } from '../../domain/model';
+import type { Afspraak, Belpoging, Belverbod, Bronactiviteit, Bronstatus, Contact, ContactPand, Contactvoorkeur, Dagplan, DonnaOverzicht, Opvolgactie, Pand, Planningskeuze, Waardehaak } from '../../domain/model';
 
 type Rij = Record<string, unknown>;
 const d = (v: unknown): Date | null => (v ? new Date(v as string) : null);
@@ -41,6 +41,7 @@ export const contactNaarModel = (r: Rij): Contact => ({
   postcode: s(r.postcode),
   gemeente: s(r.gemeente),
   statusBron: r.status_bron as Contact['statusBron'],
+  statusLabelBron: s(r.status_label_bron) ?? undefined,
   faseBron: (r.fase_bron as Contact['faseBron']) ?? null,
   tijdshorizonBron: s(r.tijdshorizon_bron),
   aanspreekvormBron: (r.aanspreekvorm_bron as Contact['aanspreekvormBron']) ?? null,
@@ -60,6 +61,7 @@ export const contactNaarRij = (c: Contact) => ({
   postcode: c.postcode,
   gemeente: c.gemeente,
   status_bron: c.statusBron,
+  status_label_bron: c.statusLabelBron ?? null,
   fase_bron: c.faseBron,
   tijdshorizon_bron: c.tijdshorizonBron,
   aanspreekvorm_bron: c.aanspreekvormBron,
@@ -101,6 +103,7 @@ export const activiteitNaarModel = (r: Rij): Bronactiviteit => ({
   taakAfgerond: Boolean(r.taak_afgerond),
   auteur: s(r.auteur),
   tekst: r.tekst as string,
+  soortLabel: s(r.soort_label) ?? undefined,
 });
 export const activiteitNaarRij = (a: Bronactiviteit) => ({
   ...herkomstNaarRij(a),
@@ -113,6 +116,7 @@ export const activiteitNaarRij = (a: Bronactiviteit) => ({
   taak_afgerond: a.taakAfgerond,
   auteur: a.auteur,
   tekst: a.tekst,
+  soort_label: a.soortLabel ?? null,
 });
 
 export const afspraakNaarModel = (r: Rij): Afspraak => ({
@@ -127,6 +131,7 @@ export const afspraakNaarModel = (r: Rij): Afspraak => ({
   koppelStatus: r.koppel_status as Afspraak['koppelStatus'],
   omschrijving: s(r.omschrijving),
   belpogingId: s(r.belpoging_id),
+  soortLabel: s(r.soort_label) ?? undefined,
 });
 export const afspraakNaarRij = (a: Afspraak) => ({
   ...herkomstNaarRij(a),
@@ -139,6 +144,7 @@ export const afspraakNaarRij = (a: Afspraak) => ({
   koppel_status: a.koppelStatus,
   omschrijving: a.omschrijving,
   belpoging_id: a.belpogingId ?? null,
+  soort_label: a.soortLabel ?? null,
 });
 
 export const belpogingNaarModel = (r: Rij): Belpoging => ({
@@ -331,5 +337,3 @@ export const haakNaarRij = (h: Waardehaak) => ({
   is_testdata: h.isTestdata ?? false,
 });
 
-export const koppelingNaarModel = (r: Rij): EraforceKoppeling => ({ contactId: r.contact_id as string, salesforceId: r.salesforce_id as string, isTestdata: Boolean(r.is_testdata) });
-export const koppelingNaarRij = (k: EraforceKoppeling) => ({ contact_id: k.contactId, salesforce_id: k.salesforceId, is_testdata: k.isTestdata ?? false });

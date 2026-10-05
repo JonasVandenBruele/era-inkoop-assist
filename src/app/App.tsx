@@ -3,7 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import type { Session } from '@supabase/supabase-js';
 import { maakKlok } from '../core/clock';
 import { maakDemoStore } from '../core/db/demoStore';
-import { leegGegevens, type Gegevens, type Store } from '../core/db/store';
+import { gebruiktEchteData, kiesGegevens, leegGegevens, type Gegevens, type Store } from '../core/db/store';
 import { maakSupabaseStore, supabase, supabaseGeconfigureerd } from '../core/db/supabaseStore';
 import type { Instellingen } from '../core/settings/schema';
 import { AppContext, type AppStaat, type LopendeOproep, type Melding as MeldingType } from './context';
@@ -40,7 +40,7 @@ export function App() {
 
 function IngelogdeApp({ store, email }: { store: Store; email: string | null }) {
   const [instellingen, setInstellingen] = useState<Instellingen | null>(null);
-  const [gegevens, setGegevens] = useState<Gegevens>(leegGegevens());
+  const [alleGegevens, setGegevens] = useState<Gegevens>(leegGegevens());
   const [fout, setFout] = useState<string | null>(null);
   const [bezig, setBezig] = useState(true);
   const [melding, setMelding] = useState<MeldingType | null>(null);
@@ -85,7 +85,10 @@ function IngelogdeApp({ store, email }: { store: Store; email: string | null }) 
 
   // Een vaste testdatum uit de omgeving (VITE_TESTDATUM) gaat voor op de instelling.
   // De klok wordt enkel opnieuw gemaakt als de testdatum wijzigt, zodat de tijd binnen de testdag verder tikt.
-  const testdatum = (import.meta.env.VITE_TESTDATUM as string | undefined) || instellingen?.testdatum;
+  // Echte (ERAForce) gegevens en testdata worden nooit samen getoond; met echte gegevens geldt de echte datum.
+  const echt = instellingen ? gebruiktEchteData(alleGegevens, instellingen) : false;
+  const gegevens = useMemo(() => kiesGegevens(alleGegevens, echt), [alleGegevens, echt]);
+  const testdatum = (import.meta.env.VITE_TESTDATUM as string | undefined) || (echt ? null : instellingen?.testdatum);
   const klok = useMemo(() => maakKlok(testdatum), [testdatum]);
 
   const staat = useMemo<AppStaat | null>(() => {
@@ -96,6 +99,7 @@ function IngelogdeApp({ store, email }: { store: Store; email: string | null }) 
       klok,
       gegevens,
       gebruikerEmail: email,
+      echteData: echt,
       herlaad,
       async wijzigInstellingen(nieuw) {
         const testdatumGewijzigd = nieuw.testdatum !== instellingen.testdatum;
@@ -164,8 +168,8 @@ function IngelogdeApp({ store, email }: { store: Store; email: string | null }) 
           gebeurdOp: nu,
           gewijzigdInBronOp: null,
           geimporteerdOp: nu,
-          // Tot echte data is goedgekeurd, telt alles als testdata (wordt mee opgeruimd bij een reset).
-          isTestdata: true,
+          // In testmodus hoort een tijdelijk contact bij de testdata (en verdwijnt het bij een reset).
+          isTestdata: !echt,
           aanhef: n.aanhef,
           voornaam: n.voornaam,
           achternaam: n.achternaam,
@@ -184,7 +188,7 @@ function IngelogdeApp({ store, email }: { store: Store; email: string | null }) 
           isLokaalTijdelijk: true,
         };
         await store.maakContact(contact);
-        await store.bewaarKeuze({ id: crypto.randomUUID(), contactId: contact.id, soort: 'vastpinnen', voorDag: klok.vandaag(), totDag: null, aangemaaktOp: nu, ongedaanOp: null, isTestdata: true });
+        await store.bewaarKeuze({ id: crypto.randomUUID(), contactId: contact.id, soort: 'vastpinnen', voorDag: klok.vandaag(), totDag: null, aangemaaktOp: nu, ongedaanOp: null, isTestdata: !echt });
         await herlaad();
         return contact;
       },
@@ -192,17 +196,11 @@ function IngelogdeApp({ store, email }: { store: Store; email: string | null }) 
 
       async bewaarHaak(h) {
         const contact = h.contactId ? gegevens.contacten.find((c) => c.id === h.contactId) : null;
-        await store.bewaarHaak({ ...h, id: crypto.randomUUID(), aangemaaktOp: klok.nu(), isTestdata: contact?.isTestdata ?? gegevens.contacten.some((c) => c.isTestdata) });
+        await store.bewaarHaak({ ...h, id: crypto.randomUUID(), aangemaaktOp: klok.nu(), isTestdata: contact?.isTestdata ?? !echt });
         await herlaad();
       },
       async verwijderHaak(id) {
         await store.verwijderHaak(id);
-        await herlaad();
-      },
-      async koppelAanEraforce(contactId, salesforceId) {
-        const contact = gegevens.contacten.find((c) => c.id === contactId);
-        if (salesforceId) await store.bewaarKoppeling({ contactId, salesforceId, isTestdata: contact?.isTestdata ?? false });
-        else await store.verwijderKoppeling(contactId);
         await herlaad();
       },
       oproep,
@@ -218,7 +216,7 @@ function IngelogdeApp({ store, email }: { store: Store; email: string | null }) 
         await herlaad();
       },
     };
-  }, [store, instellingen, klok, gegevens, email, herlaad, dataVersie, oproep]);
+  }, [store, instellingen, klok, gegevens, echt, email, herlaad, dataVersie, oproep]);
 
   if (bezig || !staat) return <Melding tekst={fout ? `Er ging iets mis: ${fout}` : 'Gegevens laden…'} />;
 

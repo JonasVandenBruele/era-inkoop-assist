@@ -12,7 +12,7 @@ const SUPABASE_NABOOTSING = `
   create role anon nologin;
   create role authenticated nologin;
   create schema auth;
-  create table auth.users (id uuid primary key);
+  create table auth.users (id uuid primary key, email text);
   create function auth.uid() returns uuid language sql stable as
     $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
   grant usage on schema auth to anon, authenticated;
@@ -164,5 +164,35 @@ describe('toegangsregels voor pushmeldingen', () => {
     expect((await als(B, () => db.query('select * from public.push_abonnementen'))).rows).toEqual([]);
     expect((await als(A, () => db.query('select * from public.push_abonnementen'))).rows.length).toBe(1);
     await expect(als(A, () => db.query(`insert into public.verstuurde_meldingen (eigenaar_id, sleutel) values ($1, 'x')`, [A]))).rejects.toThrow();
+  });
+});
+
+describe('importgebruiker van de ERAForce-mirror', () => {
+  async function alsImport<T>(fn: () => Promise<T>): Promise<T> {
+    await db.exec('set role oxpecker_import');
+    try {
+      return await fn();
+    } finally {
+      await db.exec('reset role');
+    }
+  }
+
+  it('vindt de eigenaar op e-mail en schrijft ERAForce-rijen voor hem', async () => {
+    await db.query(`update auth.users set email = 'a@voorbeeld.be' where id = $1`, [A]);
+    const eigenaar = (await alsImport(() => db.query<{ id: string }>(`select public.import_eigenaar('A@voorbeeld.be') as id`))).rows[0]!.id;
+    expect(eigenaar).toBe(A);
+    await alsImport(() => db.query(`insert into public.contacten (eigenaar_id, achternaam, bron, extern_id) values ($1, 'Mirror', 'eraforce_mirror', '00Q000000000001')`, [A]));
+    const r = await als(A, () => db.query<{ achternaam: string }>(`select achternaam from public.contacten where bron = 'eraforce_mirror'`));
+    expect(r.rows).toEqual([{ achternaam: 'Mirror' }]);
+  });
+
+  it('kan geen lokale of testgegevens lezen of wijzigen', async () => {
+    const zichtbaar = (await alsImport(() => db.query<{ bron: string }>('select bron from public.contacten'))).rows.map((x) => x.bron);
+    expect(new Set(zichtbaar)).toEqual(new Set(['eraforce_mirror']));
+    await alsImport(() => db.query(`update public.contacten set achternaam = 'Gewijzigd' where bron <> 'eraforce_mirror'`));
+    expect((await als(A, () => db.query(`select 1 from public.contacten where achternaam = 'Gewijzigd'`))).rows).toEqual([]);
+    await expect(alsImport(() => db.query(`insert into public.contacten (eigenaar_id, achternaam, bron) values ($1, 'X', 'lokaal')`, [A]))).rejects.toThrow();
+    await expect(alsImport(() => db.query('select * from public.belpogingen'))).rejects.toThrow();
+    await expect(alsImport(() => db.query('select * from public.instellingen'))).rejects.toThrow();
   });
 });

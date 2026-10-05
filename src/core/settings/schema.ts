@@ -7,7 +7,13 @@ const uur = z.string().regex(/^\d{2}:\d{2}$/, 'Gebruik UU:MM');
 export const InstellingenSchema = z.object({
   schemaVersie: z.number().int().default(2),
 
-  /** Brusselse lokale tijd "YYYY-MM-DDTHH:mm", of null voor de echte datum. */
+  /**
+   * Welke gegevens de app toont: 'echt' = ERAForce (via de mirror), 'test' = fictieve testdata,
+   * 'auto' = echt zodra er ERAForce-gegevens zijn. Met echte gegevens geldt altijd de echte datum.
+   */
+  gegevens: z.enum(['auto', 'test', 'echt']).default('auto'),
+
+  /** Brusselse lokale tijd "YYYY-MM-DDTHH:mm", of null voor de echte datum. Enkel bij testdata. */
   testdatum: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/).nullable().default('2026-10-13T07:30'),
 
   /** Voor de openingszin: "met Jonas van ERA". */
@@ -22,6 +28,8 @@ export const InstellingenSchema = z.object({
     .default({ warm: 7, lauw: 60, koud: 180 }),
   maxPerDag: z.number().int().min(1).max(100).default(15),
   nieuweLeadDagen: z.number().int().min(1).default(3),
+  /** Een terugbeltaak uit ERAForce die langer dan dit aantal werkdagen verlopen is, telt als achterstand (niet op de daglijst). */
+  achterstandNaWerkdagen: z.number().int().min(1).default(10),
   gewichten: z
     .object({
       ritmePerVerhouding: z.number().default(25),
@@ -74,10 +82,8 @@ export const InstellingenSchema = z.object({
       belViaEraforce: z.boolean().default(true),
       /** Na bellen via ERAForce nog "hoe ging het?" vragen? Standaard niet: de evaluatie staat dan al in ERAForce. */
       vraagNaBellenViaEraforce: z.boolean().default(false),
-      /** TIJDELIJK (tot de mirror er is): één ERAForce-ID voor alle contacten zonder eigen koppeling, om de knop te testen. */
-      testIdVoorIedereen: z.string().regex(/^[a-zA-Z0-9]{15}([a-zA-Z0-9]{3})?$/).nullable().default(null),
     })
-    .default({ belViaEraforce: true, vraagNaBellenViaEraforce: false, testIdVoorIedereen: null }),
+    .default({ belViaEraforce: true, vraagNaBellenViaEraforce: false }),
 
   // Pushmeldingen (zonder klantgegevens tenzij toonNamen aan staat).
   meldingen: z

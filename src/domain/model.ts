@@ -16,7 +16,8 @@ export interface Herkomst {
   isTestdata: boolean;
 }
 
-export type ContactStatus = 'nieuwe_lead' | 'prospect' | 'langetermijn';
+/** beeindigd = lead afgesloten in ERAForce; relatie = contact dat geen prospect is (bv. verkoper, kandidaat). Beide enkel op de bellijst met een open terugbeltaak. */
+export type ContactStatus = 'nieuwe_lead' | 'prospect' | 'langetermijn' | 'beeindigd' | 'relatie';
 export type Fase = 'koud' | 'lauw' | 'warm';
 export type Aanspreekvorm = 'u' | 'je';
 
@@ -37,6 +38,8 @@ export interface Contact extends Herkomst {
   postcode: string | null;
   gemeente: string | null;
   statusBron: ContactStatus;
+  /** Oorspronkelijke status in de bron, bv. "In Opvolging". */
+  statusLabelBron?: string | null;
   faseBron: Fase | null;
   tijdshorizonBron: string | null;
   aanspreekvormBron: Aanspreekvorm | null;
@@ -80,6 +83,8 @@ export interface Bronactiviteit extends Herkomst {
   taakAfgerond: boolean;
   auteur: string | null;
   tekst: string;
+  /** Oorspronkelijk type in de bron, bv. "Uitgaande Oproep". */
+  soortLabel?: string | null;
 }
 
 export interface Afspraak extends Herkomst {
@@ -94,6 +99,8 @@ export interface Afspraak extends Herkomst {
   contactId: string | null;
   koppelStatus: 'bevestigd' | 'voorgesteld' | 'geen';
   omschrijving: string | null;
+  /** Oorspronkelijk type in de bron, bv. "Afspraak prospect kennismaking". */
+  soortLabel?: string | null;
 }
 
 export type BelUitkomst = 'gesproken' | 'geen_antwoord' | 'terugbellen' | 'afspraak' | 'niet_meer_bellen' | 'bericht_verstuurd' | 'reactie';
@@ -198,13 +205,6 @@ export interface Waardehaak {
   isTestdata?: boolean;
   /** Afgeleid uit het dossier (niet opgeslagen). */
   afgeleid?: boolean;
-}
-
-/** Handmatige koppeling van een contact aan een ERAForce-record (enkel het Salesforce-ID). */
-export interface EraforceKoppeling {
-  contactId: string;
-  salesforceId: string;
-  isTestdata?: boolean;
 }
 
 export interface Bronstatus {
