@@ -440,7 +440,7 @@ try {
   if (waPad) {
     try {
       const nummers = new Map(kandidaten.map((k) => [k.contact.id, nummersVan(k.contact.telefoons)]));
-      const lezing = leesWhatsapp(waPad, new Set([...nummers.values()].flat()), 180);
+      const lezing = leesWhatsapp(waPad, new Set([...nummers.values()].flat()), 365);
       for (const [id, ns] of nummers) waPerContact.set(id, ns.flatMap((n) => lezing.berichten.get(n) ?? []).sort((a, b) => a.tijd.getTime() - b.tijd.getTime()));
     } catch {
       console.log('Hooks: WhatsApp niet leesbaar; verder zonder.');
