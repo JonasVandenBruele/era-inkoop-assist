@@ -85,6 +85,8 @@ export interface Bronactiviteit extends Herkomst {
   tekst: string;
   /** Oorspronkelijk type in de bron, bv. "Uitgaande Oproep". */
   soortLabel?: string | null;
+  /** Bij taken: het geplande kanaal, uit het onderwerp of het type (bv. "langsgaan met flyer" → bezoek). */
+  kanaal?: Contactkanaal | null;
 }
 
 export interface Afspraak extends Herkomst {
@@ -104,14 +106,18 @@ export interface Afspraak extends Herkomst {
 }
 
 export type BelUitkomst = 'gesproken' | 'geen_antwoord' | 'terugbellen' | 'afspraak' | 'niet_meer_bellen' | 'bericht_verstuurd' | 'reactie';
-export type Kanaal = 'telefoon' | 'sms' | 'whatsapp' | 'mail';
+/** Kanaal van een geregistreerde poging. Flyer, brief en bezoek tikt Jonas aan als "gedaan". */
+export type Kanaal = 'telefoon' | 'sms' | 'whatsapp' | 'mail' | 'flyer' | 'brief' | 'bezoek';
+
+/** Manier om een contact te benaderen: in het kanaaladvies en als gepland kanaal van een taak. */
+export type Contactkanaal = 'bellen' | 'bericht' | 'whatsapp' | 'mail' | 'flyer' | 'brief' | 'bezoek';
 
 export interface Belpoging {
   id: string;
   contactId: string;
   tijdstip: Date;
   uitkomst: BelUitkomst;
-  /** Telefoon, sms, WhatsApp of mail. Ontbreekt bij oudere records: dan telefoon. */
+  /** Telefoon, sms, WhatsApp, mail, flyer, brief of bezoek. Ontbreekt bij oudere records: dan telefoon. */
   kanaal?: Kanaal;
   isInhoudelijk: boolean;
   notitie: string | null;
@@ -205,6 +211,26 @@ export interface Waardehaak {
   isTestdata?: boolean;
   /** Afgeleid uit het dossier (niet opgeslagen). */
   afgeleid?: boolean;
+}
+
+/**
+ * Hook van de dag voor één contact, gemaakt op de Mac (scripts/hooks-maken.ts) met Claude op basis van de
+ * evaluaties, buurtfeiten uit de mirror en het nieuws. Enkel aangeleverde feiten; de app toont hem op de BelKaart.
+ */
+export interface Contacthook {
+  id: string;
+  contactId: string;
+  dag: string; // DagKey
+  onderwerp: string;
+  detail: string | null;
+  openingszin: string | null;
+  kanaal: Contactkanaal | null;
+  kanaalReden: string | null;
+  conceptbericht: string | null;
+  bronlinks: { titel: string; url: string }[];
+  aangemaaktOp: Date;
+  /** Enkel in de demo (fictieve hooks); echte hooks komen altijd uit de mirror. */
+  isTestdata?: boolean;
 }
 
 export interface Bronstatus {

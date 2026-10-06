@@ -3,8 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { genereerTestdata, RANDGEVAL } from '../../fixtures/testdata';
 import { STANDAARD_INSTELLINGEN, type Instellingen } from '../core/settings/schema';
 import type { Belpoging, Bronactiviteit, Contact } from './model';
-import { berekenBellijst, type BellijstInvoer, type Kandidaat, type Planningskeuze } from './prioriteit';
+import { berekenBellijst, hookVanDeDag, type BellijstInvoer, type Kandidaat, type Planningskeuze } from './prioriteit';
 import { standaardOpeningszin } from './openingszin';
+import { aanknopingspunt, isNietszeggend } from './aanknopingspunt';
 
 const VANDAAG = '2026-10-13';
 const data = genereerTestdata({ testdatum: `${VANDAAG}T07:30` });
@@ -16,6 +17,7 @@ function invoer(extra: Partial<BellijstInvoer> = {}): BellijstInvoer {
     activiteiten: data.activiteiten,
     belpogingen: data.belpogingen,
     afspraken: data.afspraken,
+    contacthooks: data.contacthooks,
     instellingen: STANDAARD_INSTELLINGEN,
     vandaag: VANDAAG,
     ...extra,
@@ -24,7 +26,7 @@ function invoer(extra: Partial<BellijstInvoer> = {}): BellijstInvoer {
 const lijst = berekenBellijst(invoer());
 const alleKandidaten = [...lijst.vandaag, ...lijst.nietOpLijst];
 const vind = (ext: string): Kandidaat | undefined =>
-  [...alleKandidaten, ...lijst.nummerZoeken, ...lijst.handmatigBeoordelen].find((k) => k.contact.externId === ext);
+  [...alleKandidaten, ...lijst.nummerZoeken, ...lijst.handmatigBeoordelen, ...lijst.langsgaanLater.map((l) => l.kandidaat)].find((k) => k.contact.externId === ext);
 const uitgesloten = (ext: string) => lijst.uitgesloten.find((u) => u.contact.externId === ext);
 
 describe('voorbeelden uit PLAN.md §5.4', () => {
@@ -134,7 +136,7 @@ describe('harde regels en aparte lijsten', () => {
   });
 
   it('geen enkel contact staat dubbel', () => {
-    const ids = [...alleKandidaten, ...lijst.nummerZoeken, ...lijst.handmatigBeoordelen, ...lijst.uitgesloten].map((k) => k.contact.id);
+    const ids = [...alleKandidaten, ...lijst.nummerZoeken, ...lijst.handmatigBeoordelen, ...lijst.langsgaanLater.map((l) => l.kandidaat), ...lijst.uitgesloten].map((k) => k.contact.id);
     expect(new Set(ids).size).toBe(ids.length);
     expect(ids.length).toBe(data.contacten.length);
   });
@@ -241,16 +243,13 @@ describe('standaard-openingszin', () => {
   const zin = (ext: string, uur = 9) =>
     standaardOpeningszin({ kandidaat: vind(ext)!, voornaamGebruiker: 'Jonas', organisatie: 'ERA', uur, vandaag: VANDAAG });
 
-  it('verwijst naar de afspraak bij een terugbelafspraak', () => {
-    expect(zin(RANDGEVAL.terugbellenVandaagMetUur)).toBe(
-      'Goeiemorgen mevrouw Peeters, met Jonas van ERA. We hadden afgesproken dat ik u vandaag zou terugbellen. Past het even?',
-    );
+  it('geen algemene "we hadden afgesproken"-zin bij een terugbelafspraak (Jonas, 6/10/2026)', () => {
+    expect(zin(RANDGEVAL.terugbellenVandaagMetUur)).toBe('Goeiemorgen mevrouw Peeters, met Jonas van ERA. Past het even?');
+    expect(zin(RANDGEVAL.terugbellenVerstreken)).not.toMatch(/afgesproken|terugbellen/);
   });
 
-  it('bij een verstreken terugbelafspraak zegt de zin niet "vandaag"', () => {
-    expect(zin(RANDGEVAL.terugbellenVerstreken)).toBe(
-      'Goeiemorgen familie Janssens, met Jonas van ERA. We hadden afgesproken dat ik u zou terugbellen. Past het even?',
-    );
+  it('de hook van Claude gaat voor', () => {
+    expect(zin(RANDGEVAL.aiHook)).toContain('Biddit');
   });
 
   it('gebruikt de herkomst bij een nieuwe lead', () => {
@@ -265,6 +264,62 @@ describe('standaard-openingszin', () => {
   it('neemt nooit notitietekst over (geen gevoelige aanleiding)', () => {
     // De notitie van mevr. Peeters vermeldt een overlijden; dat mag nooit in de openingszin komen.
     expect(zin(RANDGEVAL.terugbellenVandaagMetUur)).not.toMatch(/overleden|man|dochter/i);
+  });
+});
+
+describe('hooks en kanalen (6/10/2026)', () => {
+  const blok = (dag: string, van = '14:00', tot = '16:00') => ({
+    ...data.afspraken[0]!, id: `blok-${dag}`, externId: `blok-${dag}`, titel: 'Baanprospectie', soortLabel: 'Baanprospectie', contactId: null, koppelStatus: 'geen' as const,
+    heleDag: false, start: new Date(`${dag}T${van}:00+02:00`), einde: new Date(`${dag}T${tot}:00+02:00`), locatie: 'Kantoor: ERA (fictief)',
+  });
+
+  it('"langsgaan met flyer" (type Bellen) wordt een bezoek; zonder Baanprospectie-blok wacht het op het volgende blok', () => {
+    const l = lijst.langsgaanLater.find((x) => x.kandidaat.contact.externId === RANDGEVAL.langsgaanMetFlyer)!;
+    expect(l.kandidaat.terugbel?.kanaal).toBe('bezoek');
+    expect(l.kandidaat.advies).toMatchObject({ kanaal: 'bezoek', reden: 'Gepland in ERAForce: langsgaan' });
+    expect(l.blok?.soortLabel).toBe('Baanprospectie');
+    expect(lijst.vandaag.some((k) => k.contact.externId === RANDGEVAL.langsgaanMetFlyer)).toBe(false);
+  });
+
+  it('met een Baanprospectie-blok vandaag staat het bezoek op de lijst, in dat blok, buiten het belmaximum', () => {
+    const met = berekenBellijst(invoer({ afspraken: [...data.afspraken, blok(VANDAAG)], instellingen: { ...STANDAARD_INSTELLINGEN, maxPerDag: 1 } }));
+    const k = met.vandaag.find((x) => x.contact.externId === RANDGEVAL.langsgaanMetFlyer)!;
+    expect(k.veldwerkBlok?.titel).toBe('Baanprospectie');
+    expect(k.reden).toContain('Baanprospectie-blok 14:00–16:00');
+    // Een voorbij blok telt niet meer.
+    const laat = berekenBellijst(invoer({ afspraken: [...data.afspraken, blok(VANDAAG)], uur: '17:00' }));
+    expect(laat.vandaag.some((x) => x.contact.externId === RANDGEVAL.langsgaanMetFlyer)).toBe(false);
+  });
+
+  it('aanknopingspunt: specifiek taakonderwerp en fragment uit het laatste gesprek', () => {
+    const k = vind(RANDGEVAL.aiHook)!;
+    const a = aanknopingspunt(k.terugbel, k.laatste);
+    expect(a.taak).toBe('Zeker van biddit?');
+    expect(a.gesprek?.fragment).toContain('Biddit');
+    expect(aanknopingspunt({ dag: VANDAAG, uur: null, tekst: 'TB mevr. Peeters', herkomst: 'bron', kanaal: 'bellen' }, null).taak).toBeNull();
+    expect(isNietszeggend('Opvolgen :)')).toBe(true);
+    expect(isNietszeggend('update')).toBe(true);
+    expect(isNietszeggend('Zeker van biddit?')).toBe(false);
+  });
+
+  it('de hook van vandaag; anders de recentste van de laatste dagen', () => {
+    const h = (dag: string) => ({ ...data.contacthooks[0]!, id: dag, dag });
+    expect(hookVanDeDag(data.contacthooks[0]!.contactId, [h('2026-10-09'), h(VANDAAG)], VANDAAG)?.dag).toBe(VANDAAG);
+    expect(hookVanDeDag(data.contacthooks[0]!.contactId, [h('2026-10-01')], VANDAAG)).toBeNull();
+    expect(vind(RANDGEVAL.aiHook)!.hook?.onderwerp).toContain('Biddit');
+  });
+
+  it('een flyer of bericht op of na de geplande dag rondt de geplande stap af', () => {
+    const c = contact(RANDGEVAL.langsgaanMetFlyer);
+    const gedaan = berekenBellijst(
+      invoer({
+        belpogingen: [
+          ...data.belpogingen,
+          { id: 'flyer-1', contactId: c.id, tijdstip: new Date(`${VANDAAG}T09:00:00Z`), uitkomst: 'bericht_verstuurd', kanaal: 'flyer', isInhoudelijk: false, notitie: null, volgendeStap: null, ongedaanOp: null, isTestdata: true },
+        ],
+      }),
+    );
+    expect([...gedaan.vandaag, ...gedaan.nietOpLijst].some((k) => k.contact.id === c.id)).toBe(false);
   });
 });
 

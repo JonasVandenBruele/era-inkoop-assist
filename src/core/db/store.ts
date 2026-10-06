@@ -7,6 +7,7 @@ import type {
   Bronstatus,
   Contact,
   ContactPand,
+  Contacthook,
   Contactvoorkeur,
   Dagplan,
   DonnaOverzicht,
@@ -33,6 +34,8 @@ export interface Gegevens {
   // Contactstrategie (fase 3b)
   haken: Waardehaak[];
   voorkeuren: Contactvoorkeur[];
+  /** Hook van de dag per contact, gemaakt op de Mac met Claude (enkel echte gegevens). */
+  contacthooks: Contacthook[];
 }
 
 export interface Store {
@@ -67,7 +70,7 @@ export interface Store {
 }
 
 export function leegGegevens(): Gegevens {
-  return { contacten: [], panden: [], contactPanden: [], activiteiten: [], afspraken: [], belpogingen: [], bronnen: [], opvolgacties: [], keuzes: [], belverboden: [], haken: [], voorkeuren: [] };
+  return { contacten: [], panden: [], contactPanden: [], activiteiten: [], afspraken: [], belpogingen: [], bronnen: [], opvolgacties: [], keuzes: [], belverboden: [], haken: [], voorkeuren: [], contacthooks: [] };
 }
 
 /** Toont de app echte (ERAForce) gegevens? Bij 'auto' zodra er minstens één ERAForce-contact is. */
@@ -92,5 +95,6 @@ export function kiesGegevens(g: Gegevens, echt: boolean): Gegevens {
     belverboden: ok(g.belverboden),
     haken: ok(g.haken),
     voorkeuren: ok(g.voorkeuren),
+    contacthooks: ok(g.contacthooks),
   };
 }

@@ -1,6 +1,6 @@
 // Fictieve ERAForce-rijen (geen echte klantgegevens).
 import { describe, expect, it } from 'vitest';
-import { afspraakAlsGesprek, contactNaarContact, eventNaarAfspraak, isBeltaak, leadNaarContact, leadStatus, taakNaarActiviteit, telefoons } from './eraforce';
+import { afspraakAlsGesprek, contactNaarContact, eventNaarAfspraak, isBeltaak, kanaalUitTaak, leadNaarContact, leadStatus, taakNaarActiviteit, telefoons } from './eraforce';
 
 const naam = (id: string | null) => (id === '005A' ? 'Jonas' : null);
 const lead = (extra: Record<string, unknown> = {}) => ({
@@ -27,6 +27,11 @@ describe('ERAForce → Oxpecker', () => {
     // Hetzelfde gsm-nummer in twee notaties: maar één keer.
     expect(c.telefoons).toEqual([{ nummer: '0470 12 34 56', label: 'gsm' }]);
     expect(c.aangemaaktInBronOp?.toISOString()).toBe('2026-09-01T08:00:00.000Z');
+  });
+
+  it('het pandadres komt uit de ERA-velden', () => {
+    const c = leadNaarContact(lead({ Street: null, City: null, PostalCode: null, ERA_Straat__c: 'Molenstraat', ERA_Huisnummer__c: '12', ERA_Bus__c: '3', ERA_Postcode__c: '3070', ERA_Gemeente__c: 'Kortenberg' }))!;
+    expect(c).toMatchObject({ straat: 'Molenstraat 12 bus 3', postcode: '3070', gemeente: 'Kortenberg' });
   });
 
   it('leadstatussen', () => {
@@ -69,6 +74,36 @@ describe('ERAForce → Oxpecker', () => {
   it('andere open taak = algemene volgende stap', () => {
     expect(taakNaarActiviteit(taak({ IsClosed: 0, Type: 'Administratieve taak', Subject: 'Dossier vervolledigen' }), naam)!.taakSoort).toBe('algemeen');
     expect(isBeltaak({ Type: 'Commerciële taak', Subject: 'ZO bellen' })).toBe(true);
+  });
+
+  it('kanaal uit het onderwerp gaat voor op het type', () => {
+    const k = (Subject: string | null, Type: string) => kanaalUitTaak({ Subject, Type });
+    expect(k('langsgaan met flyer', 'Bellen')).toBe('bezoek');
+    expect(k('AANBELLEN', 'Uitgaande Oproep')).toBe('bezoek');
+    expect(k('Flyer in de bus steken', 'Commerciële taak')).toBe('flyer');
+    expect(k('Zomerbrief', 'Bellen')).toBe('brief');
+    expect(k('NY kaartje', 'Commerciële taak')).toBe('brief');
+    expect(k('WhatsApp sturen', 'Bellen')).toBe('whatsapp');
+    expect(k('Berichtje voor OHD', 'Bellen')).toBe('bericht');
+    expect(k('Mail met info', 'Commerciële taak')).toBe('mail');
+    expect(k('Bellen indien bezoek mogelijk', 'Bellen')).toBe('bellen');
+    expect(k('OPBELLEN', 'Bellen')).toBe('bellen');
+    expect(k('Zeker van biddit?', 'Bellen')).toBe('bellen');
+    expect(k(null, 'Flyeren')).toBe('flyer');
+    expect(k('Dag zeggen', 'Aanbellen')).toBe('bezoek');
+    expect(k('Verkoopverslag verzenden', 'Administratieve taak')).toBeNull();
+  });
+
+  it('open taak met een kanaal is een geplande contactstap, ook als het geen oproep is', () => {
+    const a = taakNaarActiviteit(taak({ IsClosed: 0, Type: 'Bellen', Subject: 'langsgaan met flyer' }), naam)!;
+    expect(a).toMatchObject({ type: 'taak', taakSoort: 'terugbellen', kanaal: 'bezoek' });
+    const b = taakNaarActiviteit(taak({ IsClosed: 0, Type: 'Administratieve taak', Subject: 'Dossier vervolledigen' }), naam)!;
+    expect(b).toMatchObject({ taakSoort: 'algemeen', kanaal: null });
+  });
+
+  it('afgesloten bezoek telt enkel als gesprek als je iemand trof', () => {
+    expect(taakNaarActiviteit(taak({ Subject: 'Langsgaan', Type: 'Aanbellen', Description: 'Mevrouw thuis, wil volgend jaar verkopen.' }), naam)!.type).toBe('gesprek');
+    expect(taakNaarActiviteit(taak({ Subject: 'Langsgaan', Type: 'Aanbellen', Description: 'Niet thuis, flyer in de bus.' }), naam)!.type).toBe('notitie');
   });
 
   it('taak zonder lead of contact wordt overgeslagen', () => {

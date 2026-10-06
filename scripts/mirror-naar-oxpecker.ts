@@ -191,6 +191,7 @@ try {
       auteur: x.auteur,
       tekst: x.tekst,
       soort_label: x.soortLabel ?? null,
+      kanaal: x.kanaal ?? null,
     })),
   );
   const aWeg = await db.query(`delete from public.bronactiviteiten where eigenaar_id = $1 and bron = 'eraforce_mirror' and not (extern_id = any($2))`, [eigenaar, [...a.ids.keys()]]);

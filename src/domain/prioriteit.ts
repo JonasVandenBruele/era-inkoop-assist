@@ -1,14 +1,15 @@
 // De bellijst van vandaag: harde regels, voorrangsgroepen en een uitlegbare score (PLAN.md §5).
 // Pure functie: alle gegevens, instellingen en "vandaag" komen binnen als parameter. De AI speelt hier geen rol.
-import { dagVan, dagenTussen, korteDag, relatief, type DagKey } from '../core/dates';
+import { dagVan, dagenTussen, korteDag, relatief, uurVan, type DagKey } from '../core/dates';
 import type { Instellingen } from '../core/settings/schema';
-import type { Afspraak, Belpoging, Belverbod, Bronactiviteit, Contact, ContactPand, Contactvoorkeur, Fase, Opvolgactie, Pand, Planningskeuze, Waardehaak } from './model';
+import type { Afspraak, Belpoging, Belverbod, Bronactiviteit, Contact, Contacthook, Contactkanaal, ContactPand, Contactvoorkeur, Fase, Opvolgactie, Pand, Planningskeuze, Waardehaak } from './model';
 import { hakenVoorContact, specifiekeHaken } from './haken';
-import { kanaaladvies, kanaalVan, type Kanaaladvies } from './kanaaladvies';
+import { KANAAL_LABEL, kanaaladvies, kanaalVan, type Kanaaladvies } from './kanaaladvies';
 export type { Belverbod, Opvolgactie, Planningskeuze } from './model';
 import { heeftTelefoon, laatsteInhoudelijkContact, type LaatsteContact } from './overzicht';
 import { horizonCategorie, HORIZON_LABEL, type HorizonCategorie } from './horizon';
 import { plusWerkdagen, werkdagenTussen } from './werkdagen';
+import { isVeldwerk, prospectieblokkenOp, volgendProspectieblok } from './prospectieblokken';
 
 // ---------- Invoer ----------
 
@@ -25,6 +26,8 @@ export interface BellijstInvoer {
   voorkeuren?: Contactvoorkeur[];
   panden?: Pand[];
   contactPanden?: ContactPand[];
+  /** Hooks van Claude (gemaakt op de Mac na de mirror-run). */
+  contacthooks?: Contacthook[];
   /** Brussels uur "HH:mm" van nu, voor de rustige uren in het kanaaladvies. */
   uur?: string;
   instellingen: Instellingen;
@@ -62,6 +65,8 @@ export interface Terugbelafspraak {
   uur: string | null;
   tekst: string | null;
   herkomst: 'bron' | 'lokaal';
+  /** Gepland kanaal uit de ERAForce-taak (bv. bezoek bij "langsgaan met flyer"); null bij een lokale afspraak. */
+  kanaal: Contactkanaal | null;
 }
 
 export interface Kandidaat {
@@ -81,7 +86,11 @@ export interface Kandidaat {
   isVastgepind: boolean;
   /** Geldige waardehaken (incl. algemene). */
   haken: Waardehaak[];
+  /** Hook van Claude voor vandaag (of de laatste werkdag ervoor), indien gemaakt. */
+  hook: Contacthook | null;
   advies: Kanaaladvies;
+  /** Bij langsgaan of een flyer: het Baanprospectie-blok van vandaag waarin het gepland is. */
+  veldwerkBlok: Afspraak | null;
 }
 
 export type UitsluitReden =
@@ -116,6 +125,8 @@ export interface Bellijst {
   zonderTimeline: Contact[];
   /** Terugbeltaken in de bron die al lang verlopen zijn: niet op de daglijst, maar opruimen in ERAForce (oudste eerst). */
   achterstand: { contact: Contact; dag: DagKey; tekst: string | null }[];
+  /** Langsgaan of flyer gepland, maar vandaag geen Baanprospectie-blok: wacht op het volgende blok (null = geen gepland). */
+  langsgaanLater: { kandidaat: Kandidaat; blok: Afspraak | null }[];
 }
 
 // ---------- Hulpfuncties ----------
@@ -142,16 +153,30 @@ function geldendeTerugbel(contactId: string, invoer: BellijstInvoer, laatste: La
   const kandidaten: { aangemaakt: Date; t: Terugbelafspraak }[] = [];
   for (const a of invoer.activiteiten) {
     if (a.contactId !== contactId || a.taakSoort !== 'terugbellen' || a.taakAfgerond || !a.vervaltOp) continue;
-    kandidaten.push({ aangemaakt: a.gebeurdOp ?? a.geimporteerdOp, t: { dag: a.vervaltOp, uur: a.vervaltUur, tekst: a.tekst, herkomst: 'bron' } });
+    kandidaten.push({ aangemaakt: a.gebeurdOp ?? a.geimporteerdOp, t: { dag: a.vervaltOp, uur: a.vervaltUur, tekst: a.tekst, herkomst: 'bron', kanaal: a.kanaal ?? 'bellen' } });
   }
   for (const o of invoer.opvolgacties ?? []) {
     if (o.contactId !== contactId || o.soort !== 'terugbellen' || o.status !== 'open') continue;
-    kandidaten.push({ aangemaakt: o.aangemaaktOp, t: { dag: o.dag, uur: o.uur, tekst: o.omschrijving, herkomst: 'lokaal' } });
+    kandidaten.push({ aangemaakt: o.aangemaaktOp, t: { dag: o.dag, uur: o.uur, tekst: o.omschrijving, herkomst: 'lokaal', kanaal: null } });
   }
-  const open = kandidaten.filter(({ t }) => !(laatste && dagVan(laatste.tijdstip) >= t.dag));
+  // Een bericht, flyer, brief of bezoek (niemand thuis) op of na de geplande dag rondt de stap ook af.
+  const laatsteGedaan = invoer.belpogingen
+    .filter((p) => p.contactId === contactId && !p.ongedaanOp && p.uitkomst === 'bericht_verstuurd')
+    .reduce<DagKey | null>((m, p) => (m && m > dagVan(p.tijdstip) ? m : dagVan(p.tijdstip)), null);
+  const open = kandidaten.filter(({ t }) => !(laatste && dagVan(laatste.tijdstip) >= t.dag) && !(laatsteGedaan && laatsteGedaan >= t.dag));
   if (open.length === 0) return null;
   open.sort((a, b) => b.aangemaakt.getTime() - a.aangemaakt.getTime());
   return open[0]!.t;
+}
+
+/** De hook voor vandaag; anders de recentste van de laatste 4 dagen (bv. gemaakt vrijdagavond voor maandag). */
+export function hookVanDeDag(contactId: string, hooks: Contacthook[], vandaag: DagKey): Contacthook | null {
+  let beste: Contacthook | null = null;
+  for (const h of hooks) {
+    if (h.contactId !== contactId || h.dag > vandaag || dagenTussen(h.dag, vandaag) > 4) continue;
+    if (!beste || h.dag > beste.dag) beste = h;
+  }
+  return beste;
 }
 
 function aanspreking(c: Contact): string {
@@ -187,8 +212,9 @@ export function berekenBellijst(invoer: BellijstInvoer): Bellijst {
   const verboden = new Set((invoer.belverboden ?? []).filter((b) => !b.ingetrokkenOp).map((b) => b.contactId));
   const afspraakVandaag = new Set(invoer.afspraken.filter((a) => a.contactId && dagVan(a.start) <= vandaag && vandaag <= dagVan(a.einde)).map((a) => a.contactId!));
 
-  const resultaat: Bellijst = { vandaag: [], nietOpLijst: [], nummerZoeken: [], handmatigBeoordelen: [], uitgesloten: [], pinGeweigerd: [], waarschuwingen: [], zonderTimeline: [], achterstand: [] };
+  const resultaat: Bellijst = { vandaag: [], nietOpLijst: [], nummerZoeken: [], handmatigBeoordelen: [], uitgesloten: [], pinGeweigerd: [], waarschuwingen: [], zonderTimeline: [], achterstand: [], langsgaanLater: [] };
   const kandidaten: Kandidaat[] = [];
+  const blokkenVandaag = prospectieblokkenOp(invoer.afspraken, vandaag, invoer.uur);
   const pinVolgorde = new Map<string, number>();
 
   for (const c of invoer.contacten) {
@@ -294,6 +320,7 @@ export function berekenBellijst(invoer: BellijstInvoer): Bellijst {
       vandaag,
     });
     const specifiek = specifiekeHaken(haken);
+    const hook = hookVanDeDag(c.id, invoer.contacthooks ?? [], vandaag);
     if (specifiek.length > 0) onderdelen.push({ label: `Hook: ${specifiek[0]!.onderwerp}`, punten: w.waardehaak });
     const bron = bronMetVoorrang(c.herkomstContact);
     if (bron) onderdelen.push({ label: `Bron: ${bron}`, punten: w.bron });
@@ -316,10 +343,9 @@ export function berekenBellijst(invoer: BellijstInvoer): Bellijst {
       // Een (vergeten) belofte gaat net vóór een nieuwe lead (afgestemd met Jonas, 3/10/2026).
       groep = 'C';
       const verstreken = werkdagenTussen(terugbel.dag, vandaag);
+      const wat = !terugbel.kanaal || terugbel.kanaal === 'bellen' ? 'Terugbelafspraak' : `Geplande stap (${KANAAL_LABEL[terugbel.kanaal]})`;
       reden =
-        terugbel.dag === vandaag
-          ? 'Terugbelafspraak vandaag'
-          : `Terugbelafspraak was voor ${korteDag(terugbel.dag)} — ${verstreken} ${verstreken === 1 ? 'werkdag' : 'werkdagen'} verstreken`;
+        terugbel.dag === vandaag ? `${wat} vandaag` : `${wat} was voor ${korteDag(terugbel.dag)} — ${verstreken} ${verstreken === 1 ? 'werkdag' : 'werkdagen'} verstreken`;
     } else if (isNieuweLead) {
       groep = 'B';
       const binnen = c.aangemaaktInBronOp ? relatief(dagVan(c.aangemaaktInBronOp), vandaag) : 'onlangs';
@@ -364,9 +390,13 @@ export function berekenBellijst(invoer: BellijstInvoer): Bellijst {
       pogingenZonderAntwoord: pogingen.length,
       isVastgepind: Boolean(pin),
       haken,
+      hook,
       advies: kanaaladvies({
         contact: c,
         pogingen,
+        gepland: terugbel?.kanaal ?? null,
+        hook,
+        veldwerkMogelijk: blokkenVandaag.length > 0,
         voorkeur: (invoer.voorkeuren ?? []).find((v) => v.contactId === c.id) ?? null,
         haken,
         fase,
@@ -374,7 +404,21 @@ export function berekenBellijst(invoer: BellijstInvoer): Bellijst {
         dag: vandaag,
         uur: invoer.uur ?? '10:00',
       }),
+      veldwerkBlok: null,
     };
+
+    // Regel 5b: langsgaan of flyer enkel in een Baanprospectie-blok (Jonas, 6/10/2026). Geen nummer nodig.
+    if (isVeldwerk(kandidaat.advies.kanaal)) {
+      const blok = blokkenVandaag[0];
+      if (!blok) {
+        resultaat.langsgaanLater.push({ kandidaat, blok: volgendProspectieblok(invoer.afspraken, vandaag) });
+        continue;
+      }
+      kandidaat.veldwerkBlok = blok;
+      kandidaat.reden += ` — in je Baanprospectie-blok ${uurVan(blok.start)}–${uurVan(blok.einde)}`;
+      kandidaten.push(kandidaat);
+      continue;
+    }
 
     // Regel 6: geen bruikbaar nummer → aparte actie.
     if (!heeftTelefoon(c)) {
@@ -433,14 +477,16 @@ export function berekenBellijst(invoer: BellijstInvoer): Bellijst {
 
   // ----- Limiet: groep A altijd volledig, daarna tot het maximum -----
   const max = inst.maxPerDag;
-  const groepA = kandidaten.filter((k) => k.groep === 'A');
-  const rest = kandidaten.filter((k) => k.groep !== 'A');
-  const plaats = Math.max(0, max - groepA.length);
+  // Groep A en bezoeken in een Baanprospectie-blok (die nemen geen belplaats in) staan er altijd op.
+  const groepA = kandidaten.filter((k) => k.groep === 'A' || k.veldwerkBlok);
+  const rest = kandidaten.filter((k) => !groepA.includes(k));
+  const plaats = Math.max(0, max - groepA.filter((k) => !k.veldwerkBlok).length);
   resultaat.achterstand.sort((a, b) => a.dag.localeCompare(b.dag));
-  resultaat.vandaag = [...groepA, ...rest.slice(0, plaats)];
+  resultaat.vandaag = [...groepA, ...rest.slice(0, plaats)].sort((a, b) => groepRang[a.groep] - groepRang[b.groep]);
   resultaat.nietOpLijst = rest.slice(plaats);
-  if (groepA.length > max) {
-    resultaat.waarschuwingen.push(`Je hebt vandaag ${groepA.length} terugbelafspraken met een uur — meer dan je maximum van ${max}. Ze staan er allemaal op.`);
+  const metUur = groepA.filter((k) => k.groep === 'A').length;
+  if (metUur > max) {
+    resultaat.waarschuwingen.push(`Je hebt vandaag ${metUur} terugbelafspraken met een uur — meer dan je maximum van ${max}. Ze staan er allemaal op.`);
   }
   const pinsTeveel = resultaat.nietOpLijst.filter((k) => k.groep === 'pin').length;
   if (pinsTeveel > 0) resultaat.waarschuwingen.push(`${pinsTeveel} vastgepinde contacten passen niet meer in je maximum.`);

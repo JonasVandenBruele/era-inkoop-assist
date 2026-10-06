@@ -1,5 +1,5 @@
 // Vertaling tussen databaserijen (snake_case) en het interne model (camelCase).
-import type { Afspraak, Belpoging, Belverbod, Bronactiviteit, Bronstatus, Contact, ContactPand, Contactvoorkeur, Dagplan, DonnaOverzicht, Opvolgactie, Pand, Planningskeuze, Waardehaak } from '../../domain/model';
+import type { Afspraak, Belpoging, Belverbod, Bronactiviteit, Bronstatus, Contact, Contacthook, ContactPand, Contactvoorkeur, Dagplan, DonnaOverzicht, Opvolgactie, Pand, Planningskeuze, Waardehaak } from '../../domain/model';
 
 type Rij = Record<string, unknown>;
 const d = (v: unknown): Date | null => (v ? new Date(v as string) : null);
@@ -104,6 +104,7 @@ export const activiteitNaarModel = (r: Rij): Bronactiviteit => ({
   auteur: s(r.auteur),
   tekst: r.tekst as string,
   soortLabel: s(r.soort_label) ?? undefined,
+  kanaal: (r.kanaal as Bronactiviteit['kanaal']) ?? undefined,
 });
 export const activiteitNaarRij = (a: Bronactiviteit) => ({
   ...herkomstNaarRij(a),
@@ -117,6 +118,7 @@ export const activiteitNaarRij = (a: Bronactiviteit) => ({
   auteur: a.auteur,
   tekst: a.tekst,
   soort_label: a.soortLabel ?? null,
+  kanaal: a.kanaal ?? null,
 });
 
 export const afspraakNaarModel = (r: Rij): Afspraak => ({
@@ -337,3 +339,17 @@ export const haakNaarRij = (h: Waardehaak) => ({
   is_testdata: h.isTestdata ?? false,
 });
 
+
+export const contacthookNaarModel = (r: Rij): Contacthook => ({
+  id: r.id as string,
+  contactId: r.contact_id as string,
+  dag: dagKolom(r.dag)!,
+  onderwerp: r.onderwerp as string,
+  detail: s(r.detail),
+  openingszin: s(r.openingszin),
+  kanaal: (r.kanaal as Contacthook['kanaal']) ?? null,
+  kanaalReden: s(r.kanaal_reden),
+  conceptbericht: s(r.conceptbericht),
+  bronlinks: Array.isArray(r.bronlinks) ? (r.bronlinks as Contacthook['bronlinks']) : [],
+  aangemaaktOp: new Date(r.aangemaakt_op as string),
+});

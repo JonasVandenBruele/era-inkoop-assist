@@ -51,6 +51,7 @@ async function gegevensVan(eigenaar: string): Promise<Gegevens> {
     belverboden: belverboden!.map(m.belverbodNaarModel),
     haken: haken!.map(m.haakNaarModel),
     voorkeuren: voorkeuren!.map(m.voorkeurNaarModel),
+    contacthooks: [],
   };
 }
 

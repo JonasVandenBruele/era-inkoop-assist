@@ -1,10 +1,31 @@
 // Kanaaladvies (PLAN.md §7b.1): bellen, berichtje of mail. Altijd aanwezig, nooit opdringerig.
 import { parseISO, getDay } from 'date-fns';
 import type { Instellingen } from '../core/settings/schema';
-import type { Belpoging, Contact, Contactvoorkeur, Fase, Waardehaak } from './model';
+import type { Belpoging, Contact, Contacthook, Contactkanaal, Contactvoorkeur, Fase, Waardehaak } from './model';
 import { heeftTelefoon } from './overzicht';
 
-export type AdviesKanaal = 'bellen' | 'bericht' | 'mail';
+/** Bellen, berichtje (sms), WhatsApp, mail, flyer in de bus, brief of langsgaan. */
+export type AdviesKanaal = Contactkanaal;
+
+export const KANAAL_LABEL: Record<AdviesKanaal, string> = {
+  bellen: 'bellen',
+  bericht: 'berichtje',
+  whatsapp: 'WhatsApp',
+  mail: 'mail',
+  flyer: 'flyer in de bus',
+  brief: 'brief',
+  bezoek: 'langsgaan',
+};
+
+export const KANAAL_ICOON: Record<AdviesKanaal, string> = {
+  bellen: '📞',
+  bericht: '💬',
+  whatsapp: '🟢',
+  mail: '✉️',
+  flyer: '📬',
+  brief: '✉️',
+  bezoek: '🚪',
+};
 
 export interface Kanaaladvies {
   kanaal: AdviesKanaal;
@@ -18,6 +39,12 @@ export interface AdviesInvoer {
   /** Onbeantwoorde pogingen sinds het laatste inhoudelijke contact, nieuwste eerst. */
   pogingen: Belpoging[];
   voorkeur: Contactvoorkeur | null;
+  /** Gepland kanaal uit de ERAForce-taak die vandaag aan de beurt is. */
+  gepland?: Contactkanaal | null;
+  /** Hook van Claude, met een voorgesteld kanaal en de reden. */
+  hook?: Contacthook | null;
+  /** Is er vandaag een Baanprospectie-blok? Zonder blok stelt de hook geen langsgaan of flyer voor. */
+  veldwerkMogelijk?: boolean;
   haken: Waardehaak[];
   fase: Fase | null;
   instellingen: Instellingen;
@@ -45,12 +72,22 @@ export function kanaaladvies(i: AdviesInvoer): Kanaaladvies {
   const kanBericht = kanBellen && isGsm(c);
   const kanMail = Boolean(c.email);
   const rustig = (k: AdviesKanaal) =>
-    k !== 'bellen' && k !== 'mail' && !berichtNuGepast(inst, i.dag, i.uur) ? `Verstuur tussen ${inst.contact.berichtenVanaf} en ${inst.contact.berichtenTot}${inst.contact.geenBerichtenOpZondag ? ', niet op zondag' : ''}.` : null;
+    (k === 'bericht' || k === 'whatsapp') && !berichtNuGepast(inst, i.dag, i.uur) ? `Verstuur tussen ${inst.contact.berichtenVanaf} en ${inst.contact.berichtenTot}${inst.contact.geenBerichtenOpZondag ? ', niet op zondag' : ''}.` : null;
   const belUren = () => {
     const v = i.voorkeur;
     if (!v?.nietVoor && !v?.nietNa) return null;
     return `Bel ${v.nietVoor ? `niet vóór ${v.nietVoor}` : ''}${v.nietVoor && v.nietNa ? ' en ' : ''}${v.nietNa ? `niet na ${v.nietNa}` : ''}.`;
   };
+
+  const adres = Boolean(c.straat && c.gemeente);
+  const mogelijk = (k: AdviesKanaal): boolean =>
+    k === 'bellen' ? kanBellen : k === 'bericht' || k === 'whatsapp' ? kanBericht : k === 'mail' ? kanMail : adres;
+
+  // 0. Het kanaal dat je zelf plande in ERAForce (bv. "langsgaan met flyer") gaat voor.
+  const g = i.gepland;
+  if (g && g !== 'bellen' && mogelijk(g)) {
+    return { kanaal: g, reden: `Gepland in ERAForce: ${KANAAL_LABEL[g]}`, opmerking: g === 'bezoek' ? 'Niemand thuis? Laat een flyer of kaartje achter.' : rustig(g) };
+  }
 
   // 1. Voorkeur van het contact gaat altijd voor.
   const vk = i.voorkeur?.kanaal;
@@ -67,6 +104,13 @@ export function kanaaladvies(i: AdviesInvoer): Kanaaladvies {
   if (oproepen >= inst.contact.berichtNaGeenAntwoord && !alBericht) {
     const kanaal: AdviesKanaal = kanBericht ? 'bericht' : kanMail ? 'mail' : 'bellen';
     if (kanaal !== 'bellen') return { kanaal, reden: `${oproepen}× geen antwoord — stuur liever een ${kanaal === 'bericht' ? 'berichtje' : 'mail'} dan nog eens te bellen`, opmerking: rustig(kanaal) };
+  }
+
+  // 3b. Claude stelde op basis van het dossier een ander kanaal voor (bv. "telefonisch moeilijk bereikbaar").
+  const hk = i.hook?.kanaal;
+  const veldwerk = hk === 'bezoek' || hk === 'flyer';
+  if (hk && hk !== 'bellen' && mogelijk(hk) && (!veldwerk || i.veldwerkMogelijk !== false)) {
+    return { kanaal: hk, reden: i.hook!.kanaalReden ?? `Voorstel van de hook: ${KANAAL_LABEL[hk]}`, opmerking: rustig(hk) };
   }
 
   // 4. Koud/langetermijn met informatieve haak: rustig te lezen, geen druk.

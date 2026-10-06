@@ -7,7 +7,7 @@
 // - Een afgesloten oproep telt als gesprek, tenzij de evaluatie zegt dat er niemand opnam.
 // - Een afspraak die voorbij is, telt ook als inhoudelijk contact.
 import { dagVan, uurVan, vanBrusselsLokaal } from '../../core/dates';
-import type { Afspraak, Bronactiviteit, Contact, ContactStatus, Telefoon } from '../../domain/model';
+import type { Afspraak, Bronactiviteit, Contact, Contactkanaal, ContactStatus, Telefoon } from '../../domain/model';
 
 /** Een rij uit de mirror (SQLite): veldnamen zoals in Salesforce; booleans als 0/1. */
 export type SfRij = Record<string, unknown>;
@@ -81,6 +81,15 @@ export function leadStatus(r: SfRij): ContactStatus {
   return 'prospect';
 }
 
+/** Straat met huisnummer en bus uit de ERA-adresvelden van een lead. */
+function eraStraat(r: SfRij): string | null {
+  const straat = tekst(r, 'ERA_Straat__c');
+  if (!straat) return null;
+  const nr = tekst(r, 'ERA_Huisnummer__c');
+  const bus = tekst(r, 'ERA_Bus__c');
+  return [straat, nr, bus ? `bus ${bus}` : null].filter(Boolean).join(' ');
+}
+
 /** Lead → contact, of null voor een geconverteerde lead (die bestaat verder als Contact). */
 export function leadNaarContact(r: SfRij): ContactImport | null {
   if (waar(r, 'IsConverted')) return null;
@@ -93,9 +102,10 @@ export function leadNaarContact(r: SfRij): ContactImport | null {
     achternaam: tekst(r, 'LastName') ?? tekst(r, 'Company') ?? '(zonder naam)',
     telefoons: telefoons(r, [['MobilePhone', 'gsm'], ['Phone', 'vast']]),
     email: tekst(r, 'Email'),
-    straat: tekst(r, 'Street'),
-    postcode: tekst(r, 'PostalCode'),
-    gemeente: tekst(r, 'City'),
+    // Het pandadres staat in de ERA-velden (Street/City zijn bij ERA leeg).
+    straat: eraStraat(r) ?? tekst(r, 'Street'),
+    postcode: tekst(r, 'ERA_Postcode__c') ?? tekst(r, 'PostalCode'),
+    gemeente: tekst(r, 'ERA_Gemeente__c') ?? tekst(r, 'City'),
     statusBron: leadStatus(r),
     statusLabelBron: tekst(r, 'Status'),
     faseBron: null,
@@ -117,9 +127,9 @@ export function contactNaarContact(r: SfRij): ContactImport {
     achternaam: tekst(r, 'LastName') ?? '(zonder naam)',
     telefoons: telefoons(r, [['MobilePhone', 'gsm'], ['Phone', 'vast'], ['HomePhone', 'vast'], ['OtherPhone', 'ander']]),
     email: tekst(r, 'Email'),
-    straat: tekst(r, 'MailingStreet'),
-    postcode: tekst(r, 'MailingPostalCode'),
-    gemeente: tekst(r, 'MailingCity'),
+    straat: tekst(r, 'MailingStreet') ?? tekst(r, 'OtherStreet'),
+    postcode: tekst(r, 'MailingPostalCode') ?? tekst(r, 'OtherPostalCode'),
+    gemeente: tekst(r, 'MailingCity') ?? tekst(r, 'OtherCity'),
     statusBron: 'relatie',
     statusLabelBron: 'Contact',
     faseBron: null,
@@ -151,6 +161,38 @@ export function isBeltaak(r: SfRij): boolean {
   return /oproep|bellen|call/i.test(tekst(r, 'Type') ?? '') || /\b(terug)?bel(len)?\b|\bcall\b|opvolgtaak/i.test(tekst(r, 'Subject') ?? '');
 }
 
+/**
+ * Herkenning van het kanaal, in volgorde van voorrang. "Aanbellen" is aan de deur bellen (bezoek), geen oproep.
+ * "Langsgaan met flyer" is een bezoek: de flyer is wat je achterlaat als er niemand thuis is.
+ */
+const KANAAL_PATRONEN: [Contactkanaal, RegExp][] = [
+  ['bezoek', /langs\s*(gaan|gaat|komen|lopen|rijden)|\bbezoek|\baanbellen|\bdag zeggen|\bop de stoep|\bdeur\b/i],
+  ['flyer', /flyer|folder|\bin de bus\b|brievenbus|flyeren/i],
+  ['whatsapp', /whats\s*app|\bwa\b/i],
+  ['bericht', /\bsms|berichtje|\btekstbericht/i],
+  ['brief', /\bbrief|aangetekend|kaartje|\bkaart\b|buurtmailing|zomerbrief|nieuwjaarsbrief/i],
+  ['mail', /\be-?mail|\bmailen\b|\bmail\b/i],
+];
+
+/**
+ * Het geplande kanaal van een taak: eerst uit het onderwerp (wat Jonas zelf schreef), dan uit het type.
+ * Het type staat vaak op "Bellen" terwijl het onderwerp iets anders zegt (bv. "langsgaan met flyer").
+ * Een beltaak zonder ander kanaal is "bellen"; een administratieve taak heeft geen kanaal (null).
+ */
+export function kanaalUitTaak(r: SfRij): Contactkanaal | null {
+  const onderwerp = tekst(r, 'Subject') ?? '';
+  // Staat er uitdrukkelijk "bellen" in het onderwerp ("Bellen indien bezoek mogelijk"), dan is het bellen.
+  if (/\b(terug|op)?bel(len|t)?\b|\bcall\b/i.test(onderwerp)) return 'bellen';
+  for (const [k, re] of KANAAL_PATRONEN) if (re.test(onderwerp)) return k;
+  const type = tekst(r, 'Type') ?? '';
+  if (/^aanbellen/i.test(type)) return 'bezoek';
+  if (/flyer/i.test(type)) return 'flyer';
+  if (/^sms/i.test(type)) return 'bericht';
+  if (/brief|buurtmailing/i.test(type)) return 'brief';
+  if (/^e-?mail/i.test(type)) return 'mail';
+  return isBeltaak(r) ? 'bellen' : null;
+}
+
 /** Een afgesloten oproep waarbij niemand opnam, is geen inhoudelijk contact. */
 const GEEN_GEHOOR = /geen\s*(gehoor|antwoord|reactie)|niet\s*(op)?genomen|voicemail|antwoordapparaat|onbereikbaar|nummer\s*(bestaat niet|onjuist|fout)/i;
 
@@ -159,7 +201,7 @@ export function taakNaarActiviteit(r: SfRij, eigenaarNaam: (id: string | null) =
   const wie = tekst(r, 'WhoId');
   if (!isPersoonId(wie)) return null;
   const open = !waar(r, 'IsClosed');
-  const bel = isBeltaak(r);
+  const kanaal = kanaalUitTaak(r);
   const evaluatie = EVALUATIEVELDEN.map((v) => tekst(r, v)).filter(Boolean).join(' ');
   const basis = {
     contactExternId: wie,
@@ -170,22 +212,26 @@ export function taakNaarActiviteit(r: SfRij, eigenaarNaam: (id: string | null) =
   if (open) {
     const vervalt = dag(r, 'ActivityDate');
     const herinnering = waar(r, 'IsReminderSet') ? tijd(r, 'ReminderDateTime') : null;
+    // Elke open taak met een contactkanaal is een geplande contactstap (timeline eerst), ook flyer, brief of bezoek.
     return {
       ...herkomst(r, tijd(r, 'CreatedDate')),
       ...basis,
       type: 'taak',
-      taakSoort: bel ? 'terugbellen' : 'algemeen',
+      kanaal,
+      taakSoort: kanaal ? 'terugbellen' : 'algemeen',
       vervaltOp: vervalt,
       vervaltUur: herinnering && vervalt && dagVan(herinnering) === vervalt ? uurVan(herinnering) : null,
       taakAfgerond: false,
     };
   }
   const gebeurd = tijd(r, 'CompletedDateTime') ?? tijd(r, 'ERA_Close_Date__c') ?? tijd(r, 'ActivityDate') ?? tijd(r, 'CreatedDate');
-  const gesprek = bel && !GEEN_GEHOOR.test(evaluatie);
+  // Een bezoek telt enkel als gesprek als er een evaluatie is en je iemand trof.
+  const gesprek = kanaal === 'bellen' ? !GEEN_GEHOOR.test(evaluatie) : kanaal === 'bezoek' && Boolean(evaluatie) && !GEEN_GEHOOR.test(evaluatie) && !/niet thuis|niemand thuis/i.test(evaluatie);
   return {
     ...herkomst(r, gebeurd),
     ...basis,
     type: gesprek ? 'gesprek' : 'notitie',
+    kanaal,
     taakSoort: null,
     vervaltOp: dag(r, 'ActivityDate'),
     vervaltUur: null,

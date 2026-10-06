@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useApp } from '../../app/context';
 import { ACTIVITEIT_LABEL, FASE_LABEL, ROL_LABEL, STATUS_LABEL, UITKOMST_LABEL } from '../../app/labels';
 import { datumUur, korteDag } from '../../core/dates';
-import { volledigeNaam } from '../../domain/model';
+import { volledigeNaam, type Belpoging } from '../../domain/model';
 import { historiek, laatsteInhoudelijkContact } from '../../domain/overzicht';
 import { pogingenSindsContact } from '../../domain/prioriteit';
 import { KeuzeKnoppen, ResultaatPaneel } from './ResultaatPaneel';
@@ -183,7 +183,7 @@ export function ContactPagina() {
               <li key={item.belpoging.id} className={item.belpoging.ongedaanOp ? 'ongedaan' : ''}>
                 <div className="klein">
                   <span className="label lokaal">Jij</span> {UITKOMST_LABEL[item.belpoging.uitkomst]}
-                  {item.belpoging.kanaal && item.belpoging.kanaal !== 'telefoon' && ` (${item.belpoging.kanaal === 'whatsapp' ? 'WhatsApp' : item.belpoging.kanaal})`} · {datumUur(item.tijdstip)}
+                  {item.belpoging.kanaal && item.belpoging.kanaal !== 'telefoon' && ` (${POGING_KANAAL[item.belpoging.kanaal]})`} · {datumUur(item.tijdstip)}
                   {!item.belpoging.isInhoudelijk && ' · telt niet als gesprek'}
                   {item.belpoging.ongedaanOp && ' · ongedaan gemaakt'}
                 </div>
@@ -205,3 +205,12 @@ export function ContactPagina() {
     </>
   );
 }
+
+const POGING_KANAAL: Record<Exclude<NonNullable<Belpoging['kanaal']>, 'telefoon'>, string> = {
+  sms: 'sms',
+  whatsapp: 'WhatsApp',
+  mail: 'mail',
+  flyer: 'flyer',
+  brief: 'brief',
+  bezoek: 'langsgegaan',
+};

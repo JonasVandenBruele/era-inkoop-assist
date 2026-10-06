@@ -24,6 +24,8 @@ export interface BelmomentenResultaat {
   heleDag: Afspraak | null;
   /** Totaal aantal telefoontjes dat vandaag (nog) past. */
   capaciteit: number;
+  /** Bezoeken en flyers per Baanprospectie-blok, gesorteerd op postcode (handig als route). */
+  veldwerk: { blok: Afspraak; kandidaten: Kandidaat[] }[];
 }
 
 interface Interval {
@@ -62,7 +64,14 @@ export function berekenBelmomenten(
   const w = inst.werkdag;
   const vanDag = afspraken.filter((a) => dagVan(a.start) <= dag && dag <= dagVan(a.einde));
   const heleDag = vanDag.find((a) => a.heleDag) ?? null;
-  if (heleDag) return { momenten: [], pastNiet: [...lijst], heleDag, capaciteit: 0 };
+  const veldwerk: BelmomentenResultaat['veldwerk'] = [];
+  for (const k of lijst.filter((x) => x.veldwerkBlok)) {
+    const groep = veldwerk.find((v) => v.blok.id === k.veldwerkBlok!.id) ?? veldwerk[veldwerk.push({ blok: k.veldwerkBlok!, kandidaten: [] }) - 1]!;
+    groep.kandidaten.push(k);
+  }
+  for (const v of veldwerk) v.kandidaten.sort((a, b) => (a.contact.postcode ?? '').localeCompare(b.contact.postcode ?? '') || (a.contact.straat ?? '').localeCompare(b.contact.straat ?? ''));
+  lijst = lijst.filter((x) => !x.veldwerkBlok);
+  if (heleDag) return { momenten: [], pastNiet: [...lijst], heleDag, capaciteit: 0, veldwerk };
 
   const buffer = w.reisbufferMinuten * 60_000;
   const bezet: Interval[] = [
@@ -99,7 +108,7 @@ export function berekenBelmomenten(
     if (blok) blok.kandidaten.push(k);
     else pastNiet.push(k);
   }
-  return { momenten, pastNiet, heleDag: null, capaciteit: momenten.reduce((s, m) => s + m.capaciteit, 0) };
+  return { momenten, pastNiet, heleDag: null, capaciteit: momenten.reduce((s, m) => s + m.capaciteit, 0), veldwerk };
 }
 
 /** "08:30–09:40" */

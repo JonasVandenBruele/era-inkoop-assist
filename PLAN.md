@@ -554,6 +554,14 @@ Elke fase sluit af met: wat werkt · hoe je het zelf test · wat je moet regelen
 Eerste waarnemingen staan al in [DATA.md](DATA.md): prospects zijn Salesforce-**Leads**, gesprekken zijn **Taken** (recordtype "ERAforce Taken algemeen", type "Uitgaande Oproep") die via **Maf Call** ontstaan. Bellen gebeurt via ERAForce; de Dagplanner opent het record met één tik (knop "Bel via ERAForce", gebouwd 3/10/2026).
 Volgt de 8 stappen uit je instructies: inventaris → DATA.md → mappingvoorstel → **jouw akkoord** → alleen-lezen adapter → tests (herhaalde import, wijzigingen, ontbrekende velden, verwijderingen, lokale resultaten) → 10 extractievoorbeelden beoordelen.
 
+### Fase 8b — Hooks en kanalen (gebouwd 6/10/2026)
+Na Jonas' kritiek op de eerste echte lijst ("hooks zeer slecht", "ik zie enkel bellen"):
+- **Kanaal uit de taak.** Het onderwerp gaat voor op het type: "langsgaan met flyer" (type Bellen) is een bezoek. Kanalen: bellen, berichtje, WhatsApp, mail, flyer, brief, langsgaan. Elke open taak met een kanaal is een geplande contactstap (timeline eerst); in het kanaaladvies krijgt het geplande kanaal voorrang. Op de BelKaart een passende knop plus "gedaan" (thuis/niet thuis/flyer achtergelaten, flyer gestoken, brief verstuurd).
+- **Baanprospectie-blokken** (Jonas, 6/10/2026): langsgaan en flyers gebeuren enkel in de blokken "Baanprospectie" in de ERAForce-agenda. Op een dag met zo'n blok staat het bezoek op de lijst (buiten het belmaximum) en bij Belmomenten in dat blok, gesorteerd op postcode. Zonder blok wacht het op het volgende blok (melding op Vandaag). Ook de hook stelt enkel langsgaan of flyer voor op een blokdag.
+- **Zonder AI:** geen algemene "we hadden afgesproken dat ik u zou terugbellen" meer. De kaart toont het aanknopingspunt: een specifiek taakonderwerp en een fragment uit het laatste gesprek met datum.
+- **Met AI (optie 2):** `scripts/hooks-maken.ts` draait na elke mirror-run via `mirror.py` en vraagt Claude via Jonas' eigen abonnement (`claude -p`, zonder tools, geen API-sleutel) per 5 contacten een hook, openingszin, kanaal en conceptbericht. Context: geplande taak, laatste 3 gesprekken, buurtfeiten uit de mirror (ERA-verkopen in de gemeente/straat, zonder namen, huisnummers of prijzen), nieuws via Google Nieuws (vastgoed algemeen + per gemeente). Controle achteraf: geen verzonnen links, niets gevoeligs, enkel mogelijke kanalen. Resultaat in de tabel `contacthooks`; een ongewijzigde context wordt niet opnieuw gevraagd.
+- Eenmalig voor Jonas: `scripts/claude-koppelen.sh` (aanmelden bij Claude, code in de sleutelhanger).
+
 ### Fase 9 — vervallen (agenda zit in ERAForce)
 Je agenda staat in Salesforce/ERAForce, Outlook gebruik je enkel voor mail. Een Outlook-koppeling is dus niet nodig: afspraken komen mee met de ERAForce-mirror in fase 8. Blijkt de mirror de agenda niet (of te traag) te bevatten, dan bekijken we in fase 8 een alternatief.
 

@@ -192,7 +192,9 @@ describe('importgebruiker van de ERAForce-mirror', () => {
     await alsImport(() => db.query(`update public.contacten set achternaam = 'Gewijzigd' where bron <> 'eraforce_mirror'`));
     expect((await als(A, () => db.query(`select 1 from public.contacten where achternaam = 'Gewijzigd'`))).rows).toEqual([]);
     await expect(alsImport(() => db.query(`insert into public.contacten (eigenaar_id, achternaam, bron) values ($1, 'X', 'lokaal')`, [A]))).rejects.toThrow();
-    await expect(alsImport(() => db.query('select * from public.belpogingen'))).rejects.toThrow();
-    await expect(alsImport(() => db.query('select * from public.instellingen'))).rejects.toThrow();
+    // Lezen van je eigen resultaten mag (voor de bellijst van het hooks-script), maar nooit testdata en nooit wijzigen.
+    expect((await alsImport(() => db.query('select * from public.belpogingen where is_testdata'))).rows).toEqual([]);
+    await expect(alsImport(() => db.query(`update public.belpogingen set notitie = 'x'`))).rejects.toThrow();
+    await expect(alsImport(() => db.query(`update public.instellingen set document = '{}'::jsonb`))).rejects.toThrow();
   });
 });

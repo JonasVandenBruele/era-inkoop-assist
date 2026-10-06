@@ -306,8 +306,13 @@ p.label { display: block; white-space: normal; border-radius: 8px; }
 
 /* ---------- Fase 3b: contactstrategie ---------- */
 .advies { margin: 0; padding: 8px 10px; border-radius: 10px; background: var(--blauw-licht); font-size: 0.92rem; }
-.advies-bericht, .advies-mail { background: #ecfdf5; }
-@media (prefers-color-scheme: dark) { .advies-bericht, .advies-mail { background: #12301f; } }
+.advies-bericht, .advies-mail, .advies-whatsapp, .advies-flyer, .advies-brief, .advies-bezoek { background: #ecfdf5; }
+@media (prefers-color-scheme: dark) { .advies-bericht, .advies-mail, .advies-whatsapp, .advies-flyer, .advies-brief, .advies-bezoek { background: #12301f; } }
+/* Hook van Claude en aanknopingspunt uit taak en laatste gesprek */
+.hook { margin: 0; padding: 8px 10px; border-radius: var(--radius, 10px); background: var(--blauw-licht); border-left: 3px solid var(--blauw); }
+.hook p, .aanknopingspunt p { margin: 2px 0; }
+.hook a { word-break: break-word; }
+.aanknopingspunt { margin: 0; }
 .haken { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; font-size: 0.88rem; }
 .kanaalkeuze { display: flex; gap: 6px; flex-wrap: wrap; }
 .kanaalkeuze .knop { flex: 1; min-height: 44px; }
@@ -414,7 +419,7 @@ a { color: var(--rood); }
 .label { border-radius: 2px; }
 .label.lokaal { background: var(--blauw); color: #fff; }
 .advies { border-radius: var(--radius); border-left: 3px solid var(--blauw); }
-.advies-bericht, .advies-mail { border-left-color: #1d8a5a; }
+.advies-bericht, .advies-mail, .advies-whatsapp, .advies-flyer, .advies-brief, .advies-bezoek { border-left-color: #1d8a5a; }
 .openingszin { border-radius: var(--radius); border-left: 3px solid var(--rood); }
 .samenvatting strong { color: var(--blauw); text-transform: uppercase; font-size: 0.9rem; letter-spacing: 0.02em; }
 .testdata-strook { padding-top: calc(6px + env(safe-area-inset-top)); }

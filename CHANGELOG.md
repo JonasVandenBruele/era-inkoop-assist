@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.10.0] — 2026-10-06 — Hooks en kanalen
+
+### Toegevoegd
+- **Meer kanalen dan bellen:** flyer in de bus, brief, WhatsApp en langsgaan. Het kanaal komt uit het taakonderwerp in ERAForce (bv. "langsgaan met flyer" met type Bellen wordt een bezoek) en krijgt voorrang in het advies. Op de kaart: Route (Apple Kaarten) en "Gedaan" bij een bezoek, "Flyer gestoken" of "Brief verstuurd", en WhatsApp als eigen knop.
+- **Baanprospectie-blokken:** langsgaan en flyers enkel in de blokken "Baanprospectie" van je ERAForce-agenda. Op zo'n dag in het blok (bij Belmomenten, op postcode), anders wachten ze op je volgende blok.
+- **Aanknopingspunt** in plaats van de algemene terugbelzin: het specifieke taakonderwerp en een fragment uit het laatste gesprek met datum.
+- **Hooks met Claude** (`scripts/hooks-maken.ts`): na elke mirror-run, via je eigen Claude-abonnement. Hook, openingszin, kanaal en conceptbericht per contact, op basis van je evaluaties, ERA-verkopen in de buurt en het nieuws (algemeen en per gemeente). Op de BelKaart met bronlinks.
+- **Migratie `20261006000007_hooks_en_kanalen.sql`:** kolom `kanaal` op bronactiviteiten, flyer/brief/bezoek bij belpogingen, tabel `contacthooks`, leesrecht (geen schrijfrecht) voor de importrol op je eigen resultaten zodat het hooks-script dezelfde bellijst berekent.
+
+### Opgelost
+- Het pandadres van leads kwam niet mee: ERAForce bewaart het in de ERA-adresvelden (straat, huisnummer, bus, postcode, gemeente), niet in Street/City.
+- Een bericht, flyer of brief op of na de geplande dag rondt de geplande stap af (even rust), zodat het contact niet blijft staan.
+
+### Tests
+- 183 tests, o.a. kanaalherkenning, Baanprospectie-blokken, aanknopingspunt, hook van de dag en de nieuwe toegangsregels.
+
 ## [0.9.0] — 2026-10-05 — Echte gegevens uit de ERAForce-mirror (fase 8)
 
 ### Toegevoegd

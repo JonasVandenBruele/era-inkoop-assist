@@ -17,6 +17,8 @@ export interface Bericht {
 
 export function berichtTekst({ kandidaat: k, kanaal, voornaamGebruiker, organisatie }: BerichtContext): Bericht {
   const c = k.contact;
+  // Conceptbericht van de hook van Claude, als die er is (Jonas past aan en verstuurt zelf).
+  if (k.hook?.conceptbericht) return { onderwerp: kanaal === 'mail' ? k.hook.onderwerp : null, tekst: k.hook.conceptbericht };
   const je = c.aanspreekvormBron === 'je';
   const naam = je && c.voornaam && !c.voornaam.includes('&') ? c.voornaam : c.aanhef === 'Mevr.' ? `mevrouw ${c.achternaam}` : c.aanhef === 'Dhr.' ? `meneer ${c.achternaam}` : `familie ${c.achternaam}`;
   const u = je ? 'je' : 'u';

@@ -1,4 +1,5 @@
-// Standaard-openingszin zonder AI. Gebruikt enkel herleidbare feiten (groep, herkomst, terugbelafspraak),
+// Openingszin: die van de hook van Claude als die er is, anders een standaardzin zonder AI.
+// De standaardzin gebruikt enkel herleidbare feiten (groep, herkomst),
 // nooit vrije notitietekst — zo komt er geen gevoelige persoonlijke aanleiding of verzonnen voorgeschiedenis in.
 import type { Kandidaat } from './prioriteit';
 import { haakZin } from './haken';
@@ -26,15 +27,18 @@ function aanspreking(k: Kandidaat, je: boolean): string {
   return `familie ${c.achternaam}`;
 }
 
-export function standaardOpeningszin({ kandidaat: k, voornaamGebruiker, organisatie, uur, vandaag }: OpeningszinContext): string {
+export function standaardOpeningszin({ kandidaat: k, voornaamGebruiker, organisatie, uur }: OpeningszinContext): string {
   const je = k.contact.aanspreekvormBron === 'je';
   const begin = `${groet(uur)} ${aanspreking(k, je)}, met ${voornaamGebruiker} van ${organisatie}.`;
-  const u = je ? 'je' : 'u';
   const uw = je ? 'je' : 'uw';
   const past = 'Past het even?';
 
+  // De hook van Claude, als die er is: gemaakt uit de evaluaties en het nieuws, enkel aangeleverde feiten.
+  if (k.hook?.openingszin) return k.hook.openingszin;
+  // Geplande opvolging: geen algemene "we hadden afgesproken"-zin (Jonas, 6/10/2026). Het aanknopingspunt
+  // (taakonderwerp en laatste gesprek) staat apart op de kaart; de opening blijft kort.
   if (k.terugbel && (k.groep === 'A' || k.groep === 'C')) {
-    return `${begin} We hadden afgesproken dat ik ${u}${k.terugbel.dag === vandaag ? ' vandaag' : ''} zou terugbellen. ${past}`;
+    return `${begin} ${past}`;
   }
   if (k.groep === 'B' || !k.laatste) {
     const herkomst = k.contact.herkomstContact ?? '';

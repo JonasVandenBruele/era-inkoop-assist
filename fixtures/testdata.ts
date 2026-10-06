@@ -9,6 +9,7 @@ import type {
   Contact,
   ContactPand,
   ContactStatus,
+  Contacthook,
   Contactvoorkeur,
   Fase,
   Pand,
@@ -29,6 +30,7 @@ export interface Testdataset {
   bronnen: Bronstatus[];
   haken: Waardehaak[];
   voorkeuren: Contactvoorkeur[];
+  contacthooks: Contacthook[];
 }
 
 export interface TestdataOpties {
@@ -69,6 +71,9 @@ export const RANDGEVAL = {
   voorkeurBericht: 'FIC-C-005',
   persoonlijkeHaak: 'FIC-C-016',
   huurcontractLooptAf: 'FIC-C-013',
+  // Hooks en kanalen (6/10/2026)
+  langsgaanMetFlyer: 'FIC-C-901',
+  aiHook: 'FIC-C-902',
 } as const;
 
 // ---------- Bouwstenen ----------
@@ -451,6 +456,35 @@ export function genereerTestdata(opties: TestdataOpties): Testdataset {
     }
   });
 
+  // ---------- Hooks en kanalen: geplande taak die geen oproep is, en een hook van Claude ----------
+  // Na de willekeurige contacten, zodat de rest van de testdata niet verschuift.
+  const vermassen = voegContactToe({ ext: RANDGEVAL.langsgaanMetFlyer, aanhef: 'Mevr.', voornaam: 'Greet', achternaam: 'Vermassen', status: 'langetermijn', fase: 'koud', horizon: 'over 2–3 jaar', aanspreek: 'u', aangemaaktDagGeleden: 500, gemeente: ['9830', 'Sint-Martens-Latem'] });
+  activiteit(vermassen, 'gesprek', 480, 'Mevr. Vermassen: wil over 2–3 jaar kijken, zoekt dan een appartement in de buurt van haar dochter. Telefonisch moeilijk bereikbaar.');
+  activiteit(vermassen, 'taak', 30, 'langsgaan met flyer', { taakSoort: 'terugbellen', kanaal: 'bezoek', vervaltOp: vandaag, soortLabel: 'Bellen', auteur: 'JV' });
+
+  // Baanprospectie-blok morgen (vertrek vanaf kantoor): daar wacht het bezoek op.
+  afspraak(1, '14:00', '16:00', 'Baanprospectie', null, { soortLabel: 'Baanprospectie', locatie: 'Kantoor: ERA (fictief)' });
+
+  const devriendt = voegContactToe({ ext: RANDGEVAL.aiHook, aanhef: 'Dhr.', voornaam: 'Ruben', achternaam: 'Devriendt', status: 'prospect', fase: 'lauw', horizon: 'oktober', aanspreek: 'u', aangemaaktDagGeleden: 90, gemeente: ['9000', 'Gent'] });
+  activiteit(devriendt, 'gesprek', 36, 'Wil toch via een online veiling verkopen (Biddit). Zal dit doen in oktober.');
+  terugbeltaak(devriendt, 36, dag(-1), null, 'Zeker van biddit?');
+  const contacthooks: Contacthook[] = [
+    {
+      id: id('contacthook:devriendt'),
+      contactId: devriendt.id,
+      dag: vandaag,
+      onderwerp: 'Verkoop via Biddit in oktober',
+      detail: 'In het laatste gesprek zei hij dat hij in oktober via Biddit wil verkopen. Vraag of hij al een notaris heeft en hoe hij de instelprijs bepaalt.',
+      openingszin: 'Goeiemorgen meneer Devriendt, met Jonas van ERA. U zei dat u in oktober via Biddit wou verkopen — is dat ondertussen gestart? Past het even?',
+      kanaal: 'bellen',
+      kanaalReden: 'Afgesproken moment; een concrete vraag over Biddit werkt het best aan de telefoon.',
+      conceptbericht: null,
+      bronlinks: [],
+      aangemaaktOp: geimporteerdOp,
+      isTestdata: true,
+    },
+  ];
+
   // ---------- Contactstrategie: fictieve haken en voorkeuren ----------
   const haak = (sleutel: string, h: Omit<Waardehaak, 'id' | 'aangemaaktOp' | 'isTestdata' | 'detail' | 'bron' | 'gevoelig'> & Partial<Waardehaak>): Waardehaak => ({
     id: id(`haak:${sleutel}`),
@@ -500,5 +534,5 @@ export function genereerTestdata(opties: TestdataOpties): Testdataset {
     { id: id('bron:gesprekken'), soort: 'gesprekken', adapter: 'handmatig', naam: 'Gesprekssamenvattingen', isTestdata: true, laatstSuccesvolOp: null, laatsteFout: null },
   ];
 
-  return { contacten, panden, contactPanden, activiteiten, afspraken, belpogingen, bronnen, haken, voorkeuren };
+  return { contacten, panden, contactPanden, activiteiten, afspraken, belpogingen, bronnen, haken, voorkeuren, contacthooks };
 }

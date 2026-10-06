@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../../app/context';
 import { UITKOMST_LABEL } from '../../app/labels';
-import { datumUur, korteDag, langeDag, uurVan } from '../../core/dates';
+import { dagVan, datumUur, korteDag, langeDag, uurVan } from '../../core/dates';
 import { volledigeNaam, type Dagplan } from '../../domain/model';
 import { afsprakenVanDag } from '../../domain/overzicht';
 import { BLOK_VAN_GROEP, berekenBellijst, samenvattingNietOpLijst, type Kandidaat } from '../../domain/prioriteit';
@@ -195,6 +195,15 @@ export function Vandaag() {
         </details>
       )}
 
+      {lijst.langsgaanLater.length > 0 && (
+        <p className="infomelding klein">
+          🚪 {lijst.langsgaanLater.length} {lijst.langsgaanLater.length === 1 ? 'bezoek of flyer wacht' : 'bezoeken of flyers wachten'} op je volgende Baanprospectie-blok
+          {lijst.langsgaanLater[0]!.blok
+            ? ` (${korteDag(dagVan(lijst.langsgaanLater[0]!.blok.start))} ${blokTekst(lijst.langsgaanLater[0]!.blok)})`
+            : ' — er staat nog geen blok in je ERAForce-agenda'}
+          : {lijst.langsgaanLater.map((l) => l.kandidaat.contact.achternaam).join(', ')}.
+        </p>
+      )}
       {lijst.zonderTimeline.length > 0 && (
         <p className="klein zacht">
           📋 {lijst.zonderTimeline.length} {lijst.zonderTimeline.length === 1 ? 'prospect' : 'prospects'} zonder geplande opvolgtaak — koppel er een via je ERAForce-dashboard.
@@ -391,6 +400,15 @@ function Belmomenten({ actief }: { actief: Kandidaat[] }) {
           ))}
         </ul>
       )}
+      {r.veldwerk.map((v) => (
+        <div key={v.blok.id} className="kaart belmoment veldwerk">
+          <div className="belmoment-kop">
+            <strong>🚪 Baanprospectie {blokTekst(v.blok)}</strong>
+            <span className="zacht klein">{v.kandidaten.length} {v.kandidaten.length === 1 ? 'adres' : 'adressen'}</span>
+          </div>
+          <p className="klein">{v.kandidaten.map((k) => `${k.contact.achternaam}${k.contact.gemeente ? ` (${k.contact.gemeente})` : ''}`).join(' · ')}</p>
+        </div>
+      ))}
       {r.pastNiet.length > 0 && (
         <p className="foutmelding klein">
           {r.pastNiet.length} {r.pastNiet.length === 1 ? 'contact past' : 'contacten passen'} niet meer in je vrije tijd vandaag ({r.pastNiet.map((k) => k.contact.achternaam).join(', ')}).

@@ -51,6 +51,9 @@ export function maakSupabaseStore(gebruikerId: string): Store {
     async laadGegevens(): Promise<Gegevens> {
       const tabellen = ['contacten', 'panden', 'contact_pand', 'bronactiviteiten', 'afspraken', 'belpogingen', 'bronnen', 'opvolgacties', 'planningskeuzes', 'belverboden', 'waardehaken', 'contactvoorkeuren'];
       const [contacten, panden, contactPanden, activiteiten, afspraken, belpogingen, bronnen, opvolgacties, keuzes, belverboden, haken, voorkeuren] = await Promise.all(tabellen.map(alles));
+      // Hooks van vandaag en later (een paar weken terug volstaat voor de historiek). Ontbreekt de tabel nog, dan geen hooks.
+      const vanaf = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
+      const hooks = await sb.from('contacthooks').select('*').gte('dag', vanaf);
       return {
         contacten: contacten!.map(m.contactNaarModel),
         panden: panden!.map(m.pandNaarModel),
@@ -64,6 +67,7 @@ export function maakSupabaseStore(gebruikerId: string): Store {
         belverboden: belverboden!.map(m.belverbodNaarModel),
         haken: haken!.map(m.haakNaarModel),
         voorkeuren: voorkeuren!.map(m.voorkeurNaarModel),
+        contacthooks: hooks.error ? [] : (hooks.data ?? []).map(m.contacthookNaarModel),
       };
     },
 

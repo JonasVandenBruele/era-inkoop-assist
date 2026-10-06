@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../../app/context';
 import { FASE_LABEL } from '../../app/labels';
-import { dagVan, relatief, uurVan } from '../../core/dates';
+import { dagVan, korteDag, relatief, uurVan } from '../../core/dates';
 import { volledigeNaam } from '../../domain/model';
 import { standaardOpeningszin } from '../../domain/openingszin';
 import { GROEP_LABEL, type Kandidaat } from '../../domain/prioriteit';
@@ -10,11 +10,17 @@ import { KeuzeKnoppen, ResultaatPaneel } from './ResultaatPaneel';
 import { BerichtPaneel } from './BerichtPaneel';
 import { haakLabel } from '../../domain/haken';
 import { eraforceLink } from '../../domain/eraforce';
+import { aanknopingspunt } from '../../domain/aanknopingspunt';
+import { KANAAL_ICOON } from '../../domain/kanaaladvies';
+import { GedaanPaneel, type GedaanKanaal } from './GedaanPaneel';
+
+/** Route naar het adres in Apple Kaarten (opent de app op de iPhone). */
+const routeLink = (adres: string) => `https://maps.apple.com/?daddr=${encodeURIComponent(adres)}`;
 
 export function BelKaart({ k, nummer, opLijst = true }: { k: Kandidaat; nummer?: number; opLijst?: boolean }) {
   const { gegevens, instellingen, klok, startOproep } = useApp();
   const [uitleg, setUitleg] = useState(false);
-  const [paneel, setPaneel] = useState<'geen' | 'resultaat' | 'meer' | 'sms' | 'whatsapp' | 'mail'>('geen');
+  const [paneel, setPaneel] = useState<'geen' | 'resultaat' | 'meer' | 'sms' | 'whatsapp' | 'mail' | GedaanKanaal>('geen');
   const c = k.contact;
 
   const pand = gegevens.contactPanden
@@ -31,6 +37,10 @@ export function BelKaart({ k, nummer, opLijst = true }: { k: Kandidaat; nummer?:
     vandaag,
   });
   const tel = c.telefoons[0];
+  const punt = aanknopingspunt(k.terugbel, k.laatste);
+  const hook = k.hook;
+  const contactAdres = c.straat && c.gemeente ? `${c.straat}, ${c.postcode ? `${c.postcode} ` : ''}${c.gemeente}` : null;
+  const kanaal = k.advies.kanaal;
   const erafLink = instellingen.eraforce.belViaEraforce ? eraforceLink(c, import.meta.env.VITE_ERAFORCE_DOMEIN) : null;
   const geenAntwoordVandaag = gegevens.belpogingen.filter((p) => p.contactId === c.id && !p.ongedaanOp && p.uitkomst === 'geen_antwoord' && dagVan(p.tijdstip) === vandaag).length;
 
@@ -52,16 +62,43 @@ export function BelKaart({ k, nummer, opLijst = true }: { k: Kandidaat; nummer?:
       </div>
 
       <p className="reden">{k.reden}</p>
-      {k.terugbel && (
-        <p className="klein zacht">
-          📅 {k.terugbel.herkomst === 'bron' ? (c.bron === 'eraforce_mirror' ? 'Uit je ERAForce-opvolgtaak' : 'Uit de opvolgtaak in de bron') : 'Jouw afspraak in de Dagplanner'}
-          {k.terugbel.tekst && <>: <span className="citaat">“{kort(k.terugbel.tekst, 80)}”</span></>}
-        </p>
+      {hook && (
+        <div className="hook">
+          <p>
+            <strong>💡 Hook: {hook.onderwerp}</strong>
+            <span className="klein zacht"> · Claude</span>
+          </p>
+          {hook.detail && <p className="klein">{hook.detail}</p>}
+          {hook.bronlinks.length > 0 && (
+            <p className="klein">
+              {hook.bronlinks.map((b, i) => (
+                <span key={b.url}>
+                  {i > 0 && ' · '}
+                  <a href={b.url} target="_blank" rel="noreferrer">{kort(b.titel, 60)}</a>
+                </span>
+              ))}
+            </p>
+          )}
+        </div>
+      )}
+      {(punt.taak || punt.gesprek) && (
+        <div className="aanknopingspunt klein">
+          {punt.taak && (
+            <p>
+              📌 {k.terugbel?.herkomst === 'lokaal' ? 'Jouw afspraak' : 'Taak in ERAForce'}: <span className="citaat">“{punt.taak}”</span>
+            </p>
+          )}
+          {punt.gesprek && (
+            <p>
+              🗣️ Gesprek {korteDag(punt.gesprek.dag)} ({relatief(punt.gesprek.dag, vandaag)}): <span className="citaat">“{punt.gesprek.fragment}”</span>
+            </p>
+          )}
+        </div>
       )}
       {geenAntwoordVandaag > 0 && <p className="label waarschuwing">Vandaag al {geenAntwoordVandaag}× geen antwoord — later nog eens proberen</p>}
       {(k.advies.kanaal !== 'bellen' || k.advies.opmerking) && (
         <p className={`advies advies-${k.advies.kanaal}`}>
-          {{ bellen: '📞', bericht: '💬', mail: '✉️' }[k.advies.kanaal]} <strong>Advies:</strong> {k.advies.reden}
+          {KANAAL_ICOON[k.advies.kanaal]} <strong>Advies:</strong> {k.advies.reden}
           {k.advies.opmerking && <span className="zacht"> · {k.advies.opmerking}</span>}
         </p>
       )}
@@ -78,7 +115,7 @@ export function BelKaart({ k, nummer, opLijst = true }: { k: Kandidaat; nummer?:
         </ul>
       )}
 
-      <p className="klein zacht">
+      {!punt.gesprek && <p className="klein zacht">
         {k.laatste ? (
           <>
             Laatste gesprek {relatief(dagVan(k.laatste.tijdstip), vandaag)} ({k.laatste.herkomst === 'lokaal' ? 'jij' : 'bron'})
@@ -87,11 +124,11 @@ export function BelKaart({ k, nummer, opLijst = true }: { k: Kandidaat; nummer?:
         ) : (
           'Nog geen inhoudelijk gesprek.'
         )}
-      </p>
+      </p>}
 
       {opLijst && (
         <p className="openingszin">
-          <span className="klein zacht">Openingszin (standaard)</span>
+          <span className="klein zacht">Openingszin {hook?.openingszin ? '(hook)' : '(standaard)'}</span>
           <br />
           {zin}
         </p>
@@ -101,12 +138,29 @@ export function BelKaart({ k, nummer, opLijst = true }: { k: Kandidaat; nummer?:
         <ResultaatPaneel contact={c} pogingenZonderAntwoord={k.pogingenZonderAntwoord} onKlaar={() => setPaneel('geen')} />
       ) : paneel === 'sms' || paneel === 'whatsapp' || paneel === 'mail' ? (
         <BerichtPaneel k={k} start={paneel} onKlaar={() => setPaneel('geen')} />
+      ) : paneel === 'flyer' || paneel === 'brief' || paneel === 'bezoek' ? (
+        <GedaanPaneel k={k} kanaal={paneel} onKlaar={() => setPaneel('geen')} />
       ) : (
         <>
           <div className="knoppenrij">
-            {opLijst && k.advies.kanaal === 'bericht' && (
-              <button className="knop primair belknop" onClick={() => setPaneel('sms')}>
-                💬 Bericht
+            {opLijst && (kanaal === 'bericht' || kanaal === 'whatsapp') && (
+              <button className="knop primair belknop" onClick={() => setPaneel(kanaal === 'whatsapp' ? 'whatsapp' : 'sms')}>
+                {kanaal === 'whatsapp' ? '🟢 WhatsApp' : '💬 Bericht'}
+              </button>
+            )}
+            {opLijst && kanaal === 'bezoek' && (
+              <>
+                {contactAdres && (
+                  <a className="knop primair belknop" href={routeLink(contactAdres)} target="_blank" rel="noreferrer">
+                    🚪 Route
+                  </a>
+                )}
+                <button className="knop" onClick={() => setPaneel('bezoek')}>✓ Gedaan</button>
+              </>
+            )}
+            {opLijst && (kanaal === 'flyer' || kanaal === 'brief') && (
+              <button className="knop primair belknop" onClick={() => setPaneel(kanaal)}>
+                {kanaal === 'flyer' ? '📬 Flyer gestoken' : '✉️ Brief verstuurd'}
               </button>
             )}
             {opLijst && k.advies.kanaal === 'mail' && (
@@ -136,9 +190,11 @@ export function BelKaart({ k, nummer, opLijst = true }: { k: Kandidaat; nummer?:
                   📞 Bel (test)
                 </button>
               ))}
-            <button className="knop" onClick={() => setPaneel('resultaat')}>
-              Resultaat
-            </button>
+            {(kanaal === 'bellen' || kanaal === 'bericht' || kanaal === 'whatsapp' || kanaal === 'mail' || !opLijst) && (
+              <button className="knop" onClick={() => setPaneel('resultaat')}>
+                Resultaat
+              </button>
+            )}
             <button className="knop" onClick={() => setPaneel(paneel === 'meer' ? 'geen' : 'meer')} aria-expanded={paneel === 'meer'}>
               ⋯
             </button>
@@ -153,8 +209,12 @@ export function BelKaart({ k, nummer, opLijst = true }: { k: Kandidaat; nummer?:
                     <a className="knop" href={`tel:${tel.nummer.replace(/\s/g, '')}`} onClick={() => startOproep(c.id)}>📞 Toch bellen</a>
                   )
                 )}
-                {k.advies.kanaal !== 'bericht' && tel && <button className="knop" onClick={() => setPaneel('sms')}>💬 Bericht</button>}
-                {k.advies.kanaal !== 'mail' && c.email && <button className="knop" onClick={() => setPaneel('mail')}>✉️ Mail</button>}
+                {kanaal !== 'bericht' && tel && <button className="knop" onClick={() => setPaneel('sms')}>💬 Bericht</button>}
+                {kanaal !== 'whatsapp' && tel && <button className="knop" onClick={() => setPaneel('whatsapp')}>🟢 WhatsApp</button>}
+                {kanaal !== 'mail' && c.email && <button className="knop" onClick={() => setPaneel('mail')}>✉️ Mail</button>}
+                {kanaal !== 'bezoek' && contactAdres && <button className="knop" onClick={() => setPaneel('bezoek')}>🚪 Langsgegaan</button>}
+                {kanaal !== 'flyer' && contactAdres && <button className="knop" onClick={() => setPaneel('flyer')}>📬 Flyer gestoken</button>}
+                {kanaal !== 'brief' && contactAdres && <button className="knop" onClick={() => setPaneel('brief')}>✉️ Brief verstuurd</button>}
               </div>
               <KeuzeKnoppen contactId={c.id} toonVastpinnen={!opLijst} />
               <button className="knop tekstknop" onClick={() => setUitleg(!uitleg)} aria-expanded={uitleg}>
