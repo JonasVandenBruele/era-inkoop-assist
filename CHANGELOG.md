@@ -13,10 +13,11 @@
 - Migratie `20261006000010_marktsignalen.sql`: tabel `marktsignalen` (enkel advertentiegegevens), schrijfbaar door de importrol bij je ERAForce-contacten; jij mag enkel "afgehandeld" zetten.
 
 ### Gewijzigd
+- **Wacht op antwoord:** wie vandaag niet opnam (of een bericht kreeg) verdwijnt niet meer van de bellijst, maar zakt naar een blok onderaan met "Belt terug" (resultaat Gesproken), "ERAForce" (opent de prospect meteen) en "Opnieuw". Ook bij de derde keer geen antwoord. Belde hij die dag niet terug, dan geldt vanaf morgen de gewone herplanning (Jonas, 6/10/2026).
 - **Uitgaande oproep zonder evaluatie of met "vm"** (of "ingesproken", "nt opgenomen", "répondeur" …) telt als antwoordapparaat, niet als gesprek (Jonas, 6/10/2026). Een inkomende oproep zonder tekst blijft een gesprek.
 
 ### Tests
-- 205 tests, o.a. adresnormalisatie, officiële straatnamen, groep "Te koop gezet" (dag erna, boven het maximum, verdwijnt na een bericht) en voicemail-herkenning.
+- 213 tests, o.a. wacht op antwoord, adresnormalisatie, officiële straatnamen, groep "Te koop gezet" (dag erna, boven het maximum, verdwijnt na een bericht) en voicemail-herkenning.
 
 ## [0.12.0] — 2026-10-06 — Taal, aanspreking, ander kanaal en evaluatie-vinkje
 

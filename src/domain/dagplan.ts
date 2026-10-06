@@ -55,3 +55,34 @@ export function dagWeergave(lijst: Bellijst, plan: { contactIds: string[] } | nu
 
   return { actief: [...top, ...rest], nietOpLijst, gebeld, nieuwPlan };
 }
+
+export interface WachtOpAntwoord {
+  contact: Contact;
+  /** Laatste onbeantwoorde poging (geen antwoord of bericht), nieuwste eerst. */
+  pogingen: Belpoging[];
+  /** Wanneer de app weer een poging voorstelt, bv. "Geen antwoord op di 6 okt; volgende poging do 8 okt." */
+  detail: string;
+}
+
+/**
+ * Wie VANDAAG niet opnam of een bericht kreeg, verdwijnt niet maar zakt naar onderen ("Wacht op antwoord", Jonas
+ * 6/10/2026): belt de klant terug, dan tik je hem daar aan zonder in ERAForce te zoeken. Belde hij die dag niet terug,
+ * dan geldt vanaf morgen de gewone herplanning na geen antwoord. Nieuwste poging eerst.
+ */
+export function wachtOpAntwoord(lijst: Bellijst, belpogingen: Belpoging[], vandaag: DagKey): WachtOpAntwoord[] {
+  const uit: WachtOpAntwoord[] = [];
+  // Ook wie vandaag te vaak geen antwoord gaf (morgen: "Handmatig beoordelen").
+  const kandidaten = [
+    ...lijst.uitgesloten.filter((u) => u.reden === 'wacht_na_geen_antwoord'),
+    ...lijst.handmatigBeoordelen.map((k) => ({ contact: k.contact, detail: k.reden })),
+  ];
+  for (const u of kandidaten) {
+    const pogingen = belpogingen
+      .filter((p) => p.contactId === u.contact.id && !p.ongedaanOp && (p.uitkomst === 'geen_antwoord' || p.uitkomst === 'bericht_verstuurd'))
+      .sort((a, b) => b.tijdstip.getTime() - a.tijdstip.getTime());
+    const laatste = pogingen[0];
+    if (!laatste || dagVan(laatste.tijdstip) !== vandaag) continue;
+    uit.push({ contact: u.contact, pogingen: pogingen.filter((p) => dagVan(p.tijdstip) === vandaag), detail: u.detail });
+  }
+  return uit.sort((a, b) => b.pogingen[0]!.tijdstip.getTime() - a.pogingen[0]!.tijdstip.getTime());
+}

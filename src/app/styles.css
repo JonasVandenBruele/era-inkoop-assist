@@ -494,3 +494,7 @@ h1, .appnaam { font-weight: 900; }
 .tekoop-signaal p { margin: 2px 0; }
 .tekoop-signaal .tekstknop { padding: 0; }
 .tekoop-teller { color: var(--rood); }
+
+/* Wacht op antwoord (6/10/2026): onderaan de bellijst, rustig. */
+.belkaart.wacht { border-left-color: #b7b7c2; opacity: 0.92; }
+.wacht-blok h3 { color: var(--zacht); }

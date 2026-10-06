@@ -6,7 +6,8 @@ import { dagVan, datumUur, korteDag, langeDag, uurVan } from '../../core/dates';
 import { volledigeNaam, type Dagplan } from '../../domain/model';
 import { afsprakenVanDag } from '../../domain/overzicht';
 import { BLOK_VAN_GROEP, berekenBellijst, samenvattingNietOpLijst, type Kandidaat } from '../../domain/prioriteit';
-import { dagWeergave } from '../../domain/dagplan';
+import { dagWeergave, wachtOpAntwoord } from '../../domain/dagplan';
+import { WachtOpAntwoordBlok } from './WachtOpAntwoord';
 import { berekenBelmomenten, blokTekst } from '../../domain/belmomenten';
 import { BelKaart } from './BelKaart';
 
@@ -60,6 +61,11 @@ export function Vandaag() {
   if (!weergave) return <p className="zacht">Bellijst laden…</p>;
 
   const actief = weergave.actief;
+  // Wie niet opnam, blijft onderaan de bellijst staan (niet ook nog bij "Gebeld vandaag").
+  const wacht = wachtOpAntwoord(lijst, gegevens.belpogingen, vandaag);
+  const inWacht = new Set(wacht.map((w) => w.contact.id));
+  const gebeldZonderWacht = weergave.gebeld.filter((g) => !inWacht.has(g.contact.id));
+  const handmatig = lijst.handmatigBeoordelen.filter((k) => !inWacht.has(k.contact.id));
   const aantalTerugbellen = actief.filter((k) => k.groep === 'A' || k.groep === 'C').length;
   const aantalLeads = actief.filter((k) => k.groep === 'B').length;
   const aantalTeKoop = actief.filter((k) => k.groep === 'S').length;
@@ -130,6 +136,7 @@ export function Vandaag() {
         <h2>Bellijst ({actief.length})</h2>
         {actief.length === 0 && <p className="infomelding">Alles van je lijst is gebeld. 🎉 Wil je meer bellen? Kies hieronder bij "Niet op vandaag".</p>}
         <Blokken actief={actief} />
+        <WachtOpAntwoordBlok wacht={wacht} />
 
         {weergave.nietOpLijst.length > 0 && (
           <details className="groep extra">
@@ -146,14 +153,14 @@ export function Vandaag() {
         )}
       </section>
 
-      {weergave.gebeld.length > 0 && <GebeldVandaag gebeld={weergave.gebeld} />}
+      {gebeldZonderWacht.length > 0 && <GebeldVandaag gebeld={gebeldZonderWacht} />}
 
-      {lijst.handmatigBeoordelen.length > 0 && (
+      {handmatig.length > 0 && (
         <section>
-          <h2>Handmatig beoordelen ({lijst.handmatigBeoordelen.length})</h2>
+          <h2>Handmatig beoordelen ({handmatig.length})</h2>
           <p className="klein zacht">Te vaak geen antwoord op rij. De app plant hier zelf geen nieuwe poging meer: kies zelf (opnieuw proberen, uitstellen of niet meer bellen).</p>
           <ul className="lijst">
-            {lijst.handmatigBeoordelen.map((k) => (
+            {handmatig.map((k) => (
               <BelKaart key={k.contact.id} k={k} opLijst={false} />
             ))}
           </ul>
