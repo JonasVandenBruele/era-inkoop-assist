@@ -54,6 +54,8 @@ export function maakSupabaseStore(gebruikerId: string): Store {
       // Hooks van vandaag en later (een paar weken terug volstaat voor de historiek). Ontbreekt de tabel nog, dan geen hooks.
       const vanaf = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
       const hooks = await sb.from('contacthooks').select('*').gte('dag', vanaf);
+      // Te koop gezet: de laatste 90 dagen. Ontbreekt de tabel nog, dan geen signalen.
+      const signalen = await sb.from('marktsignalen').select('*').gte('laatst_gezien_op', new Date(Date.now() - 90 * 86400000).toISOString());
       return {
         contacten: contacten!.map(m.contactNaarModel),
         panden: panden!.map(m.pandNaarModel),
@@ -68,6 +70,7 @@ export function maakSupabaseStore(gebruikerId: string): Store {
         haken: haken!.map(m.haakNaarModel),
         voorkeuren: voorkeuren!.map(m.voorkeurNaarModel),
         contacthooks: hooks.error ? [] : (hooks.data ?? []).map(m.contacthookNaarModel),
+        marktsignalen: signalen.error ? [] : (signalen.data ?? []).map(m.marktsignaalNaarModel),
       };
     },
 
@@ -111,6 +114,10 @@ export function maakSupabaseStore(gebruikerId: string): Store {
 
     async verwijderHaak(id) {
       controleer(await sb.from('waardehaken').delete().eq('id', id), 'Verwijderen van hook');
+    },
+
+    async handelMarktsignaalAf(id, op) {
+      controleer(await sb.from('marktsignalen').update({ afgehandeld_op: op.toISOString() }).eq('id', id), 'Te koop gezet afhandelen');
     },
 
     async bewaarPushAbonnement(a) {

@@ -194,7 +194,18 @@ export function kanaalUitTaak(r: SfRij): Contactkanaal | null {
 }
 
 /** Een afgesloten oproep waarbij niemand opnam, is geen inhoudelijk contact. */
-const GEEN_GEHOOR = /geen\s*(gehoor|antwoord|reactie)|niet\s*(op)?genomen|voicemail|antwoordapparaat|onbereikbaar|nummer\s*(bestaat niet|onjuist|fout)/i;
+const GEEN_GEHOOR =
+  /geen\s*(gehoor|antwoord|reactie)|niet\s*(op)?genomen|nt\s*opgenomen|voicemail|antwoordapparaat|antw\.?\s*app|onbereikbaar|niet\s*bereikbaar|nummer\s*(bestaat niet|onjuist|fout)|(?<![\p{L}])(vm|v\.m\.?|vmail|ingesproken|inspreken|bericht\s*ingesproken|r[ée]pondeur|messagerie|no answer|pas de r[ée]ponse)(?![\p{L}])/iu;
+
+/**
+ * Niemand gesproken bij een afgesloten oproep: de evaluatie zegt het ("geen gehoor", "vm", …), of een UITGAANDE oproep
+ * zonder evaluatie (Jonas, 6/10/2026: leeg of "vm" = antwoordapparaat). Een inkomende oproep zonder tekst blijft een gesprek.
+ */
+export function geenGehoor(evaluatie: string, type: string | null): boolean {
+  if (GEEN_GEHOOR.test(evaluatie)) return true;
+  const leeg = !/\p{L}{2,}/u.test(evaluatie);
+  return leeg && !/inkomend/i.test(type ?? '');
+}
 
 /** Taak → bronactiviteit, of null als de taak niet aan een lead of contact hangt. */
 export function taakNaarActiviteit(r: SfRij, eigenaarNaam: (id: string | null) => string | null): ActiviteitImport | null {
@@ -226,7 +237,7 @@ export function taakNaarActiviteit(r: SfRij, eigenaarNaam: (id: string | null) =
   }
   const gebeurd = tijd(r, 'CompletedDateTime') ?? tijd(r, 'ERA_Close_Date__c') ?? tijd(r, 'ActivityDate') ?? tijd(r, 'CreatedDate');
   // Een bezoek telt enkel als gesprek als er een evaluatie is en je iemand trof.
-  const gesprek = kanaal === 'bellen' ? !GEEN_GEHOOR.test(evaluatie) : kanaal === 'bezoek' && Boolean(evaluatie) && !GEEN_GEHOOR.test(evaluatie) && !/niet thuis|niemand thuis/i.test(evaluatie);
+  const gesprek = kanaal === 'bellen' ? !geenGehoor(evaluatie, tekst(r, 'Type')) : kanaal === 'bezoek' && Boolean(evaluatie) && !GEEN_GEHOOR.test(evaluatie) && !/niet thuis|niemand thuis/i.test(evaluatie);
   return {
     ...herkomst(r, gebeurd),
     ...basis,

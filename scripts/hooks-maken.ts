@@ -22,6 +22,7 @@ import { dagVan, dagenTussen, uurVan, type DagKey } from '../src/core/dates';
 import { leesInstellingen } from '../src/core/settings/schema';
 import * as m from '../src/core/db/mappers';
 import { isGevoelig } from '../src/domain/haken';
+import { normPostcode, normStraat, splitsStraatregel } from '../src/domain/adres';
 import { berekenBellijst, type Kandidaat } from '../src/domain/prioriteit';
 import { isWerkdag, plusWerkdagen } from '../src/domain/werkdagen';
 import { heeftTelefoon } from '../src/domain/overzicht';
@@ -121,7 +122,7 @@ function leesBuurt(mirrorPad: string): Map<string, Buurtfeit[]> {
   const rijen = db
     .prepare(
       `select b.Id as object, o.StageName as fase, coalesce(o.ERA_Datum_Ondertekening_VK_OV__c, o.CloseDate) as verkocht, o.ERA_Datum_Op_de_markt__c as markt,
-              b.ERA_Straat__c as straat, b.ERA_Gemeente__c as gemeente, coalesce(b.ERA_Object_Type__c, o.ERA_Object_Type__c) as type
+              b.ERA_Straat__c as straat, b.ERA_Gemeente__c as gemeente, b.ERA_Postcode__c as postcode, coalesce(b.ERA_Object_Type__c, o.ERA_Object_Type__c) as type
        from Opportunity o join ERA_Object__c b on b.Id = o.ERA_Object__c
        where o._verwijderd = 0 and b._verwijderd = 0
          and ((o.StageName in ('Verkocht', 'Verkocht OV') and coalesce(o.ERA_Datum_Ondertekening_VK_OV__c, o.CloseDate) >= date('now', '-12 months'))
@@ -136,7 +137,8 @@ function leesBuurt(mirrorPad: string): Map<string, Buurtfeit[]> {
     const sleutel = `${r.object}:${r.fase === 'Verkocht' || r.fase === 'Verkocht OV' ? 'v' : 't'}`;
     if (gezien.has(sleutel)) continue;
     gezien.add(sleutel);
-    const gemeente = (r.gemeente ?? '').trim().toLowerCase();
+    // Per postcode (adresnormalisatie 6/10/2026): de postcode beslist, niet de schrijfwijze van de (deel)gemeente.
+    const gemeente = normPostcode(r.postcode) || (r.gemeente ?? '').trim().toLowerCase();
     const straat = (r.straat ?? '').replace(/\s+\d.*$/, '').trim();
     if (!gemeente || !straat) continue;
     const verkocht = r.fase === 'Verkocht' || r.fase === 'Verkocht OV';
@@ -185,8 +187,8 @@ function maakContext(
     .slice(0, 2)
     .map((p) => ({ dag: dagVan(p.tijdstip), kanaal: p.kanaal ?? 'telefoon', uitkomst: p.uitkomst, notitie: p.notitie!.slice(0, 300) }));
   const gemeente = (c.gemeente ?? '').trim().toLowerCase();
-  const feiten = buurt.get(gemeente) ?? [];
-  const zelfdeStraat = feiten.filter((f) => f.straat.toLowerCase() === straatnaam(c.straat));
+  const feiten = buurt.get(normPostcode(c.postcode)) ?? buurt.get(gemeente) ?? [];
+  const zelfdeStraat = feiten.filter((f) => normStraat(f.straat) === normStraat(splitsStraatregel(c.straat).straat));
   const verkocht = feiten.filter((f) => f.soort === 'verkocht');
   const nieuwsLokaal = lokaal.get(gemeente) ?? [];
   const links = new Set([...algemeen, ...nieuwsLokaal].map((n) => n.url));
@@ -201,6 +203,14 @@ function maakContext(
     woont_in: c.gemeente,
     straat: c.straat ? straatnaam(c.straat) : null,
     waarom_vandaag: k.reden,
+    // Woning staat te koop (zelf of via een andere makelaar): de hook is dan een bericht met veel succes (Jonas, 6/10/2026).
+    te_koop_gezet: k.signaal
+      ? {
+          verkoper: k.signaal.verkoper === 'particulier' ? 'zelf (particulier)' : (k.signaal.makelaar ?? 'andere makelaar'),
+          online_sinds: k.signaal.onlineSinds,
+          bron: k.signaal.bron === 'immoweb' ? 'Immoweb' : 'Marketpulse',
+        }
+      : null,
     geplande_taak: k.terugbel ? { dag: k.terugbel.dag, onderwerp: (k.terugbel.tekst ?? '').split('\n')[0]!.slice(0, 200), kanaal: k.terugbel.kanaal } : null,
     laatste_gesprekken: gesprekken,
     eigen_notities_in_app: notities,
@@ -279,6 +289,12 @@ Werkwijze ("ossenpikker"): altijd aanwezig, nooit opdringerig. De hook levert de
 - Lokaal nieuws gebruik je enkel als het over wonen, bouwen, verkavelingen, ruimtelijke plannen, mobiliteit of
   voorzieningen in hun buurt gaat. Algemene dorpsverhalen, sport of human interest zijn geen hook.
 - bronnen: enkel URL's die letterlijk in de invoer staan en die je gebruikt; anders [].
+- Staat te_koop_gezet ingevuld: de woning van de klant staat sinds kort te koop (zelf of via een andere makelaar).
+  Dan is de hook ALTIJD een kort bericht om veel succes te wensen met de verkoop; dat gaat voor alles. Kanaal whatsapp of
+  bericht (gsm), anders mail of brief. onderwerp "Woning te koop: veel succes wensen". Geen verkooppraat, geen kritiek op
+  de makelaar of de prijs, geen aanbod om het over te nemen en geen prijs noemen. Verkoopt de klant zelf (particulier),
+  dan mag je hoogstens afsluiten met "laat gerust iets weten als ik ergens kan helpen". Het woord "succes" staat in het bericht.
+  Voorbeeld: "Dag Olivier, ik zag dat jullie woning te koop staat. Ik wens jullie alvast heel veel succes met de verkoop! Groetjes, Jonas van ERA"
 - Is er echt geen bruikbaar aanknopingspunt, geef dan onderwerp "" (dan toont de app het aanknopingspunt uit de taak).
 
 Antwoord met ENKEL een JSON-array, zonder uitleg, één object per contact:
@@ -382,6 +398,8 @@ async function laad(db: pg.Client, eigenaar: string) {
   const contacten = await rijen('contacten');
   const activiteiten = await rijen('bronactiviteiten');
   const afspraken = await rijen('afspraken');
+  // Te koop gezet (scripts/marktsignalen.ts, net vóór de hooks). Zonder tabel (oude databank) geen signalen.
+  const marktsignalen = (await rijen('marktsignalen', true).catch(() => [])).map(m.marktsignaalNaarModel);
   const [belpogingen, opvolgacties, keuzes, belverboden, haken, voorkeuren, inst] = [
     await rijen('belpogingen', true),
     await rijen('opvolgacties', true),
@@ -402,6 +420,7 @@ async function laad(db: pg.Client, eigenaar: string) {
     haken: haken!.map(m.haakNaarModel),
     voorkeuren: voorkeuren!.map(m.voorkeurNaarModel),
     instellingen: leesInstellingen(inst![0]?.document),
+    marktsignalen,
   };
 }
 

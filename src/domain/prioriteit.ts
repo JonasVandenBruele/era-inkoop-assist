@@ -2,7 +2,9 @@
 // Pure functie: alle gegevens, instellingen en "vandaag" komen binnen als parameter. De AI speelt hier geen rol.
 import { dagVan, dagenTussen, korteDag, relatief, uurVan, type DagKey } from '../core/dates';
 import type { Instellingen } from '../core/settings/schema';
-import type { Afspraak, Belpoging, Belverbod, Bronactiviteit, Contact, Contacthook, Contactkanaal, ContactPand, Contactvoorkeur, Fase, Opvolgactie, Pand, Planningskeuze, Waardehaak } from './model';
+import type { Afspraak, Belpoging, Belverbod, Bronactiviteit, Contact, Contacthook, Contactkanaal, ContactPand, Contactvoorkeur, Fase, Marktsignaal, Opvolgactie, Pand, Planningskeuze, Waardehaak } from './model';
+import { signaalTekst, signaalVoorVandaag } from './marktsignaal';
+import { adresSleutelVan } from './adres';
 import { hakenVoorContact, specifiekeHaken } from './haken';
 import { KANAAL_LABEL, kanaaladvies, kanaalVan, type Kanaaladvies } from './kanaaladvies';
 export type { Belverbod, Opvolgactie, Planningskeuze } from './model';
@@ -28,6 +30,8 @@ export interface BellijstInvoer {
   contactPanden?: ContactPand[];
   /** Hooks van Claude (gemaakt op de Mac na de mirror-run). */
   contacthooks?: Contacthook[];
+  /** Woning te koop gezet (zelf of via een andere makelaar), gevonden op de Mac. */
+  marktsignalen?: Marktsignaal[];
   /** Brussels uur "HH:mm" van nu, voor de rustige uren in het kanaaladvies. */
   uur?: string;
   instellingen: Instellingen;
@@ -36,10 +40,11 @@ export interface BellijstInvoer {
 
 // ---------- Uitvoer ----------
 
-export type Groep = 'A' | 'pin' | 'B' | 'C' | 'D';
+export type Groep = 'A' | 'S' | 'pin' | 'B' | 'C' | 'D';
 
 export const GROEP_LABEL: Record<Groep, string> = {
   A: 'Gepland met uur',
+  S: 'Te koop gezet',
   pin: 'Vastgepind',
   B: 'Nieuwe lead',
   C: 'Gepland',
@@ -47,7 +52,8 @@ export const GROEP_LABEL: Record<Groep, string> = {
 };
 
 /** Blokken op de Vandaag-pagina ("timeline eerst", afgestemd met Jonas 3/10/2026). */
-export const BLOK_VAN_GROEP: Record<Groep, 'gepland' | 'vastgepind' | 'leads' | 'aanvulling'> = {
+export const BLOK_VAN_GROEP: Record<Groep, 'tekoop' | 'gepland' | 'vastgepind' | 'leads' | 'aanvulling'> = {
+  S: 'tekoop',
   A: 'gepland',
   C: 'gepland',
   pin: 'vastgepind',
@@ -91,6 +97,8 @@ export interface Kandidaat {
   advies: Kanaaladvies;
   /** Bij langsgaan of een flyer: het Baanprospectie-blok van vandaag waarin het gepland is. */
   veldwerkBlok: Afspraak | null;
+  /** Woning te koop gezet: vandaag een bericht met veel succes (groep S). */
+  signaal: Marktsignaal | null;
 }
 
 export type UitsluitReden =
@@ -100,7 +108,8 @@ export type UitsluitReden =
   | 'vandaag_overgeslagen'
   | 'afspraak_vandaag'
   | 'wacht_na_geen_antwoord'
-  | 'nog_niet_aan_de_beurt';
+  | 'nog_niet_aan_de_beurt'
+  | 'zelfde_adres';
 
 export interface Uitgesloten {
   contact: Contact;
@@ -235,12 +244,15 @@ export function berekenBellijst(invoer: BellijstInvoer): Bellijst {
     const laatste = laatsteInhoudelijkContact(c.id, invoer.activiteiten, invoer.belpogingen);
     const terugbel = geldendeTerugbel(c.id, invoer, laatste);
     const pogingen = pogingenSindsContact(c.id, invoer.belpogingen, laatste);
+    // Woning te koop gezet (zelf of via een andere makelaar): de dag erna een bericht, ongeacht ritme, status of
+    // geplande stap (Jonas, 6/10/2026). Enkel een belverbod, een afspraak vandaag of "vandaag overslaan" houdt het tegen.
+    const signaal = signaalVoorVandaag(c.id, invoer.marktsignalen ?? [], invoer.belpogingen, invoer.activiteiten, vandaag);
 
     // Beëindigde leads en relaties (geen prospect) komen enkel op de lijst met een terugbelafspraak of als je ze vastpint.
-    if ((c.statusBron === 'beeindigd' || c.statusBron === 'relatie') && !pin && !(terugbel && terugbel.dag <= vandaag)) continue;
+    if ((c.statusBron === 'beeindigd' || c.statusBron === 'relatie') && !pin && !signaal && !(terugbel && terugbel.dag <= vandaag)) continue;
 
     // Een terugbeltaak uit de bron die al lang verlopen is, is achterstand: die verdringt de actuele beloftes niet.
-    if (!pin && terugbel?.herkomst === 'bron' && terugbel.dag < vandaag && werkdagenTussen(terugbel.dag, vandaag) > inst.achterstandNaWerkdagen) {
+    if (!pin && !signaal && terugbel?.herkomst === 'bron' && terugbel.dag < vandaag && werkdagenTussen(terugbel.dag, vandaag) > inst.achterstandNaWerkdagen) {
       resultaat.achterstand.push({ contact: c, dag: terugbel.dag, tekst: terugbel.tekst });
       continue;
     }
@@ -255,7 +267,7 @@ export function berekenBellijst(invoer: BellijstInvoer): Bellijst {
       (invoer.opvolgacties ?? []).some((o) => o.contactId === c.id && o.status === 'open' && o.dag >= vandaag);
     if (!heeftTimeline && c.statusBron !== 'nieuwe_lead') resultaat.zonderTimeline.push(c);
 
-    if (!pin) {
+    if (!pin && !signaal) {
       // Regel 2: toekomstige expliciete terugbeldatum wordt gerespecteerd.
       if (terugbel && terugbel.dag > vandaag) {
         sluitUit('terugbel_later', `Terugbellen op ${korteDag(terugbel.dag)}${terugbel.uur ? ` om ${terugbel.uur}` : ''}.`);
@@ -279,6 +291,8 @@ export function berekenBellijst(invoer: BellijstInvoer): Bellijst {
         sluitUit('uitgesteld', `Uitgesteld tot ${korteDag(uitstel.totDag!)}.`);
         continue;
       }
+    }
+    if (!pin) {
       // Regel 4: enkel vandaag overgeslagen.
       if (mijnKeuzes.some((k) => k.soort === 'vandaag_overslaan' && k.voorDag === vandaag)) {
         sluitUit('vandaag_overgeslagen', 'Vandaag overgeslagen; morgen weer zichtbaar.');
@@ -339,6 +353,9 @@ export function berekenBellijst(invoer: BellijstInvoer): Bellijst {
     if (terugbel && terugbel.dag === vandaag && terugbel.uur) {
       groep = 'A';
       reden = `Terugbelafspraak vandaag om ${terugbel.uur}`;
+    } else if (signaal) {
+      groep = 'S';
+      reden = `${signaalTekst(signaal)} — stuur vandaag een berichtje met veel succes`;
     } else if (pin) {
       groep = 'pin';
       reden = 'Door jou vastgepind voor vandaag';
@@ -408,7 +425,16 @@ export function berekenBellijst(invoer: BellijstInvoer): Bellijst {
         uur: invoer.uur ?? '10:00',
       }),
       veldwerkBlok: null,
+      signaal,
     };
+
+    // Te koop gezet: een kort bericht, geen telefoon nodig. Staat altijd op de lijst (neemt geen belplaats in).
+    if (groep === 'S') {
+      kandidaat.advies = succesAdvies(c, hook);
+      if (pin) pinVolgorde.set(c.id, keuzes.indexOf(pin));
+      kandidaten.push(kandidaat);
+      continue;
+    }
 
     // Regel 5b: langsgaan of flyer enkel in een Baanprospectie-blok (Jonas, 6/10/2026). Geen nummer nodig.
     if (isVeldwerk(kandidaat.advies.kanaal)) {
@@ -460,7 +486,7 @@ export function berekenBellijst(invoer: BellijstInvoer): Bellijst {
   }
 
   // ----- Volgorde -----
-  const groepRang: Record<Groep, number> = { A: 0, pin: 1, C: 2, B: 3, D: 4 };
+  const groepRang: Record<Groep, number> = { A: 0, S: 1, pin: 2, C: 3, B: 4, D: 5 };
   const naam = (k: Kandidaat) => aanspreking(k.contact);
   kandidaten.sort((a, b) => {
     if (a.groep !== b.groep) return groepRang[a.groep] - groepRang[b.groep];
@@ -478,12 +504,30 @@ export function berekenBellijst(invoer: BellijstInvoer): Bellijst {
     }
   });
 
+  // ----- Dubbels: één contact per adres per dag (bv. lead en contact, of twee leads op hetzelfde adres) -----
+  // Het adres is genormaliseerd (straat, nummer, bus, postcode; de gemeentenaam telt niet). De eerste in de volgorde blijft;
+  // terugbelafspraken met uur blijven altijd staan.
+  const perAdres = new Map<string, Kandidaat>();
+  for (const k of [...kandidaten]) {
+    const sleutel = adresSleutelVan(k.contact);
+    if (!sleutel) continue;
+    const eerste = perAdres.get(sleutel);
+    if (!eerste) {
+      perAdres.set(sleutel, k);
+      continue;
+    }
+    if (k.groep === 'A' || k.isVastgepind) continue;
+    kandidaten.splice(kandidaten.indexOf(k), 1);
+    resultaat.uitgesloten.push({ contact: k.contact, reden: 'zelfde_adres', detail: `Zelfde adres als ${aanspreking(eerste.contact)}, die vandaag al op de lijst staat.` });
+  }
+
   // ----- Limiet: groep A altijd volledig, daarna tot het maximum -----
   const max = inst.maxPerDag;
-  // Groep A en bezoeken in een Baanprospectie-blok (die nemen geen belplaats in) staan er altijd op.
-  const groepA = kandidaten.filter((k) => k.groep === 'A' || k.veldwerkBlok);
+  // Groep A, te koop gezet (een bericht) en bezoeken in een Baanprospectie-blok staan er altijd op;
+  // enkel groep A neemt een belplaats in.
+  const groepA = kandidaten.filter((k) => k.groep === 'A' || k.groep === 'S' || k.veldwerkBlok);
   const rest = kandidaten.filter((k) => !groepA.includes(k));
-  const plaats = Math.max(0, max - groepA.filter((k) => !k.veldwerkBlok).length);
+  const plaats = Math.max(0, max - groepA.filter((k) => k.groep === 'A' && !k.veldwerkBlok).length);
   resultaat.achterstand.sort((a, b) => a.dag.localeCompare(b.dag));
   resultaat.vandaag = [...groepA, ...rest.slice(0, plaats)].sort((a, b) => groepRang[a.groep] - groepRang[b.groep]);
   resultaat.nietOpLijst = rest.slice(plaats);
@@ -507,4 +551,16 @@ export function samenvattingNietOpLijst(nietOpLijst: Kandidaat[]): string {
     tel('D') && `${tel('D')} over ritme`,
   ].filter(Boolean);
   return delen.join(', ');
+}
+
+/** Kanaal voor het succesbericht: het berichtkanaal van de hook, anders WhatsApp (gsm), mail, brief of bellen. */
+function succesAdvies(c: Contact, hook: Contacthook | null): Kanaaladvies {
+  const reden = 'Woning te koop gezet: kort berichtje met veel succes, geen verkooppraat.';
+  const berichtKanalen: Contactkanaal[] = ['whatsapp', 'bericht', 'mail', 'brief'];
+  if (hook?.kanaal && berichtKanalen.includes(hook.kanaal)) return { kanaal: hook.kanaal, reden: hook.kanaalReden ?? reden, opmerking: null };
+  const gsm = c.telefoons.some((t) => t.label === 'gsm' || /^\+?32\s?4|^04/.test(t.nummer.replace(/\s/g, '')));
+  if (gsm) return { kanaal: 'whatsapp', reden, opmerking: null };
+  if (c.email) return { kanaal: 'mail', reden, opmerking: null };
+  if (c.straat && c.gemeente) return { kanaal: 'brief', reden, opmerking: null };
+  return { kanaal: 'bellen', reden: 'Woning te koop gezet en geen gsm, mail of adres: kort bellen om veel succes te wensen.', opmerking: null };
 }

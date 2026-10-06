@@ -41,11 +41,12 @@ export function teVersturenMeldingen(gegevens: Gegevens, inst: Instellingen, nu:
   if (m.ochtend && uur >= m.ochtendUur && uur < '12:00') {
     const gepland = lijst.filter((k) => k.groep === 'A' || k.groep === 'C').length;
     const leads = lijst.filter((k) => k.groep === 'B').length;
+    const teKoop = lijst.filter((k) => k.groep === 'S').length;
     const eerste = momenten.find((b) => uurVan(b.einde) > uur);
     uit.push({
       sleutel: `ochtend:${dag}`,
       titel: 'Goeiemorgen ☀️',
-      tekst: `Vandaag: ${lijst.length} te bellen (${gepland} gepland, ${leads} nieuwe ${leads === 1 ? 'lead' : 'leads'}) en ${afspraken} ${afspraken === 1 ? 'afspraak' : 'afspraken'}.${eerste ? ` Eerste belmoment ${blokTekst(eerste)}.` : ''}`,
+      tekst: `Vandaag: ${lijst.length} te bellen (${gepland} gepland, ${leads} nieuwe ${leads === 1 ? 'lead' : 'leads'}) en ${afspraken} ${afspraken === 1 ? 'afspraak' : 'afspraken'}.${eerste ? ` Eerste belmoment ${blokTekst(eerste)}.` : ''}${teKoop ? ` 🏷️ ${teKoop} ${teKoop === 1 ? 'woning' : 'woningen'} te koop gezet: stuur eerst een berichtje met veel succes.` : ''}`,
       tag: 'ochtend',
     });
   }

@@ -1,7 +1,7 @@
 // De lijst van de dag stabiel houden (PLAN.md §5.5): de volgorde wordt bij de eerste opening vastgelegd.
 // Lokale resultaten werken meteen door (wie gebeld is, verdwijnt of krijgt een label), maar de lijst
 // wordt niet vanzelf aangevuld of door elkaar geschud. Enkel terugbelafspraken met uur, vastgepinde
-// contacten en nieuwe leads die later op de dag binnenkomen, worden toegevoegd.
+// contacten, woningen die te koop gezet werden en nieuwe leads die later op de dag binnenkomen, worden toegevoegd.
 import { dagVan, type DagKey } from '../core/dates';
 import type { Belpoging, Contact } from './model';
 import type { Bellijst, Kandidaat } from './prioriteit';
@@ -21,7 +21,7 @@ export interface DagWeergave {
   nieuwPlan: string[] | null;
 }
 
-const VOORRANG_LATER = new Set(['A', 'pin', 'B']);
+const VOORRANG_LATER = new Set(['A', 'S', 'pin', 'B']);
 
 export function dagWeergave(lijst: Bellijst, plan: { contactIds: string[] } | null, belpogingen: Belpoging[], contacten: Contact[], vandaag: DagKey): DagWeergave {
   const nieuwPlan = plan ? null : lijst.vandaag.map((k) => k.contact.id);
@@ -37,9 +37,9 @@ export function dagWeergave(lijst: Bellijst, plan: { contactIds: string[] } | nu
   }
 
   // Volgorde: groep A en vastgepind bovenaan (zoals berekend), daarna de vastgelegde volgorde, daarna later toegevoegde.
-  const top = actief.filter((k) => k.groep === 'A' || k.groep === 'pin');
+  const top = actief.filter((k) => k.groep === 'A' || k.groep === 'S' || k.groep === 'pin');
   const rest = actief
-    .filter((k) => k.groep !== 'A' && k.groep !== 'pin')
+    .filter((k) => k.groep !== 'A' && k.groep !== 'S' && k.groep !== 'pin')
     .sort((a, b) => (positie.get(a.contact.id) ?? Number.MAX_SAFE_INTEGER) - (positie.get(b.contact.id) ?? Number.MAX_SAFE_INTEGER));
 
   const perContact = new Map<string, Belpoging[]>();

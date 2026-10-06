@@ -13,12 +13,13 @@ import { eraforceLink } from '../../domain/eraforce';
 import { aanknopingspunt } from '../../domain/aanknopingspunt';
 import { KANAAL_ICOON } from '../../domain/kanaaladvies';
 import { GedaanPaneel, type GedaanKanaal } from './GedaanPaneel';
+import { signaalTekst } from '../../domain/marktsignaal';
 
 /** Route naar het adres in Apple Kaarten (opent de app op de iPhone). */
 const routeLink = (adres: string) => `https://maps.apple.com/?daddr=${encodeURIComponent(adres)}`;
 
 export function BelKaart({ k, nummer, opLijst = true }: { k: Kandidaat; nummer?: number; opLijst?: boolean }) {
-  const { gegevens, instellingen, klok, startOproep } = useApp();
+  const { gegevens, instellingen, klok, startOproep, handelMarktsignaalAf, toon } = useApp();
   const [uitleg, setUitleg] = useState(false);
   const [paneel, setPaneel] = useState<'geen' | 'resultaat' | 'meer' | 'sms' | 'whatsapp' | 'mail' | GedaanKanaal>('geen');
   const c = k.contact;
@@ -62,6 +63,34 @@ export function BelKaart({ k, nummer, opLijst = true }: { k: Kandidaat; nummer?:
       </div>
 
       <p className="reden">{k.reden}</p>
+      {k.signaal && (
+        <div className="tekoop-signaal">
+          <p>
+            <strong>🏷️ {signaalTekst(k.signaal)}</strong>
+          </p>
+          <p className="klein">
+            {k.signaal.url && (
+              <a href={k.signaal.url} target="_blank" rel="noreferrer">
+                Bekijk de advertentie
+              </a>
+            )}
+            {k.signaal.url && ' · '}
+            <button
+              className="knop tekstknop klein"
+              onClick={async () => {
+                try {
+                  await handelMarktsignaalAf(k.signaal!.id);
+                  toon({ tekst: `${c.achternaam}: te koop gezet afgehandeld.` });
+                } catch (e) {
+                  toon({ tekst: e instanceof Error ? e.message : String(e), fout: true });
+                }
+              }}
+            >
+              Niets sturen
+            </button>
+          </p>
+        </div>
+      )}
       {hook && (
         <div className="hook">
           <p>

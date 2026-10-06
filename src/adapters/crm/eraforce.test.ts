@@ -63,6 +63,18 @@ describe('ERAForce → Oxpecker', () => {
     expect(taakNaarActiviteit(taak({ Description: 'Geen gehoor, voicemail ingesproken' }), naam)!.type).toBe('notitie');
   });
 
+  it('uitgaande oproep zonder evaluatie of met "vm" = antwoordapparaat (Jonas, 6/10/2026)', () => {
+    const leeg = { Description: null, ERA_Evaluatie__c: null, ERA_Broker_Evaluation_Text__c: null, ERA_Property_Evaluation_Text__c: null, ERA_Interne_Informatie__c: null };
+    expect(taakNaarActiviteit(taak(leeg), naam)!.type).toBe('notitie');
+    expect(taakNaarActiviteit(taak({ ...leeg, Description: '-' }), naam)!.type).toBe('notitie');
+    for (const vm of ['vm', 'VM', 'v.m.', 'vm ingesproken', 'Bericht ingesproken', 'nt opgenomen', 'répondeur']) {
+      expect(taakNaarActiviteit(taak({ ...leeg, Description: vm }), naam)!.type, vm).toBe('notitie');
+    }
+    // Gewone woorden met "vm" erin blijven een gesprek; een inkomende oproep zonder tekst ook.
+    expect(taakNaarActiviteit(taak({ ...leeg, Description: 'Woont in een VMS-project, wil verkopen in 2027' }), naam)!.type).toBe('gesprek');
+    expect(taakNaarActiviteit(taak({ ...leeg, Type: 'Inkomende Oproep' }), naam)!.type).toBe('gesprek');
+  });
+
   it('open beltaak = terugbelafspraak; uur enkel uit een herinnering op dezelfde dag', () => {
     const a = taakNaarActiviteit(taak({ IsClosed: 0, Type: 'Bellen', Subject: 'terugbellen', ActivityDate: '2026-10-20', IsReminderSet: 1, ReminderDateTime: '2026-10-20T08:30:00.000Z' }), naam)!;
     expect(a).toMatchObject({ type: 'taak', taakSoort: 'terugbellen', vervaltOp: '2026-10-20', vervaltUur: '10:30', taakAfgerond: false });

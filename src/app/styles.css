@@ -486,3 +486,11 @@ h1, .appnaam { font-weight: 900; }
 .belmoment-kop { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .belmoment-kop strong { color: var(--blauw); font-size: 1.05rem; }
 .belmoment p { margin: 0; }
+
+/* Te koop gezet (6/10/2026): hoogste urgentie, ERA-rood. */
+.belkaart.groep-S { border-left-color: var(--rood); border-left-width: 6px; }
+.groeplabel.groep-S { background: var(--rood); color: #fff; }
+.tekoop-signaal { border-left: 3px solid var(--rood); background: #fde7ea; padding: 8px 10px; border-radius: var(--radius); margin: 6px 0; }
+.tekoop-signaal p { margin: 2px 0; }
+.tekoop-signaal .tekstknop { padding: 0; }
+.tekoop-teller { color: var(--rood); }

@@ -2,6 +2,7 @@
 // Enkel herleidbare feiten; geen persoonlijke of gevoelige haken; geen "even checken".
 import type { Kandidaat } from './prioriteit';
 import { haakZin } from './haken';
+import { succesbericht } from './marktsignaal';
 
 export interface BerichtContext {
   kandidaat: Kandidaat;
@@ -17,6 +18,11 @@ export interface Bericht {
 
 export function berichtTekst({ kandidaat: k, kanaal, voornaamGebruiker, organisatie }: BerichtContext): Bericht {
   const c = k.contact;
+  // Woning te koop gezet: een bericht met veel succes (hook van Claude als die erover gaat, anders de standaardtekst).
+  if (k.signaal) {
+    const hookOverSucces = k.hook?.conceptbericht && /succes|bonne chance|good luck|best of luck/i.test(k.hook.conceptbericht);
+    return { onderwerp: kanaal === 'mail' ? 'Veel succes met de verkoop' : null, tekst: hookOverSucces ? k.hook!.conceptbericht! : succesbericht(c, k.signaal) };
+  }
   // Conceptbericht van de hook van Claude, als die er is (Jonas past aan en verstuurt zelf).
   if (k.hook?.conceptbericht) return { onderwerp: kanaal === 'mail' ? k.hook.onderwerp : null, tekst: k.hook.conceptbericht };
   const je = c.aanspreekvormBron === 'je';

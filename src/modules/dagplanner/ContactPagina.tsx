@@ -8,6 +8,8 @@ import { historiek, laatsteInhoudelijkContact } from '../../domain/overzicht';
 import { pogingenSindsContact } from '../../domain/prioriteit';
 import { KeuzeKnoppen, ResultaatPaneel } from './ResultaatPaneel';
 import { HakenEnVoorkeur } from './HakenEnVoorkeur';
+import { adresSleutelVan } from '../../domain/adres';
+import { signaalTekst, signalenVan } from '../../domain/marktsignaal';
 
 export function ContactPagina() {
   const { id } = useParams();
@@ -38,6 +40,10 @@ export function ContactPagina() {
   }
 
   const items = historiek(contact.id, gegevens.activiteiten, gegevens.belpogingen);
+  const signalen = signalenVan(contact.id, gegevens.marktsignalen);
+  // Dubbels: andere contacten op hetzelfde adres (straat, nummer, bus en postcode; de gemeentenaam telt niet).
+  const sleutel = adresSleutelVan(contact);
+  const zelfdeAdres = sleutel ? gegevens.contacten.filter((c) => c.id !== contact.id && adresSleutelVan(c) === sleutel) : [];
   const laatste = laatsteInhoudelijkContact(contact.id, gegevens.activiteiten, gegevens.belpogingen);
   const openTaken = gegevens.activiteiten.filter((a) => a.contactId === contact.id && a.type === 'taak' && !a.taakAfgerond);
   const pogingen = pogingenSindsContact(contact.id, gegevens.belpogingen, laatste).length;
@@ -87,7 +93,40 @@ export function ContactPagina() {
           <dt>Herkomst</dt>
           <dd>{contact.herkomstContact ?? 'onbekend'}</dd>
         </dl>
+        {zelfdeAdres.length > 0 && (
+          <p className="klein">
+            🏠 Zelfde adres:{' '}
+            {zelfdeAdres.map((c, i) => (
+              <span key={c.id}>
+                {i > 0 && ', '}
+                <Link to={`/contact/${c.id}`}>{volledigeNaam(c)}</Link> <span className="zacht">({STATUS_LABEL[c.statusBron]})</span>
+              </span>
+            ))}
+          </p>
+        )}
       </section>
+
+      {signalen.length > 0 && (
+        <section className="kaart">
+          <h2>Te koop</h2>
+          <ul className="lijst klein">
+            {signalen.map((s) => (
+              <li key={s.id}>
+                🏷️ {signaalTekst(s)}
+                {s.status === 'verkocht' && ' — nu verkocht'}
+                {s.status === 'weg' && ' — advertentie niet meer gevonden'}
+                <span className="zacht"> · gezien {korteDag(s.eerstGezienOp.toISOString().slice(0, 10))}{s.afgehandeldOp ? ' · afgehandeld' : ''}</span>
+                {s.url && (
+                  <>
+                    {' · '}
+                    <a href={s.url} target="_blank" rel="noreferrer">advertentie</a>
+                  </>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className="kaart">
         <h2>Acties</h2>

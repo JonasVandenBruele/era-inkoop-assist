@@ -62,6 +62,7 @@ export function Vandaag() {
   const actief = weergave.actief;
   const aantalTerugbellen = actief.filter((k) => k.groep === 'A' || k.groep === 'C').length;
   const aantalLeads = actief.filter((k) => k.groep === 'B').length;
+  const aantalTeKoop = actief.filter((k) => k.groep === 'S').length;
 
   return (
     <>
@@ -76,6 +77,7 @@ export function Vandaag() {
           {actief.length} te bellen · {weergave.gebeld.length} gebeld · {afspraken.filter((a) => !a.afspraak.heleDag).length} afspraken
         </strong>
         <div className="klein zacht">
+          {aantalTeKoop > 0 && <strong className="tekoop-teller">{aantalTeKoop} te koop gezet · </strong>}
           {aantalTerugbellen} terugbelafspraken · {aantalLeads} nieuwe leads
           {weergave.nietOpLijst.length > 0 && ` · ${weergave.nietOpLijst.length} passen niet meer`}
         </div>
@@ -320,6 +322,7 @@ function Bronstatus() {
 }
 
 const BLOKKEN: { sleutel: ReturnType<typeof blokVan>; titel: string; uitleg: string }[] = [
+  { sleutel: 'tekoop', titel: 'Te koop gezet', uitleg: 'Woning staat te koop (zelf of via een andere makelaar): stuur vandaag een berichtje met veel succes.' },
   { sleutel: 'gepland', titel: 'Gepland vandaag', uitleg: 'Afgesproken met de klant of verlopen opvolgtaken.' },
   { sleutel: 'vastgepind', titel: 'Vastgepind', uitleg: 'Door jou op de lijst gezet.' },
   { sleutel: 'leads', titel: 'Nieuwe leads', uitleg: 'Nog niet bereikt.' },

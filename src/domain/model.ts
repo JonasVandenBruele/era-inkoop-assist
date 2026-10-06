@@ -233,6 +233,34 @@ export interface Contacthook {
   isTestdata?: boolean;
 }
 
+/**
+ * Marktsignaal (6/10/2026): de woning van een contact staat te koop — zelf (particulier) of via een andere makelaar.
+ * Gevonden op de Mac (scripts/marktsignalen.ts) via Immoweb en de Marketpulse-prospects in de mirror, op basis van het
+ * genormaliseerde adres (postcode beslist). Jonas stuurt dan de dag erna een bericht "veel succes".
+ */
+export interface Marktsignaal {
+  id: string;
+  contactId: string;
+  bron: 'immoweb' | 'marketpulse';
+  /** Immoweb-ID of Lead-ID van de Marketpulse-prospect. */
+  externId: string;
+  verkoper: 'particulier' | 'makelaar' | 'notaris' | null;
+  /** Naam van het kantoor (enkel bij een makelaar of notaris). */
+  makelaar: string | null;
+  vraagprijs: number | null;
+  /** Dag dat de advertentie online kwam (volgens de bron). */
+  onlineSinds: string | null; // DagKey
+  url: string | null;
+  /** 'adres' = zelfde woning; 'gebouw' = zelfde gebouw, andere bus. */
+  overeenkomst: 'adres' | 'gebouw';
+  status: 'te_koop' | 'onder_optie' | 'verkocht' | 'weg';
+  eerstGezienOp: Date;
+  laatstGezienOp: Date;
+  /** Door Jonas afgehandeld (bericht gestuurd of bewust niets). */
+  afgehandeldOp: Date | null;
+  isTestdata?: boolean;
+}
+
 export interface Bronstatus {
   id: string;
   soort: BronSoort;

@@ -11,6 +11,7 @@ import type {
   Contactvoorkeur,
   Dagplan,
   DonnaOverzicht,
+  Marktsignaal,
   Opvolgactie,
   Pand,
   Planningskeuze,
@@ -36,6 +37,8 @@ export interface Gegevens {
   voorkeuren: Contactvoorkeur[];
   /** Hook van de dag per contact, gemaakt op de Mac met Claude (enkel echte gegevens). */
   contacthooks: Contacthook[];
+  /** Woning te koop gezet (zelf of via een andere makelaar), gevonden op de Mac. */
+  marktsignalen: Marktsignaal[];
 }
 
 export interface Store {
@@ -62,6 +65,8 @@ export interface Store {
   bewaarDonnaOverzicht(o: DonnaOverzicht): Promise<void>;
   bewaarHaak(h: Waardehaak): Promise<void>;
   verwijderHaak(id: string): Promise<void>;
+  /** "Te koop gezet" afgehandeld zonder bericht (het verdwijnt van de lijst). */
+  handelMarktsignaalAf(id: string, op: Date): Promise<void>;
   /** Eén voorkeur per contact; overschrijft de vorige. */
   bewaarVoorkeur(v: Contactvoorkeur): Promise<void>;
   /** Pushabonnement van dit toestel bewaren (enkel met Supabase; de demo kan geen meldingen ontvangen). */
@@ -70,7 +75,7 @@ export interface Store {
 }
 
 export function leegGegevens(): Gegevens {
-  return { contacten: [], panden: [], contactPanden: [], activiteiten: [], afspraken: [], belpogingen: [], bronnen: [], opvolgacties: [], keuzes: [], belverboden: [], haken: [], voorkeuren: [], contacthooks: [] };
+  return { contacten: [], panden: [], contactPanden: [], activiteiten: [], afspraken: [], belpogingen: [], bronnen: [], opvolgacties: [], keuzes: [], belverboden: [], haken: [], voorkeuren: [], contacthooks: [], marktsignalen: [] };
 }
 
 /** Toont de app echte (ERAForce) gegevens? Bij 'auto' zodra er minstens één ERAForce-contact is. */
@@ -96,5 +101,6 @@ export function kiesGegevens(g: Gegevens, echt: boolean): Gegevens {
     haken: ok(g.haken),
     voorkeuren: ok(g.voorkeuren),
     contacthooks: ok(g.contacthooks),
+    marktsignalen: ok(g.marktsignalen),
   };
 }

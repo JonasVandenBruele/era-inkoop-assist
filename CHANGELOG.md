@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.12.0] — 2026-10-06 — Te koop gezet en adressen
+
+### Toegevoegd
+- **Te koop gezet** (`scripts/marktsignalen.ts`, na elke mirror-run, vóór de hooks): staat de woning van een prospect te koop — zelf (particulier) of via een andere makelaar — dan staat hij **de (werk)dag na de ontdekking bovenaan** in een eigen blok "Te koop gezet", met een kort bericht "veel succes met de verkoop" (Jonas, 6/10/2026: urgentie heel hoog). Telt niet mee voor je belmaximum; enkel een belverbod, een afspraak vandaag of "vandaag overslaan" houdt het tegen. Verdwijnt zodra er een bericht of gesprek is, of met "Niets sturen".
+- Bronnen: de Immoweb-zoekresultaten per postcode van je prospects (beleefd: robots.txt, 3 s tussen aanvragen, eerlijke naam, nooit een captcha omzeilen) en de Marketpulse-prospects in de mirror. Detail per gevonden advertentie: online sinds, onder optie/verkocht, particulier of kantoor.
+- Geen bericht bij: advertenties van ERA zelf, een andere unit in hetzelfde gebouw, advertenties die al langer dan 30 dagen online staan, beëindigde leads, en prospects die zelf uit een Marketpulse-advertentie komen (tenzij ze nu zelf verkopen). Die staan enkel ter info op de contactpagina ("Te koop").
+- Claude schrijft voor zo'n contact het succesbericht in je eigen stijl; zonder hook stelt de app een standaardtekst voor. De ochtendmelding noemt het aantal.
+- **Adressen normaliseren** (`src/domain/adres.ts`): straat (afkortingen voluit: str → straat, stwg → steenweg, St. → Sint, Av./Chée …; zonder accenten, leestekens en spaties), huisnummer, bus en **postcode** — de gemeentenaam telt niet (3078 Everberg = 3078 Kortenberg). Optioneel de officiële straatnaam uit het Vlaamse Adressenregister ("Lod. van Veltemstraat" → Lodewijk van Veltemstraat), per postcode 30 dagen gecachet in `~/.oxpecker/straatnamen`.
+- **Dubbels:** één contact per adres per dag op de bellijst (bv. lead én contact op hetzelfde adres); op de contactpagina "Zelfde adres: …".
+- Buurtfeiten in de hooks per postcode in plaats van per gemeentenaam.
+- Migratie `20261006000009_marktsignalen.sql`: tabel `marktsignalen` (enkel advertentiegegevens), schrijfbaar door de importrol bij je ERAForce-contacten; jij mag enkel "afgehandeld" zetten.
+
+### Gewijzigd
+- **Uitgaande oproep zonder evaluatie of met "vm"** (of "ingesproken", "nt opgenomen", "répondeur" …) telt als antwoordapparaat, niet als gesprek (Jonas, 6/10/2026). Een inkomende oproep zonder tekst blijft een gesprek.
+
+### Tests
+- 205 tests, o.a. adresnormalisatie, officiële straatnamen, groep "Te koop gezet" (dag erna, boven het maximum, verdwijnt na een bericht) en voicemail-herkenning.
+
 ## [0.11.0] — 2026-10-06 — WhatsApp van de Mac
 
 ### Toegevoegd

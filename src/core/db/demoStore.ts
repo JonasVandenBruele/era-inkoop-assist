@@ -95,6 +95,9 @@ export function maakDemoStore(): Store {
     async verwijderHaak(id) {
       g.haken = g.haken.filter((x) => x.id !== id);
     },
+    async handelMarktsignaalAf(id, op) {
+      g.marktsignalen = g.marktsignalen.map((s) => (s.id === id ? { ...s, afgehandeldOp: op } : s));
+    },
     async bewaarPushAbonnement() {
       throw new Error('Pushmeldingen werken enkel in de online app met login, niet in de lokale demo.');
     },

@@ -1,5 +1,5 @@
 // Vertaling tussen databaserijen (snake_case) en het interne model (camelCase).
-import type { Afspraak, Belpoging, Belverbod, Bronactiviteit, Bronstatus, Contact, Contacthook, ContactPand, Contactvoorkeur, Dagplan, DonnaOverzicht, Opvolgactie, Pand, Planningskeuze, Waardehaak } from '../../domain/model';
+import type { Afspraak, Belpoging, Belverbod, Bronactiviteit, Bronstatus, Contact, Contacthook, ContactPand, Contactvoorkeur, Dagplan, DonnaOverzicht, Marktsignaal, Opvolgactie, Pand, Planningskeuze, Waardehaak } from '../../domain/model';
 
 type Rij = Record<string, unknown>;
 const d = (v: unknown): Date | null => (v ? new Date(v as string) : null);
@@ -352,4 +352,22 @@ export const contacthookNaarModel = (r: Rij): Contacthook => ({
   conceptbericht: s(r.conceptbericht),
   bronlinks: Array.isArray(r.bronlinks) ? (r.bronlinks as Contacthook['bronlinks']) : [],
   aangemaaktOp: new Date(r.aangemaakt_op as string),
+});
+
+export const marktsignaalNaarModel = (r: Rij): Marktsignaal => ({
+  id: r.id as string,
+  contactId: r.contact_id as string,
+  bron: r.bron as Marktsignaal['bron'],
+  externId: String(r.extern_id),
+  verkoper: (r.verkoper as Marktsignaal['verkoper']) ?? null,
+  makelaar: s(r.makelaar),
+  vraagprijs: r.vraagprijs === null || r.vraagprijs === undefined ? null : Number(r.vraagprijs),
+  onlineSinds: dagKolom(r.online_sinds),
+  url: s(r.url),
+  overeenkomst: (r.overeenkomst as Marktsignaal['overeenkomst']) ?? 'adres',
+  status: r.status as Marktsignaal['status'],
+  eerstGezienOp: new Date(r.eerst_gezien_op as string),
+  laatstGezienOp: new Date(r.laatst_gezien_op as string),
+  afgehandeldOp: d(r.afgehandeld_op),
+  isTestdata: false,
 });
