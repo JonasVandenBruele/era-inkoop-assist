@@ -172,6 +172,22 @@ function geldendeTerugbel(contactId: string, invoer: BellijstInvoer, laatste: La
   return open[0]!.t;
 }
 
+/**
+ * Laatste bericht sinds het laatste inhoudelijke contact dat geen antwoord kreeg: een lokaal geregistreerd bericht
+ * (sms, WhatsApp, mail; geen flyer, brief of bezoek) of een WhatsApp van je Mac zonder reactie.
+ */
+export function onbeantwoordBericht(contactId: string, invoer: BellijstInvoer, laatste: LaatsteContact | null): { dag: DagKey } | null {
+  const na = (t: Date) => !laatste || t > laatste.tijdstip;
+  const dagen = [
+    ...invoer.belpogingen
+      .filter((p) => p.contactId === contactId && !p.ongedaanOp && p.uitkomst === 'bericht_verstuurd' && ['sms', 'whatsapp', 'mail'].includes(p.kanaal ?? '') && na(p.tijdstip))
+      .map((p) => dagVan(p.tijdstip)),
+    ...invoer.activiteiten.filter((a) => a.contactId === contactId && a.bron === 'whatsapp' && a.type === 'notitie' && a.gebeurdOp && na(a.gebeurdOp)).map((a) => dagVan(a.gebeurdOp!)),
+  ].sort();
+  // Het eerste onbeantwoorde bericht telt: daar begint het wachten.
+  return dagen.length ? { dag: dagen[0]! } : null;
+}
+
 /** De hook voor vandaag; anders de recentste van de laatste 4 dagen (bv. gemaakt vrijdagavond voor maandag). */
 export function hookVanDeDag(contactId: string, hooks: Contacthook[], vandaag: DagKey): Contacthook | null {
   let beste: Contacthook | null = null;
@@ -371,6 +387,17 @@ export function berekenBellijst(invoer: BellijstInvoer): Bellijst {
       reden = `Hook: ${specifiek[0]!.onderwerp} (laatste gesprek ${dagenSinds} dagen geleden)`;
     }
 
+    // Een bericht bleef onbeantwoord: na ±2 weken één keer een ander kanaal (Jonas, 6/10/2026), binnen een venster
+    // van 30 werkdagen, zodat een oud bericht niet blijft terugkomen.
+    const ob = onbeantwoordBericht(c.id, invoer, laatste);
+    if (groep === null && ob) {
+      const wd = werkdagenTussen(ob.dag, vandaag);
+      if (wd >= inst.contact.anderKanaalNaWerkdagen && wd <= inst.contact.anderKanaalNaWerkdagen + 30) {
+        groep = 'D';
+        reden = `Je bericht van ${korteDag(ob.dag)} bleef onbeantwoord — tijd voor een ander kanaal`;
+      }
+    }
+
     if (groep === null) {
       sluitUit(
         'nog_niet_aan_de_beurt',
@@ -399,6 +426,7 @@ export function berekenBellijst(invoer: BellijstInvoer): Bellijst {
         pogingen,
         gepland: terugbel?.kanaal ?? null,
         hook,
+        onbeantwoordBericht: ob,
         veldwerkMogelijk: blokkenVandaag.length > 0,
         voorkeur: (invoer.voorkeuren ?? []).find((v) => v.contactId === c.id) ?? null,
         haken,

@@ -175,6 +175,7 @@ try {
       gemeente: x.gemeente,
       status_bron: x.statusBron,
       status_label_bron: x.statusLabelBron ?? null,
+      taal: x.taal ?? null,
       herkomst_contact: x.herkomstContact,
       niet_bellen_bron: x.nietBellenBron,
       aangemaakt_in_bron_op: iso(x.aangemaaktInBronOp),

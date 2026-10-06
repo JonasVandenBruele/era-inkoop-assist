@@ -248,12 +248,22 @@ describe('standaard-openingszin', () => {
     expect(zin(RANDGEVAL.terugbellenVerstreken)).not.toMatch(/afgesproken|terugbellen/);
   });
 
+  it('in de taal van de klant, en met u als Jonas de klant met u aanspreekt', () => {
+    const k = vind(RANDGEVAL.nieuweLeadLokaalGeenAntwoord)!;
+    const met = (c: Partial<Kandidaat['contact']>) =>
+      standaardOpeningszin({ kandidaat: { ...k, contact: { ...k.contact, ...c } }, voornaamGebruiker: 'Jonas', organisatie: 'ERA', uur: 10, vandaag: VANDAAG });
+    expect(met({ taal: 'fr' })).toBe("Bonjour Bart, c'est Jonas de ERA. Vous aviez demandé une estimation de votre bien. Vous avez un petit moment ?");
+    expect(met({ taal: 'nl', taalWhatsapp: 'en' })).toMatch(/^Hi Bart, this is Jonas from ERA\./);
+    expect(met({ aanspreekvormBron: 'u' })).toMatch(/^Goeiemorgen meneer Claes, .* U had een schatting van uw woning/);
+  });
+
   it('de hook van Claude gaat voor', () => {
     expect(zin(RANDGEVAL.aiHook)).toContain('Biddit');
   });
 
   it('gebruikt de herkomst bij een nieuwe lead', () => {
-    expect(zin(RANDGEVAL.nieuweLeadLokaalGeenAntwoord, 14)).toContain('Goeiemiddag meneer Claes');
+    // Zonder gekende aanspreekvorm: je en de voornaam, zoals Jonas het doet (6/10/2026).
+    expect(zin(RANDGEVAL.nieuweLeadLokaalGeenAntwoord, 14)).toContain('Goeiemiddag Bart');
     expect(zin(RANDGEVAL.nieuweLeadLokaalGeenAntwoord, 14)).toContain('schatting');
   });
 
@@ -337,6 +347,23 @@ describe('WhatsApp van de Mac (6/10/2026)', () => {
     expect([...metBericht.vandaag, ...metBericht.nietOpLijst].some((k) => k.contact.id === c.id && k.groep === 'C')).toBe(false);
     const metAntwoord = berekenBellijst(invoer({ activiteiten: [...data.activiteiten, wa(c.id, VANDAAG, 'gesprek')] }));
     expect(metAntwoord.uitgesloten.some((u) => u.contact.id === c.id) || ![...metAntwoord.vandaag, ...metAntwoord.nietOpLijst].some((k) => k.contact.id === c.id && k.groep === 'C')).toBe(true);
+  });
+});
+
+describe('ander kanaal na een onbeantwoord bericht (Jonas, 6/10/2026)', () => {
+  const wa = (contactId: string, dag: string): Bronactiviteit => ({
+    id: `wa2-${contactId}-${dag}`, bron: 'whatsapp', externId: `wa:${contactId}:${dag}`, gebeurdOp: new Date(`${dag}T09:00:00Z`), gewijzigdInBronOp: null,
+    geimporteerdOp: new Date(), isTestdata: true, type: 'notitie', contactId, pandId: null, taakSoort: null, vervaltOp: null, vervaltUur: null, taakAfgerond: true,
+    auteur: null, tekst: 'WhatsApp: 1 van jou (nog geen reactie)', soortLabel: 'WhatsApp', kanaal: 'whatsapp',
+  });
+  it('na 10 werkdagen komt het contact terug met het voorstel te bellen; ervoor niet', () => {
+    const c = contact(RANDGEVAL.koudNogNietAanDeBeurt);
+    const na = berekenBellijst(invoer({ activiteiten: [...data.activiteiten, wa(c.id, '2026-09-28')] }));
+    const k = [...na.vandaag, ...na.nietOpLijst, ...na.handmatigBeoordelen].find((x) => x.contact.id === c.id)!;
+    expect(k.reden).toContain('bleef onbeantwoord');
+    expect(k.advies.kanaal).toBe('bellen');
+    const voor = berekenBellijst(invoer({ activiteiten: [...data.activiteiten, wa(c.id, '2026-10-09')] }));
+    expect([...voor.vandaag, ...voor.nietOpLijst].some((x) => x.contact.id === c.id)).toBe(false);
   });
 });
 

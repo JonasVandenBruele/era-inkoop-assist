@@ -1,5 +1,7 @@
 // Kanaaladvies (PLAN.md §7b.1): bellen, berichtje of mail. Altijd aanwezig, nooit opdringerig.
 import { parseISO, getDay } from 'date-fns';
+import { korteDag } from '../core/dates';
+import { werkdagenTussen } from './werkdagen';
 import type { Instellingen } from '../core/settings/schema';
 import type { Belpoging, Contact, Contacthook, Contactkanaal, Contactvoorkeur, Fase, Waardehaak } from './model';
 import { heeftTelefoon } from './overzicht';
@@ -43,6 +45,8 @@ export interface AdviesInvoer {
   gepland?: Contactkanaal | null;
   /** Hook van Claude, met een voorgesteld kanaal en de reden. */
   hook?: Contacthook | null;
+  /** Laatste bericht (sms, WhatsApp of mail) sinds het laatste inhoudelijke contact dat geen antwoord kreeg. */
+  onbeantwoordBericht?: { dag: string } | null;
   /** Is er vandaag een Baanprospectie-blok? Zonder blok stelt de hook geen langsgaan of flyer voor. */
   veldwerkMogelijk?: boolean;
   haken: Waardehaak[];
@@ -89,6 +93,15 @@ export function kanaaladvies(i: AdviesInvoer): Kanaaladvies {
     return { kanaal: g, reden: `Gepland in ERAForce: ${KANAAL_LABEL[g]}`, opmerking: g === 'bezoek' ? 'Niemand thuis? Laat een flyer of kaartje achter.' : rustig(g) };
   }
 
+  // 0b. Je bericht bleef onbeantwoord: na een tijd een ander kanaal (Jonas, 6/10/2026: bellen of langsgaan, geen brief).
+  //     Ervoor geen tweede bericht: niet aandringen.
+  const ob = i.onbeantwoordBericht;
+  const wachtOpAntwoord = Boolean(ob);
+  if (ob && werkdagenTussen(ob.dag, i.dag) >= inst.contact.anderKanaalNaWerkdagen) {
+    if (kanBellen) return { kanaal: 'bellen', reden: `Je bericht van ${korteDag(ob.dag)} bleef onbeantwoord — probeer eens te bellen`, opmerking: null };
+    if (adres && i.veldwerkMogelijk !== false) return { kanaal: 'bezoek', reden: `Je bericht van ${korteDag(ob.dag)} bleef onbeantwoord en er is geen nummer — ga eens langs`, opmerking: null };
+  }
+
   // 1. Voorkeur van het contact gaat altijd voor.
   const vk = i.voorkeur?.kanaal;
   if (vk === 'mail' && kanMail) return { kanaal: 'mail', reden: 'Voorkeur van het contact: mail', opmerking: null };
@@ -101,7 +114,7 @@ export function kanaaladvies(i: AdviesInvoer): Kanaaladvies {
   // 3. Na x keer geen antwoord: een berichtje in plaats van nog eens bellen (één keer per reeks).
   const oproepen = i.pogingen.filter((p) => kanaalVan(p) === 'telefoon').length;
   const alBericht = i.pogingen.some((p) => kanaalVan(p) !== 'telefoon');
-  if (oproepen >= inst.contact.berichtNaGeenAntwoord && !alBericht) {
+  if (oproepen >= inst.contact.berichtNaGeenAntwoord && !alBericht && !wachtOpAntwoord) {
     const kanaal: AdviesKanaal = kanBericht ? 'bericht' : kanMail ? 'mail' : 'bellen';
     if (kanaal !== 'bellen') return { kanaal, reden: `${oproepen}× geen antwoord — stuur liever een ${kanaal === 'bericht' ? 'berichtje' : 'mail'} dan nog eens te bellen`, opmerking: rustig(kanaal) };
   }
@@ -109,13 +122,14 @@ export function kanaaladvies(i: AdviesInvoer): Kanaaladvies {
   // 3b. Claude stelde op basis van het dossier een ander kanaal voor (bv. "telefonisch moeilijk bereikbaar").
   const hk = i.hook?.kanaal;
   const veldwerk = hk === 'bezoek' || hk === 'flyer';
-  if (hk && hk !== 'bellen' && mogelijk(hk) && (!veldwerk || i.veldwerkMogelijk !== false)) {
+  const nogEenBericht = hk === 'bericht' || hk === 'whatsapp' || hk === 'mail' || hk === 'brief';
+  if (hk && hk !== 'bellen' && mogelijk(hk) && (!veldwerk || i.veldwerkMogelijk !== false) && !(nogEenBericht && wachtOpAntwoord)) {
     return { kanaal: hk, reden: i.hook!.kanaalReden ?? `Voorstel van de hook: ${KANAAL_LABEL[hk]}`, opmerking: rustig(hk) };
   }
 
   // 4. Koud/langetermijn met informatieve haak: rustig te lezen, geen druk.
   const info = i.haken.find((h) => h.soort === 'buurt' || h.soort === 'algemeen');
-  if (i.fase === 'koud' && info && (kanMail || kanBericht)) {
+  if (i.fase === 'koud' && info && (kanMail || kanBericht) && !wachtOpAntwoord) {
     const kanaal: AdviesKanaal = kanMail ? 'mail' : 'bericht';
     return { kanaal, reden: `Koud contact met nuttige info — een ${kanaal === 'mail' ? 'mail' : 'berichtje'} is minder opdringerig`, opmerking: rustig(kanaal) };
   }

@@ -25,7 +25,7 @@ import { isGevoelig } from '../src/domain/haken';
 import { berekenBellijst, type Kandidaat } from '../src/domain/prioriteit';
 import { isWerkdag, plusWerkdagen } from '../src/domain/werkdagen';
 import { heeftTelefoon } from '../src/domain/overzicht';
-import type { Contactkanaal } from '../src/domain/model';
+import { taalVan, type Contactkanaal } from '../src/domain/model';
 import { prospectieblokkenOp } from '../src/domain/prospectieblokken';
 import { nummersVan, type WaBericht } from '../src/adapters/gesprekken/whatsapp';
 import { leesWhatsapp, zoekWhatsapp } from './whatsapp-lezen';
@@ -193,7 +193,9 @@ function maakContext(
   const tekst = {
     ref,
     naam: [c.aanhef, c.voornaam, c.achternaam].filter(Boolean).join(' '),
-    aanspreekvorm: c.aanspreekvormBron ?? 'u',
+    // Zoals Jonas deze klant aanspreekt (uit WhatsApp); onbekend = je (Jonas, 6/10/2026).
+    aanspreekvorm: c.aanspreekvormBron ?? 'je',
+    taal: taalVan(c),
     status: c.statusLabelBron ?? c.statusBron,
     langetermijn: c.statusBron === 'langetermijn',
     herkomst: c.herkomstContact,
@@ -201,6 +203,7 @@ function maakContext(
     woont_in: c.gemeente,
     straat: c.straat ? straatnaam(c.straat) : null,
     waarom_vandaag: k.reden,
+    kanaaladvies_app: { kanaal: k.advies.kanaal, reden: k.advies.reden },
     geplande_taak: k.terugbel ? { dag: k.terugbel.dag, onderwerp: (k.terugbel.tekst ?? '').split('\n')[0]!.slice(0, 200), kanaal: k.terugbel.kanaal } : null,
     laatste_gesprekken: gesprekken,
     eigen_notities_in_app: notities,
@@ -236,7 +239,7 @@ function maakContext(
     lokaal_nieuws: nieuwsLokaal.map((n) => ({ titel: n.titel, bron: n.bron, dag: n.dag, url: n.url })),
   };
   // De vingerafdruk gebruikt de inhoud zonder het algemene nieuws, zodat een nieuw krantenartikel niet alles opnieuw laat maken.
-  const hash = createHash('sha256').update(JSON.stringify({ tekst, model: MODEL, versie: 4 })).digest('hex').slice(0, 32);
+  const hash = createHash('sha256').update(JSON.stringify({ tekst, model: MODEL, versie: 5 })).digest('hex').slice(0, 32);
   return { ref, kandidaat: k, tekst, links, hash };
 }
 
@@ -261,12 +264,14 @@ Werkwijze ("ossenpikker"): altijd aanwezig, nooit opdringerig. De hook levert de
   vertelde je me dat …, is dat ondertussen …?"), en sluit af met een hulpaanbod ("Kan ik nog ergens bij helpen?").
   Ondertekenen met "Mvg, Jonas van ERA", "Fijne avond, Jonas van ERA" of "Groetjes, Jonas". Geen emoji, geen
   verkooppraat, geen druk.
-- Taal: in de taal van de eerdere gesprekken of WhatsApp-berichten (Nederlands, Frans of Engels). In het Frans:
+- Aanspreking: volg "aanspreekvorm" (je = voornaam en je; u = meneer/mevrouw + achternaam en u).
+- Taal: schrijf in "taal" (nl, fr of en), tenzij de laatste gesprekken of WhatsApp-berichten duidelijk een andere taal tonen. In het Frans:
   "Bonjour <voornaam>, … Bav, Jonas de ERA"; in het Engels: "Hi <first name>, Jonas from ERA here. …".
 - Vlaams Nederlands, spreektaal maar beleefd. Jonas werkt bij ERA.
 - Kanaal: kies uit kanalen_mogelijk. Langsgaan (bezoek) en flyer kan enkel tijdens een Baanprospectie-blok; daarom staan
   ze enkel in kanalen_mogelijk op zo'n dag. Respecteer het kanaal van de geplande taak (bv. bezoek bij "langsgaan met flyer").
-  Antwoordde de klant onlangs via WhatsApp, dan ligt WhatsApp voor de hand. Herhaal geen vraag die al in WhatsApp
+  Antwoordde de klant onlangs via WhatsApp, dan ligt WhatsApp voor de hand. Zegt kanaaladvies_app dat een bericht
+  onbeantwoord bleef, stel dan bellen of langsgaan voor: geen nieuw bericht, geen mail en nooit een brief. Herhaal geen vraag die al in WhatsApp
   beantwoord werd, en citeer nooit letterlijk uit een WhatsApp-bericht van de klant.
   Na meerdere pogingen zonder antwoord of als de notities zeggen dat iemand moeilijk telefonisch bereikbaar is:
   WhatsApp, bericht, brief, flyer of langsgaan. Langetermijn met informatieve hook: liefst iets rustig te lezen.

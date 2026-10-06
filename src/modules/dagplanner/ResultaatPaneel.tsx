@@ -20,8 +20,7 @@ export function ResultaatPaneel({ contact, pogingenZonderAntwoord, onKlaar }: { 
   const vandaag = klok.vandaag();
   const [uitkomst, setUitkomst] = useState<BelUitkomst | null>(null);
   const [notitie, setNotitie] = useState('');
-  const [volgendeStap, setVolgendeStap] = useState('');
-  const [vervolgDag, setVervolgDag] = useState('');
+  const [evaluatieGedaan, setEvaluatieGedaan] = useState(false);
   const [terugbelDag, setTerugbelDag] = useState(plusWerkdagen(vandaag, 1));
   const [terugbelUur, setTerugbelUur] = useState('');
   const [teltAlsGesprek, setTeltAlsGesprek] = useState(true);
@@ -41,16 +40,14 @@ export function ResultaatPaneel({ contact, pogingenZonderAntwoord, onKlaar }: { 
         contact,
         uitkomst: gekozen,
         kanaal: gekozen === 'reactie' ? reactieKanaal : 'telefoon',
-        notitie,
-        volgendeStap,
-        vervolgDag: vervolgDag || null,
+        notitie: gekozen === 'gesproken' ? null : notitie,
         terugbelDag,
         terugbelUur: terugbelUur || null,
         teltAlsGesprek,
         afspraak: { dag: afspraakDag, start: afspraakUur, duurMinuten: duur },
         reden: notitie,
       });
-      let tekst = `Gesprek met ${contact.achternaam} bewaard.`;
+      let tekst = `Gesprek met ${contact.achternaam} bewaard; de evaluatie staat in ERAForce.`;
       if (gekozen === 'geen_antwoord') {
         const volgende = volgendePogingDag(pogingenZonderAntwoord + 1, vandaag, instellingen);
         tekst = volgende
@@ -140,22 +137,18 @@ export function ResultaatPaneel({ contact, pogingenZonderAntwoord, onKlaar }: { 
         </div>
       )}
 
-      <label>
-        {uitkomst === 'niet_meer_bellen' ? 'Reden (optioneel)' : 'Korte notitie (optioneel)'}
-        <textarea rows={2} value={notitie} onChange={(e) => setNotitie(e.target.value)} />
-      </label>
-
-      {uitkomst === 'gesproken' && (
-        <>
-          <label>
-            Volgende stap (optioneel)
-            <input value={volgendeStap} onChange={(e) => setVolgendeStap(e.target.value)} placeholder="bv. referenties mailen" />
-          </label>
-          <label>
-            Op dag (optioneel)
-            <input type="date" min={vandaag} value={vervolgDag} onChange={(e) => setVervolgDag(e.target.value)} />
-          </label>
-        </>
+      {/* Na een gesprek: geen notitie of opvolging in Oxpecker (Jonas, 6/10/2026). De evaluatie en de volgende
+          stap zet je in ERAForce; hier bevestig je enkel dat dat gebeurd is. */}
+      {uitkomst === 'gesproken' ? (
+        <label className="vinkje">
+          <input type="checkbox" checked={evaluatieGedaan} onChange={(e) => setEvaluatieGedaan(e.target.checked)} />
+          Evaluatie staat in ERAForce
+        </label>
+      ) : (
+        <label>
+          {uitkomst === 'niet_meer_bellen' ? 'Reden (optioneel)' : 'Korte notitie (optioneel)'}
+          <textarea rows={2} value={notitie} onChange={(e) => setNotitie(e.target.value)} />
+        </label>
       )}
 
       {fout && <p className="foutmelding">{fout}</p>}
@@ -166,7 +159,12 @@ export function ResultaatPaneel({ contact, pogingenZonderAntwoord, onKlaar }: { 
             Niet meer bellen…
           </button>
         ) : (
-          <button className={`knop groot ${uitkomst === 'niet_meer_bellen' ? 'gevaar' : 'primair'}`} disabled={bezig} onClick={() => bewaar(uitkomst)}>
+          <button
+            className={`knop groot ${uitkomst === 'niet_meer_bellen' ? 'gevaar' : 'primair'}`}
+            disabled={bezig || (uitkomst === 'gesproken' && !evaluatieGedaan)}
+            title={uitkomst === 'gesproken' && !evaluatieGedaan ? 'Zet eerst de evaluatie in ERAForce en vink het aan' : undefined}
+            onClick={() => bewaar(uitkomst)}
+          >
             {bezig ? 'Bewaren…' : uitkomst === 'niet_meer_bellen' ? 'Ja, dit contact nooit meer bellen' : 'Bewaren'}
           </button>
         )}

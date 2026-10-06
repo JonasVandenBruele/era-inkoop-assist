@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.12.0] — 2026-10-06 — Taal, aanspreking, ander kanaal en evaluatie-vinkje
+
+### Gewijzigd
+- **Na "Gesproken"** geen notitie, volgende stap of dag meer: enkel het vinkje "Evaluatie staat in ERAForce" (verplicht). De opvolging zet je in ERAForce.
+- **Aanspreking zoals jij het doet:** je en de voornaam, tenzij je die klant in WhatsApp met u aanspreekt.
+- **Taal van de klant** (Nederlands, Frans, Engels): uit je WhatsApp-gesprekken, anders uit de communicatietaal in ERAForce. Ook de openingszin en de berichtvoorstellen zonder AI volgen die taal, in jouw stijl ("Dag/Hi <voornaam>, … Mvg, Jonas van ERA").
+- **Ander kanaal na een onbeantwoord bericht:** na 10 werkdagen komt het contact terug met het voorstel te bellen (of langs te gaan zonder nummer), nooit een brief of een tweede bericht. Daarvoor geen tweede bericht.
+- Hooks: in jouw schrijfstijl, uit de analyse van je WhatsApp-historiek.
+- Migratie `20261006000009_taal_en_aanspreking.sql`.
+
 ## [0.11.0] — 2026-10-06 — WhatsApp van de Mac
 
 ### Toegevoegd

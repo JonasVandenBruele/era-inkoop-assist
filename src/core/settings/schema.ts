@@ -52,8 +52,10 @@ export const InstellingenSchema = z.object({
       berichtenVanaf: uur.default('09:00'),
       berichtenTot: uur.default('20:00'),
       geenBerichtenOpZondag: z.boolean().default(true),
+      // Bleef een bericht onbeantwoord, dan na zoveel werkdagen een ander kanaal voorstellen (bellen of langsgaan, geen brief).
+      anderKanaalNaWerkdagen: z.number().int().min(1).default(10),
     })
-    .default({ berichtNaGeenAntwoord: 2, werkdagenNaBericht: 3, berichtenVanaf: '09:00', berichtenTot: '20:00', geenBerichtenOpZondag: true }),
+    .default({ berichtNaGeenAntwoord: 2, werkdagenNaBericht: 3, berichtenVanaf: '09:00', berichtenTot: '20:00', geenBerichtenOpZondag: true, anderKanaalNaWerkdagen: 10 }),
 
   // Herplanning na geen antwoord (fase 3)
   geenAntwoord: z
