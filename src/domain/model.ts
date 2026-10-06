@@ -20,6 +20,7 @@ export interface Herkomst {
 export type ContactStatus = 'nieuwe_lead' | 'prospect' | 'langetermijn' | 'beeindigd' | 'relatie';
 export type Fase = 'koud' | 'lauw' | 'warm';
 export type Aanspreekvorm = 'u' | 'je';
+export type Taal = 'nl' | 'fr' | 'en';
 
 export interface Telefoon {
   nummer: string;
@@ -42,7 +43,12 @@ export interface Contact extends Herkomst {
   statusLabelBron?: string | null;
   faseBron: Fase | null;
   tijdshorizonBron: string | null;
+  /** Zoals Jonas de klant aanspreekt (uit zijn WhatsApp-berichten); null = onbekend, dan "je" (Jonas, 6/10/2026). */
   aanspreekvormBron: Aanspreekvorm | null;
+  /** Communicatietaal uit ERAForce. */
+  taal?: Taal | null;
+  /** Taal uit de WhatsApp-gesprekken; gaat voor op ERAForce. */
+  taalWhatsapp?: Taal | null;
   herkomstContact: string | null;
   nietBellenBron: boolean;
   /** Datum waarop het contact (als lead) binnenkwam. */
@@ -274,6 +280,16 @@ export interface Bronstatus {
 /** Of een uitkomst standaard telt als inhoudelijk contact (zie PLAN.md §4). */
 export function standaardInhoudelijk(uitkomst: BelUitkomst): boolean {
   return uitkomst !== 'geen_antwoord' && uitkomst !== 'bericht_verstuurd';
+}
+
+/** De taal waarin Jonas de klant schrijft of aanspreekt: WhatsApp gaat voor, dan ERAForce, anders Nederlands. */
+export function taalVan(c: Pick<Contact, 'taal' | 'taalWhatsapp'>): Taal {
+  return c.taalWhatsapp ?? c.taal ?? 'nl';
+}
+
+/** Je-vorm, tenzij Jonas deze klant met u aanspreekt (Jonas, 6/10/2026). */
+export function zegtJe(c: Pick<Contact, 'aanspreekvormBron'>): boolean {
+  return c.aanspreekvormBron !== 'u';
 }
 
 export function volledigeNaam(c: Pick<Contact, 'aanhef' | 'voornaam' | 'achternaam'>): string {

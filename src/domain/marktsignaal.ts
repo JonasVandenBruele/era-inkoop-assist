@@ -2,7 +2,7 @@
 // hij de dag erna een kort bericht van Jonas met veel succes. Urgentie: heel hoog (Jonas, 6/10/2026).
 // Pure functies; de signalen zelf komen van de Mac (scripts/marktsignalen.ts).
 import { dagVan, korteDag, type DagKey } from '../core/dates';
-import type { Belpoging, Bronactiviteit, Contact, Marktsignaal } from './model';
+import { taalVan, zegtJe, type Belpoging, type Bronactiviteit, type Contact, type Marktsignaal } from './model';
 import { plusWerkdagen } from './werkdagen';
 
 /** Hoe lang een signaal na de ontdekking op de lijst blijft als er nog niets gebeurde. */
@@ -70,14 +70,28 @@ export function signaalTekst(s: Marktsignaal): string {
 }
 
 /**
- * Standaardbericht in Jonas' stijl (kort, warm, geen verkooppraat), voor als er geen hook van Claude is.
- * Je-vorm tenzij de aanspreekvorm "u" is.
+ * Standaardbericht in Jonas' stijl (kort, warm, geen verkooppraat), voor als er geen hook van Claude is. In de taal van de
+ * klant; je-vorm en de voornaam, tenzij Jonas de klant met u aanspreekt.
  */
-export function succesbericht(c: Pick<Contact, 'voornaam' | 'achternaam' | 'aanhef' | 'aanspreekvormBron'>, s: Pick<Marktsignaal, 'verkoper'>): string {
-  const u = c.aanspreekvormBron === 'u';
-  const naam = u ? [c.aanhef ?? '', c.achternaam].join(' ').trim() : (c.voornaam ?? c.achternaam);
-  const jullie = u ? 'uw' : 'jullie';
-  const je = u ? 'u' : 'je';
-  const hulp = s.verkoper === 'particulier' ? ` Mocht ${je} onderweg ergens hulp bij kunnen gebruiken, laat ${u ? 'het me gerust weten' : 'gerust iets weten'}.` : '';
-  return `${u ? 'Goeiedag' : 'Dag'} ${naam}, ik zag dat ${jullie} woning te koop staat. Ik wens ${je} alvast heel veel succes met de verkoop!${hulp} Groetjes, Jonas van ERA`;
+export function succesbericht(
+  c: Pick<Contact, 'voornaam' | 'achternaam' | 'aanhef' | 'aanspreekvormBron'> & Partial<Pick<Contact, 'taal' | 'taalWhatsapp'>>,
+  s: Pick<Marktsignaal, 'verkoper'>,
+): string {
+  const taal = taalVan({ taal: c.taal ?? null, taalWhatsapp: c.taalWhatsapp ?? null });
+  const je = zegtJe(c);
+  const voornaam = c.voornaam && !c.voornaam.includes('&') ? c.voornaam : null;
+  const zelf = s.verkoper === 'particulier';
+  if (taal === 'fr') {
+    const naam = je && voornaam ? voornaam : c.aanhef === 'Mevr.' ? `Madame ${c.achternaam}` : c.aanhef === 'Dhr.' ? `Monsieur ${c.achternaam}` : c.achternaam;
+    return `Bonjour ${naam}, j'ai vu que votre maison est en vente. Je vous souhaite beaucoup de succès avec la vente !${zelf ? " N'hésitez pas si je peux vous aider." : ''} Bav, Jonas de ERA`;
+  }
+  if (taal === 'en') {
+    const naam = je && voornaam ? voornaam : c.aanhef === 'Mevr.' ? `Ms ${c.achternaam}` : c.aanhef === 'Dhr.' ? `Mr ${c.achternaam}` : c.achternaam;
+    return `Hi ${naam}, Jonas from ERA here. I saw your house is on the market, best of luck with the sale!${zelf ? ' Feel free to reach out if I can help.' : ''} Kind regards, Jonas`;
+  }
+  const naam = je ? (voornaam ?? c.achternaam) : [c.aanhef === 'Mevr.' ? 'mevrouw' : c.aanhef === 'Dhr.' ? 'meneer' : 'familie', c.achternaam].join(' ');
+  const jullie = je ? 'jullie' : 'uw';
+  const jij = je ? 'jullie' : 'u';
+  const hulp = zelf ? ` Kan ik ergens bij helpen, laat ${je ? 'gerust iets weten' : 'het me gerust weten'}.` : '';
+  return `${je ? 'Dag' : 'Goeiedag'} ${naam}, ik zag dat ${jullie} woning te koop staat. Ik wens ${jij} alvast heel veel succes met de verkoop!${hulp} Groetjes, Jonas van ERA`;
 }

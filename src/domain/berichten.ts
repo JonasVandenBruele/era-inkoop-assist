@@ -1,8 +1,9 @@
 // Voorgestelde berichtteksten (sms, WhatsApp, mail) zonder AI. Jonas past aan en verstuurt zelf.
-// Enkel herleidbare feiten; geen persoonlijke of gevoelige haken; geen "even checken".
+// Enkel herleidbare feiten; geen persoonlijke of gevoelige hooks; geen "even checken". In de taal van de klant.
 import type { Kandidaat } from './prioriteit';
 import { haakZin } from './haken';
 import { succesbericht } from './marktsignaal';
+import { taalVan, zegtJe } from './model';
 
 export interface BerichtContext {
   kandidaat: Kandidaat;
@@ -25,49 +26,45 @@ export function berichtTekst({ kandidaat: k, kanaal, voornaamGebruiker, organisa
   }
   // Conceptbericht van de hook van Claude, als die er is (Jonas past aan en verstuurt zelf).
   if (k.hook?.conceptbericht) return { onderwerp: kanaal === 'mail' ? k.hook.onderwerp : null, tekst: k.hook.conceptbericht };
-  const je = c.aanspreekvormBron === 'je';
-  const naam = je && c.voornaam && !c.voornaam.includes('&') ? c.voornaam : c.aanhef === 'Mevr.' ? `mevrouw ${c.achternaam}` : c.aanhef === 'Dhr.' ? `meneer ${c.achternaam}` : `familie ${c.achternaam}`;
+  const taal = taalVan(c);
+  const je = zegtJe(c);
+  const voornaam = c.voornaam && !c.voornaam.includes('&') ? c.voornaam : null;
+  const oproepen = k.pogingenZonderAntwoord;
+  const nieuw = !k.terugbel && !k.laatste;
+  const schatting = /schatting/i.test(c.herkomstContact ?? '');
+
+  // In de stijl van Jonas (WhatsApp-analyse 6/10/2026): "Dag/Hi <voornaam>," kort, een hulpaanbod, "Mvg, Jonas van ERA".
+  if (taal === 'fr') {
+    const naam = voornaam ?? (c.aanhef === 'Mevr.' ? `Madame ${c.achternaam}` : c.aanhef === 'Dhr.' ? `Monsieur ${c.achternaam}` : c.achternaam);
+    const aanleiding = nieuw ? (schatting ? 'Vous aviez demandé une estimation de votre bien.' : "Vous aviez montré de l'intérêt pour une estimation de votre bien.") : oproepen > 0 ? "J'ai essayé de vous joindre par téléphone." : 'Comment allez-vous ?';
+    const tekst = `Bonjour ${naam}, ${aanleiding} Est-ce que je peux encore vous aider ? N'hésitez pas à me rappeler. Bav, ${voornaamGebruiker} de ${organisatie}`;
+    return { onderwerp: kanaal === 'mail' ? (nieuw ? 'Votre demande d’estimation' : 'Suivi de votre projet') : null, tekst };
+  }
+  if (taal === 'en') {
+    const naam = voornaam ?? (c.aanhef === 'Mevr.' ? `Ms ${c.achternaam}` : c.aanhef === 'Dhr.' ? `Mr ${c.achternaam}` : c.achternaam);
+    const aanleiding = nieuw ? (schatting ? 'You had asked for a valuation of your property.' : 'You had shown interest in a valuation of your property.') : oproepen > 0 ? 'I tried to give you a call.' : 'Hope you are doing well!';
+    const tekst = `Hi ${naam}, ${voornaamGebruiker} from ${organisatie} here. ${aanleiding} Is there anything I can help you with? Feel free to give me a call. Kind regards, ${voornaamGebruiker}`;
+    return { onderwerp: kanaal === 'mail' ? (nieuw ? 'Your valuation request' : 'Follow-up') : null, tekst };
+  }
+
+  const naam = je && voornaam ? voornaam : c.aanhef === 'Mevr.' ? `mevrouw ${c.achternaam}` : c.aanhef === 'Dhr.' ? `meneer ${c.achternaam}` : `familie ${c.achternaam}`;
   const u = je ? 'je' : 'u';
   const U = je ? 'Je' : 'U';
   const uw = je ? 'je' : 'uw';
-
   const haak = k.haken.find((h) => h.soort !== 'persoonlijk' && !h.gevoelig);
   const haakTekst = haak ? haakZin(haak, je) : null;
-  const oproepen = k.pogingenZonderAntwoord;
-
-  let aanleiding: string;
-  if (k.terugbel) aanleiding = `Zoals afgesproken neem ik contact met ${je ? 'je' : 'u'} op.`;
-  else if (!k.laatste) {
-    const herkomst = c.herkomstContact ?? '';
-    aanleiding = /schatting/i.test(herkomst) ? `${U} had een schatting van ${uw} woning aangevraagd.` : `${U} had interesse getoond in een schatting van ${uw} eigendom.`;
-  } else aanleiding = '';
+  const aanleiding = nieuw ? (schatting ? `${U} had een schatting van ${uw} woning aangevraagd.` : `${U} had interesse getoond in een schatting van ${uw} eigendom.`) : '';
   const geprobeerd = oproepen > 0 ? `Ik probeerde ${u} ${oproepen === 1 ? 'eerder' : 'een paar keer'} te bellen.` : '';
-
-  const vraag = je
-    ? 'Past een kort telefoontje deze week? Laat gerust weten wanneer het je uitkomt.'
-    : 'Past een kort telefoontje deze week? Laat gerust weten wanneer het u schikt.';
+  const vraag = je ? 'Kan ik nog ergens bij helpen? Geef me gerust een belletje.' : 'Kan ik u nog ergens bij helpen? Laat gerust iets weten.';
+  const slot = `Mvg, ${voornaamGebruiker} van ${organisatie}`;
 
   if (kanaal === 'mail') {
-    const onderwerp = haak ? haak.onderwerp : !k.laatste ? `${je ? 'Je' : 'Uw'} aanvraag voor een schatting` : `Opvolging — ${uw} woning`;
-    const alinea1 = [aanleiding, geprobeerd].filter(Boolean).join(' ');
-    const tekst = [
-      `${je ? 'Dag' : 'Beste'} ${naam},`,
-      '',
-      ...(alinea1 ? [alinea1, ''] : []),
-      ...(haakTekst ? [haakTekst, ''] : []),
-      `${je ? 'Heb je' : 'Heeft u'} zin in een kort gesprek? ${je ? 'Laat gerust weten wanneer het je past.' : 'Laat gerust weten wanneer het u schikt.'}`,
-      '',
-      je ? 'Groetjes,' : 'Met vriendelijke groet,',
-      voornaamGebruiker,
-      organisatie,
-    ].join('\n');
+    const onderwerp = haak ? haak.onderwerp : nieuw ? `${je ? 'Je' : 'Uw'} aanvraag voor een schatting` : `Opvolging — ${uw} woning`;
+    const alinea = [aanleiding, geprobeerd].filter(Boolean).join(' ');
+    const tekst = [`Dag ${naam},`, '', ...(alinea ? [alinea, ''] : []), ...(haakTekst ? [haakTekst, ''] : []), vraag, '', slot].join('\n');
     return { onderwerp, tekst };
   }
-
-  const groet = je ? `Dag ${naam}` : `Goeiedag ${naam}`;
-  const tekst = [`${groet}, met ${voornaamGebruiker} van ${organisatie}.`, aanleiding, geprobeerd, haakTekst ?? '', vraag, je ? `Groetjes, ${voornaamGebruiker}` : `Vriendelijke groet, ${voornaamGebruiker}`]
-    .filter(Boolean)
-    .join(' ');
+  const tekst = [`${je && voornaam ? 'Hi' : 'Dag'} ${naam}, ${voornaamGebruiker} van ${organisatie} hier.`, aanleiding, geprobeerd, haakTekst ?? '', vraag, slot].filter(Boolean).join(' ');
   return { onderwerp: null, tekst };
 }
 

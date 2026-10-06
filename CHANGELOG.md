@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.12.0] — 2026-10-06 — Te koop gezet en adressen
+## [0.13.0] — 2026-10-06 — Te koop gezet en adressen
 
 ### Toegevoegd
 - **Te koop gezet** (`scripts/marktsignalen.ts`, na elke mirror-run, vóór de hooks): staat de woning van een prospect te koop — zelf (particulier) of via een andere makelaar — dan staat hij **de (werk)dag na de ontdekking bovenaan** in een eigen blok "Te koop gezet", met een kort bericht "veel succes met de verkoop" (Jonas, 6/10/2026: urgentie heel hoog). Telt niet mee voor je belmaximum; enkel een belverbod, een afspraak vandaag of "vandaag overslaan" houdt het tegen. Verdwijnt zodra er een bericht of gesprek is, of met "Niets sturen".
@@ -10,13 +10,23 @@
 - **Adressen normaliseren** (`src/domain/adres.ts`): straat (afkortingen voluit: str → straat, stwg → steenweg, St. → Sint, Av./Chée …; zonder accenten, leestekens en spaties), huisnummer, bus en **postcode** — de gemeentenaam telt niet (3078 Everberg = 3078 Kortenberg). Optioneel de officiële straatnaam uit het Vlaamse Adressenregister ("Lod. van Veltemstraat" → Lodewijk van Veltemstraat), per postcode 30 dagen gecachet in `~/.oxpecker/straatnamen`.
 - **Dubbels:** één contact per adres per dag op de bellijst (bv. lead én contact op hetzelfde adres); op de contactpagina "Zelfde adres: …".
 - Buurtfeiten in de hooks per postcode in plaats van per gemeentenaam.
-- Migratie `20261006000009_marktsignalen.sql`: tabel `marktsignalen` (enkel advertentiegegevens), schrijfbaar door de importrol bij je ERAForce-contacten; jij mag enkel "afgehandeld" zetten.
+- Migratie `20261006000010_marktsignalen.sql`: tabel `marktsignalen` (enkel advertentiegegevens), schrijfbaar door de importrol bij je ERAForce-contacten; jij mag enkel "afgehandeld" zetten.
 
 ### Gewijzigd
 - **Uitgaande oproep zonder evaluatie of met "vm"** (of "ingesproken", "nt opgenomen", "répondeur" …) telt als antwoordapparaat, niet als gesprek (Jonas, 6/10/2026). Een inkomende oproep zonder tekst blijft een gesprek.
 
 ### Tests
 - 205 tests, o.a. adresnormalisatie, officiële straatnamen, groep "Te koop gezet" (dag erna, boven het maximum, verdwijnt na een bericht) en voicemail-herkenning.
+
+## [0.12.0] — 2026-10-06 — Taal, aanspreking, ander kanaal en evaluatie-vinkje
+
+### Gewijzigd
+- **Na "Gesproken"** geen notitie, volgende stap of dag meer: enkel het vinkje "Evaluatie staat in ERAForce" (verplicht). De opvolging zet je in ERAForce.
+- **Aanspreking zoals jij het doet:** je en de voornaam, tenzij je die klant in WhatsApp met u aanspreekt.
+- **Taal van de klant** (Nederlands, Frans, Engels): uit je WhatsApp-gesprekken, anders uit de communicatietaal in ERAForce. Ook de openingszin en de berichtvoorstellen zonder AI volgen die taal, in jouw stijl ("Dag/Hi <voornaam>, … Mvg, Jonas van ERA").
+- **Ander kanaal na een onbeantwoord bericht:** na 10 werkdagen komt het contact terug met het voorstel te bellen (of langs te gaan zonder nummer), nooit een brief of een tweede bericht. Daarvoor geen tweede bericht.
+- Hooks: in jouw schrijfstijl, uit de analyse van je WhatsApp-historiek.
+- Migratie `20261006000009_taal_en_aanspreking.sql`.
 
 ## [0.11.0] — 2026-10-06 — WhatsApp van de Mac
 

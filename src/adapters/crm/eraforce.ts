@@ -7,7 +7,7 @@
 // - Een afgesloten oproep telt als gesprek, tenzij de evaluatie zegt dat er niemand opnam.
 // - Een afspraak die voorbij is, telt ook als inhoudelijk contact.
 import { dagVan, uurVan, vanBrusselsLokaal } from '../../core/dates';
-import type { Afspraak, Bronactiviteit, Contact, Contactkanaal, ContactStatus, Telefoon } from '../../domain/model';
+import type { Afspraak, Bronactiviteit, Contact, Contactkanaal, ContactStatus, Taal, Telefoon } from '../../domain/model';
 
 /** Een rij uit de mirror (SQLite): veldnamen zoals in Salesforce; booleans als 0/1. */
 export type SfRij = Record<string, unknown>;
@@ -38,6 +38,15 @@ const dag = (r: SfRij, veld: string): string | null => {
   return t && /^\d{4}-\d{2}-\d{2}/.test(t) ? t.slice(0, 10) : null;
 };
 
+/** Communicatietaal in ERAForce ("Nederlands", "Frans", "Engels") → taalcode. */
+export function taalUit(r: SfRij, veld: string): Taal | null {
+  const t = (tekst(r, veld) ?? '').toLowerCase();
+  if (/^(frans|french|fran)/.test(t)) return 'fr';
+  if (/^(engels|english)/.test(t)) return 'en';
+  if (/^(nederlands|dutch|neder)/.test(t)) return 'nl';
+  return null;
+}
+
 /** Leads (00Q) en contacten (003) zijn de enige records die in Oxpecker een contact worden. */
 export const isPersoonId = (id: string | null | undefined): id is string => Boolean(id && /^(00Q|003)/.test(id));
 
@@ -49,7 +58,7 @@ const herkomst = (r: SfRij, gebeurdOp: Date | null) => ({
   isTestdata: false,
 });
 
-const AANHEF: Record<string, string> = { 'mr.': 'Dhr.', mr: 'Dhr.', 'mrs.': 'Mevr.', 'ms.': 'Mevr.', mevrouw: 'Mevr.', meneer: 'Dhr.', heer: 'Dhr.', dhr: 'Dhr.', 'dhr.': 'Dhr.', 'mevr.': 'Mevr.', mevr: 'Mevr.' };
+const AANHEF: Record<string, string> = { 'de heer': 'Dhr.', juffrouw: 'Mevr.', 'mr.': 'Dhr.', mr: 'Dhr.', 'mrs.': 'Mevr.', 'ms.': 'Mevr.', mevrouw: 'Mevr.', meneer: 'Dhr.', heer: 'Dhr.', dhr: 'Dhr.', 'dhr.': 'Dhr.', 'mevr.': 'Mevr.', mevr: 'Mevr.' };
 function aanhef(r: SfRij): string | null {
   const t = tekst(r, 'ERA_Aanspreking__c') ?? tekst(r, 'Salutation');
   return t ? (AANHEF[t.toLowerCase()] ?? t) : null;
@@ -111,6 +120,7 @@ export function leadNaarContact(r: SfRij): ContactImport | null {
     faseBron: null,
     tijdshorizonBron: null,
     aanspreekvormBron: null,
+    taal: taalUit(r, 'ERA_Communicatie_Taal__c'),
     herkomstContact: bron && subbron && subbron !== bron ? `${bron} – ${subbron}` : bron,
     nietBellenBron: waar(r, 'DoNotCall'),
     aangemaaktInBronOp: tijd(r, 'CreatedDate'),
@@ -135,6 +145,7 @@ export function contactNaarContact(r: SfRij): ContactImport {
     faseBron: null,
     tijdshorizonBron: null,
     aanspreekvormBron: null,
+    taal: taalUit(r, 'PPM_Taal_Picklist__c') ?? taalUit(r, 'PPM_Taal__c'),
     herkomstContact: tekst(r, 'LeadSource'),
     nietBellenBron: waar(r, 'DoNotCall'),
     aangemaaktInBronOp: tijd(r, 'CreatedDate'),

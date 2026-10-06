@@ -7,7 +7,7 @@
 //   Enkel berichten van jou zonder reactie is geen gesprek.
 // - De inhoud van de laatste berichten gaat enkel lokaal naar Claude, als context voor de hooks.
 import { dagVan, type DagKey } from '../../core/dates';
-import type { Telefoon } from '../../domain/model';
+import type { Aanspreekvorm, Taal, Telefoon } from '../../domain/model';
 
 /** Core Data bewaart tijden als seconden sinds 1/1/2001. */
 export const CORE_DATA_EPOCH = 978307200;
@@ -67,4 +67,26 @@ export function perDag(berichten: WaBericht[]): WaDag[] {
 export function dagTekst(d: WaDag): string {
   const delen = [d.vanMij && `${d.vanMij} van jou`, d.vanKlant && `${d.vanKlant} van de klant`].filter(Boolean).join(', ');
   return `WhatsApp: ${delen}${d.vanKlant === 0 ? ' (nog geen reactie)' : ''}`;
+}
+
+const FR = /\b(bonjour|bonsoir|merci|vous|votre|est-ce|salut|nous|pour|avec|bonne|rappeler|maison)\b/gi;
+const EN = /\b(hello|thanks|thank|you|your|please|the|and|call|house|regards|would)\b/gi;
+const NL = /\b(dag|bedankt|jij|u|uw|het|een|de|en|niet|woning|huis|bellen|terugbellen|graag|groetjes|mvg|zou|even|kunnen|wanneer|ik|mij|ook|nog|ondertussen|bij|deze)\b/gi;
+const tel = (t: string, re: RegExp) => (t.match(re) ?? []).length;
+
+/** Taal van een gesprek: het meest voorkomende van Nederlands, Frans en Engels. Null bij te weinig tekst. */
+export function detecteerTaal(teksten: (string | null)[]): Taal | null {
+  const t = teksten.filter(Boolean).join(' ');
+  const s = { nl: tel(t, NL), fr: tel(t, FR), en: tel(t, EN) };
+  const [beste, n] = (Object.entries(s) as [Taal, number][]).sort((a, b) => b[1] - a[1])[0]!;
+  return n >= 3 ? beste : null;
+}
+
+/** Hoe Jonas de klant aanspreekt in zijn eigen Nederlandstalige berichten: je of u. Null als het niet blijkt. */
+export function aanspreekvormVan(eigenTeksten: (string | null)[]): Aanspreekvorm | null {
+  const t = eigenTeksten.filter(Boolean).join(' ');
+  const je = tel(t, /\b(je|jij|jou|jouw|jullie)\b/gi);
+  const u = tel(t, /\b(u|uw)\b/gi);
+  if (je === 0 && u === 0) return null;
+  return u > je ? 'u' : 'je';
 }

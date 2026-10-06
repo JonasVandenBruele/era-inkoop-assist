@@ -1,6 +1,6 @@
 // Fictieve nummers en berichten (geen echte klantgegevens).
 import { describe, expect, it } from 'vitest';
-import { coreDataDatum, dagTekst, nummerUitJid, nummersVan, perDag, waNummer } from './whatsapp';
+import { aanspreekvormVan, coreDataDatum, dagTekst, detecteerTaal, nummerUitJid, nummersVan, perDag, waNummer } from './whatsapp';
 
 describe('WhatsApp → Oxpecker', () => {
   it('nummers in de vorm van WhatsApp', () => {
@@ -34,5 +34,15 @@ describe('WhatsApp → Oxpecker', () => {
     expect(dagTekst(dagen[0]!)).toBe('WhatsApp: 2 van jou (nog geen reactie)');
     expect(dagTekst(dagen[1]!)).toBe('WhatsApp: 1 van jou, 1 van de klant');
     expect(dagen.map(dagTekst).join(' ')).not.toContain('geheim');
+  });
+
+  it('taal en aanspreking uit de berichten', () => {
+    expect(detecteerTaal(['Bonjour Marie, pourriez-vous me rappeler? Merci, Jonas', 'Oui je vous rappelle'])).toBe('fr');
+    expect(detecteerTaal(['Hi Gary, thank you for your message, give me a call'])).toBe('en');
+    expect(detecteerTaal(['Dag Sigrid, zou je me even kunnen terugbellen? Bedankt!'])).toBe('nl');
+    expect(detecteerTaal(['ok', null])).toBeNull();
+    expect(aanspreekvormVan(['Dag Frank, wanneer zou het voor u passen? Mvg'])).toBe('u');
+    expect(aanspreekvormVan(['Hi Bart, neem je tijd, geef me gerust een belletje'])).toBe('je');
+    expect(aanspreekvormVan(['Top!'])).toBeNull();
   });
 });

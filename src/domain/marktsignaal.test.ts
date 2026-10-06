@@ -103,7 +103,9 @@ describe('te koop gezet', () => {
     expect(tekst).toContain('veel succes met de verkoop');
     expect(tekst).toMatch(/Jonas van ERA$/);
     const u = succesbericht({ voornaam: null, achternaam: 'Peeters', aanhef: 'Mevr.', aanspreekvormBron: 'u' }, { verkoper: 'makelaar' });
-    expect(u).toMatch(/^Goeiedag Mevr\. Peeters, ik zag dat uw woning/);
+    expect(u).toMatch(/^Goeiedag mevrouw Peeters, ik zag dat uw woning/);
+    const fr = succesbericht({ voornaam: 'Claire', achternaam: 'D', aanhef: 'Mevr.', aanspreekvormBron: null, taal: 'fr', taalWhatsapp: null }, { verkoper: 'makelaar' });
+    expect(fr).toMatch(/^Bonjour Claire, .*beaucoup de succès/);
     const k = lijst({ marktsignalen: [signaal()] }).vandaag.find((x) => x.contact.id === maes.id)!;
     expect(berichtTekst({ kandidaat: k, kanaal: 'whatsapp', voornaamGebruiker: 'Jonas', organisatie: 'ERA' }).tekst).toContain('veel succes');
   });

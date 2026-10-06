@@ -9,7 +9,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import pg from 'pg';
-import { dagTekst, nummersVan, perDag } from '../src/adapters/gesprekken/whatsapp';
+import { aanspreekvormVan, dagTekst, detecteerTaal, nummersVan, perDag } from '../src/adapters/gesprekken/whatsapp';
 import type { Telefoon } from '../src/domain/model';
 import { leesWhatsapp, zoekWhatsapp } from './whatsapp-lezen';
 
@@ -70,10 +70,21 @@ try {
       }
     }
   }
+  // Taal en aanspreking per contact, uit de laatste 60 berichten (enkel de uitkomst gaat naar Supabase).
+  const profiel = new Map<string, { taal: string | null; vorm: string | null }>();
+  for (const [nummer, berichten] of lezing.berichten) {
+    const laatste = berichten.slice(-60);
+    const taal = detecteerTaal(laatste.map((b) => b.tekst));
+    // Je of u blijkt enkel uit Jonas' eigen Nederlandstalige berichten.
+    const vorm = taal === 'nl' ? aanspreekvormVan(laatste.filter((b) => b.vanMij).map((b) => b.tekst)) : null;
+    for (const contactId of contactenVan.get(nummer) ?? []) profiel.set(contactId, { taal, vorm });
+  }
   const metContact = new Set(rijen.map((r) => r.contact_id)).size;
   console.log(
     `WhatsApp: ${lezing.telling.chats} chats op de Mac, ${lezing.telling.gekoppeld} gekoppeld aan een ERAForce-contact, ${lezing.telling.berichten} berichten (laatste 12 maanden), ${rijen.length} contactdagen bij ${metContact} contacten.`,
   );
+  const tel = (k: 'taal' | 'vorm', w: string) => [...profiel.values()].filter((p) => p[k] === w).length;
+  console.log(`WhatsApp-profiel: taal nl ${tel('taal', 'nl')}, fr ${tel('taal', 'fr')}, en ${tel('taal', 'en')}; aanspreking je ${tel('vorm', 'je')}, u ${tel('vorm', 'u')}.`);
   if (DROOG) process.exit(0);
 
   await db.query('begin');
@@ -89,6 +100,13 @@ try {
     );
   }
   const weg = await db.query(`delete from public.bronactiviteiten where eigenaar_id = $1 and bron = 'whatsapp' and not (extern_id = any($2))`, [eigenaar, rijen.map((r) => r.extern_id)]);
+  for (const [contactId, p] of profiel) {
+    await db.query(
+      `update public.contacten set taal_whatsapp = coalesce($3, taal_whatsapp), aanspreekvorm_bron = coalesce($4, aanspreekvorm_bron)
+       where eigenaar_id = $1 and id = $2 and bron = 'eraforce_mirror'`,
+      [eigenaar, contactId, p.taal, p.vorm],
+    );
+  }
   await db.query('commit');
   console.log(`WhatsApp bijgewerkt: ${rijen.length} contactdagen, ${weg.rowCount ?? 0} weg.`);
 } catch (e) {
