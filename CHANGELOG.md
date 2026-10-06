@@ -5,6 +5,7 @@
 ### Toegevoegd
 - **WhatsApp (zakelijk nummer op de Mac), alleen-lezen** (`scripts/whatsapp-naar-oxpecker.ts`, na elke mirror-run). Enkel 1-op-1-chats met nummers van je ERAForce-contacten (toestemming Jonas 6/10/2026). Naar Supabase gaat per contact en per dag enkel wie wat stuurde ("WhatsApp: 2 van jou, 1 van de klant"), nooit de inhoud.
 - Antwoordde de klant die dag, dan telt dat als contact voor je ritme. Een WhatsApp die je zelf stuurde, rondt de geplande stap af; die moet je nergens loggen.
+- **Hooks lezen ook WhatsApp** (toestemming Jonas 6/10/2026): de laatste 8 berichten per kandidaat gaan lokaal als context naar Claude, nooit naar Supabase. Claude citeert nooit letterlijk uit een bericht van de klant en herhaalt geen vraag die er al beantwoord werd.
 - Migratie `20261006000008_whatsapp.sql`: de importrol mag enkel WhatsApp-rijen bij je ERAForce-contacten schrijven.
 - Het importwachtwoord wordt niet meer bij elke push opnieuw gezet; de scripts proberen het bij een geweigerde aanmelding nog twee keer.
 

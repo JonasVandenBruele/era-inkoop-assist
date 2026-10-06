@@ -27,6 +27,8 @@ import { isWerkdag, plusWerkdagen } from '../src/domain/werkdagen';
 import { heeftTelefoon } from '../src/domain/overzicht';
 import type { Contactkanaal } from '../src/domain/model';
 import { prospectieblokkenOp } from '../src/domain/prospectieblokken';
+import { nummersVan, type WaBericht } from '../src/adapters/gesprekken/whatsapp';
+import { leesWhatsapp, zoekWhatsapp } from './whatsapp-lezen';
 
 const OXPECKER_EMAIL = process.env.OXPECKER_EMAIL ?? 'jonas@eraleustoye.be';
 const DB_HOST = process.env.SUPABASE_DB_HOST ?? 'aws-1-eu-central-1.pooler.supabase.com';
@@ -158,7 +160,16 @@ interface Context {
   hash: string;
 }
 
-function maakContext(ref: string, k: Kandidaat, gegevens: Awaited<ReturnType<typeof laad>>, buurt: Map<string, Buurtfeit[]>, lokaal: Map<string, Nieuws[]>, algemeen: Nieuws[], dag: DagKey): Context {
+function maakContext(
+  ref: string,
+  k: Kandidaat,
+  gegevens: Awaited<ReturnType<typeof laad>>,
+  buurt: Map<string, Buurtfeit[]>,
+  lokaal: Map<string, Nieuws[]>,
+  algemeen: Nieuws[],
+  dag: DagKey,
+  whatsapp: WaBericht[],
+): Context {
   const c = k.contact;
   const veldwerk = prospectieblokkenOp(gegevens.afspraken, dag).length > 0;
   const gesprekken = gegevens.activiteiten
@@ -193,6 +204,12 @@ function maakContext(ref: string, k: Kandidaat, gegevens: Awaited<ReturnType<typ
     geplande_taak: k.terugbel ? { dag: k.terugbel.dag, onderwerp: (k.terugbel.tekst ?? '').split('\n')[0]!.slice(0, 200), kanaal: k.terugbel.kanaal } : null,
     laatste_gesprekken: gesprekken,
     eigen_notities_in_app: notities,
+    // Laatste WhatsApp-berichten van je zakelijke nummer: enkel lokaal gelezen en enkel hier naar Claude
+    // (toestemming Jonas 6/10/2026). Ze gaan nooit naar Supabase.
+    whatsapp_laatste_berichten: whatsapp
+      .filter((b) => b.tekst && b.tekst.trim())
+      .slice(-8)
+      .map((b) => ({ dag: dagVan(b.tijd), van: b.vanMij ? 'Jonas' : 'klant', tekst: b.tekst!.slice(0, 300) })),
     pogingen_zonder_antwoord: k.pogingenZonderAntwoord,
     // Langsgaan en flyers enkel op een dag met een Baanprospectie-blok in de agenda (Jonas, 6/10/2026).
     baanprospectie_blok_op_dag: veldwerk,
@@ -219,7 +236,7 @@ function maakContext(ref: string, k: Kandidaat, gegevens: Awaited<ReturnType<typ
     lokaal_nieuws: nieuwsLokaal.map((n) => ({ titel: n.titel, bron: n.bron, dag: n.dag, url: n.url })),
   };
   // De vingerafdruk gebruikt de inhoud zonder het algemene nieuws, zodat een nieuw krantenartikel niet alles opnieuw laat maken.
-  const hash = createHash('sha256').update(JSON.stringify({ tekst, model: MODEL, versie: 2 })).digest('hex').slice(0, 32);
+  const hash = createHash('sha256').update(JSON.stringify({ tekst, model: MODEL, versie: 3 })).digest('hex').slice(0, 32);
   return { ref, kandidaat: k, tekst, links, hash };
 }
 
@@ -230,7 +247,7 @@ Voor elk contact maak je één HOOK: een concreet, herleidbaar aanknopingspunt w
 
 Werkwijze ("ossenpikker"): altijd aanwezig, nooit opdringerig. De hook levert de klant iets op (nuttige info, een antwoord op wat hij zelf zei).
 - Gebruik ENKEL de aangeleverde feiten. Verzin niets: geen cijfers, data, wetten, verkopen of nieuws die niet in de invoer staan.
-- Vertrek bij voorkeur van wat de klant zelf zei in de laatste gesprekken of van het onderwerp van de geplande taak
+- Vertrek bij voorkeur van wat de klant zelf zei in de laatste gesprekken of WhatsApp-berichten, of van het onderwerp van de geplande taak
   (bv. "wil via Biddit verkopen in oktober" → vraag of de Biddit-verkoop gestart is). Een algemene zin als
   "we hadden afgesproken dat ik u zou terugbellen" is VERBODEN.
 - Voor langetermijnprospects zonder concrete aanleiding: een buurtfeit (ERA-verkoop in de straat of gemeente) of een
@@ -241,6 +258,8 @@ Werkwijze ("ossenpikker"): altijd aanwezig, nooit opdringerig. De hook levert de
 - Vlaams Nederlands, spreektaal maar beleefd. Aanspreekvorm volgens "aanspreekvorm" (u of je). Jonas werkt bij ERA.
 - Kanaal: kies uit kanalen_mogelijk. Langsgaan (bezoek) en flyer kan enkel tijdens een Baanprospectie-blok; daarom staan
   ze enkel in kanalen_mogelijk op zo'n dag. Respecteer het kanaal van de geplande taak (bv. bezoek bij "langsgaan met flyer").
+  Antwoordde de klant onlangs via WhatsApp, dan ligt WhatsApp voor de hand. Herhaal geen vraag die al in WhatsApp
+  beantwoord werd, en citeer nooit letterlijk uit een WhatsApp-bericht van de klant.
   Na meerdere pogingen zonder antwoord of als de notities zeggen dat iemand moeilijk telefonisch bereikbaar is:
   WhatsApp, bericht, brief, flyer of langsgaan. Langetermijn met informatieve hook: liefst iets rustig te lezen.
 - openingszin: wat Jonas zegt als iemand opneemt of de deur opendoet (max 2 zinnen, begin met "Goeiedag" of de naam,
@@ -415,9 +434,22 @@ try {
     lokaal.set(g.toLowerCase(), await nieuws(`"${g}" (woning OR wonen OR bouwproject OR verkaveling OR gemeente)`, 3, 21));
   }
 
-  const contexten = kandidaten.map((k, i) => maakContext(`c${i + 1}`, k, gegevens, buurt, lokaal, algemeen, dag));
+  // WhatsApp van de Mac: enkel de chats met de nummers van deze kandidaten. Lukt het niet, dan zonder.
+  const waPerContact = new Map<string, WaBericht[]>();
+  const waPad = zoekWhatsapp();
+  if (waPad) {
+    try {
+      const nummers = new Map(kandidaten.map((k) => [k.contact.id, nummersVan(k.contact.telefoons)]));
+      const lezing = leesWhatsapp(waPad, new Set([...nummers.values()].flat()), 180);
+      for (const [id, ns] of nummers) waPerContact.set(id, ns.flatMap((n) => lezing.berichten.get(n) ?? []).sort((a, b) => a.tijd.getTime() - b.tijd.getTime()));
+    } catch {
+      console.log('Hooks: WhatsApp niet leesbaar; verder zonder.');
+    }
+  }
+  const contexten = kandidaten.map((k, i) => maakContext(`c${i + 1}`, k, gegevens, buurt, lokaal, algemeen, dag, waPerContact.get(k.contact.id) ?? []));
+  const metWa = [...waPerContact.values()].filter((b) => b.length > 0).length;
   const teDoen = contexten.filter((c) => OPNIEUW || bestaand.get(c.kandidaat.contact.id) !== c.hash);
-  console.log(`Hooks: ${kandidaten.length} kandidaten voor ${dag}, ${teDoen.length} te maken (${contexten.length - teDoen.length} ongewijzigd), nieuws: ${algemeen.length} algemeen, ${gemeenten.length} gemeenten.`);
+  console.log(`Hooks: ${kandidaten.length} kandidaten voor ${dag}, ${teDoen.length} te maken (${contexten.length - teDoen.length} ongewijzigd), nieuws: ${algemeen.length} algemeen, ${gemeenten.length} gemeenten, WhatsApp bij ${metWa}.`);
   if (DROOG) {
     if (process.env.HOOKS_TOON === '1') console.log(JSON.stringify(teDoen.slice(0, 2).map((c) => c.tekst), null, 2));
     process.exit(0);
