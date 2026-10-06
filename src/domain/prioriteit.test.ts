@@ -325,6 +325,21 @@ describe('hooks en kanalen (6/10/2026)', () => {
   });
 });
 
+describe('WhatsApp van de Mac (6/10/2026)', () => {
+  const wa = (contactId: string, dag: string, type: 'gesprek' | 'notitie'): Bronactiviteit => ({
+    id: `wa-${contactId}-${dag}`, bron: 'whatsapp', externId: `wa:${contactId}:${dag}`, gebeurdOp: new Date(`${dag}T09:00:00Z`), gewijzigdInBronOp: null,
+    geimporteerdOp: new Date(), isTestdata: true, type, contactId, pandId: null, taakSoort: null, vervaltOp: null, vervaltUur: null, taakAfgerond: true,
+    auteur: null, tekst: 'WhatsApp: 1 van jou', soortLabel: 'WhatsApp', kanaal: 'whatsapp',
+  });
+  it('een WhatsApp die je stuurde rondt de geplande stap af; een antwoord telt als gesprek', () => {
+    const c = contact(RANDGEVAL.terugbellenVerstreken);
+    const metBericht = berekenBellijst(invoer({ activiteiten: [...data.activiteiten, wa(c.id, VANDAAG, 'notitie')] }));
+    expect([...metBericht.vandaag, ...metBericht.nietOpLijst].some((k) => k.contact.id === c.id && k.groep === 'C')).toBe(false);
+    const metAntwoord = berekenBellijst(invoer({ activiteiten: [...data.activiteiten, wa(c.id, VANDAAG, 'gesprek')] }));
+    expect(metAntwoord.uitgesloten.some((u) => u.contact.id === c.id) || ![...metAntwoord.vandaag, ...metAntwoord.nietOpLijst].some((k) => k.contact.id === c.id && k.groep === 'C')).toBe(true);
+  });
+});
+
 describe('echte ERAForce-data (fase 8)', () => {
   const basis = contact(RANDGEVAL.koudLangGeleden);
   const taak = (contactId: string, extra: Partial<Bronactiviteit>): Bronactiviteit => ({

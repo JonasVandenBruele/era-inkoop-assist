@@ -2,7 +2,7 @@
 // Adapters vertalen bronnen naar deze types. Velden komen overeen met de tabellen in supabase/migrations.
 
 export type BronSoort = 'crm' | 'agenda' | 'gesprekken';
-export type BronAdapter = 'fictief' | 'eraforce_mirror' | 'microsoft_graph' | 'plaud' | 'handmatig' | 'lokaal';
+export type BronAdapter = 'fictief' | 'eraforce_mirror' | 'whatsapp' | 'microsoft_graph' | 'plaud' | 'handmatig' | 'lokaal';
 
 /** Herkomstvelden die elk geïmporteerd record draagt. */
 export interface Herkomst {

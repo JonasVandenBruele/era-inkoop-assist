@@ -42,6 +42,7 @@ export function aanknopingspunt(terugbel: Terugbelafspraak | null, laatste: Laat
   const k = laatste?.tekst ? kern(laatste.tekst) : '';
   // Een gesprek van minder dan drie woorden ("invite .") zegt ook niets.
   const woorden = k.split(/\s+/).filter((w) => /\p{L}{2,}/u.test(w)).length;
-  const gesprek = laatste && k && woorden >= 3 && !isNietszeggend(k) ? { dag: dagVan(laatste.tijdstip), fragment: kortAf(k, max) } : null;
+  // "WhatsApp: 2 van jou" (enkel aantallen, uit je Mac) is geen aanknopingspunt.
+  const gesprek = laatste && k && woorden >= 3 && !/^WhatsApp:/.test(k) && !isNietszeggend(k) ? { dag: dagVan(laatste.tijdstip), fragment: kortAf(k, max) } : null;
   return { taak, gesprek };
 }

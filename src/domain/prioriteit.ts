@@ -160,9 +160,12 @@ function geldendeTerugbel(contactId: string, invoer: BellijstInvoer, laatste: La
     kandidaten.push({ aangemaakt: o.aangemaaktOp, t: { dag: o.dag, uur: o.uur, tekst: o.omschrijving, herkomst: 'lokaal', kanaal: null } });
   }
   // Een bericht, flyer, brief of bezoek (niemand thuis) op of na de geplande dag rondt de stap ook af.
-  const laatsteGedaan = invoer.belpogingen
-    .filter((p) => p.contactId === contactId && !p.ongedaanOp && p.uitkomst === 'bericht_verstuurd')
-    .reduce<DagKey | null>((m, p) => (m && m > dagVan(p.tijdstip) ? m : dagVan(p.tijdstip)), null);
+  // Ook een WhatsApp die je stuurde (gelezen van je Mac, zonder reactie) telt: die log je nergens.
+  const gedaan = [
+    ...invoer.belpogingen.filter((p) => p.contactId === contactId && !p.ongedaanOp && p.uitkomst === 'bericht_verstuurd').map((p) => dagVan(p.tijdstip)),
+    ...invoer.activiteiten.filter((a) => a.contactId === contactId && a.bron === 'whatsapp' && a.gebeurdOp).map((a) => dagVan(a.gebeurdOp!)),
+  ];
+  const laatsteGedaan = gedaan.reduce<DagKey | null>((m, d) => (m && m > d ? m : d), null);
   const open = kandidaten.filter(({ t }) => !(laatste && dagVan(laatste.tijdstip) >= t.dag) && !(laatsteGedaan && laatsteGedaan >= t.dag));
   if (open.length === 0) return null;
   open.sort((a, b) => b.aangemaakt.getTime() - a.aangemaakt.getTime());
