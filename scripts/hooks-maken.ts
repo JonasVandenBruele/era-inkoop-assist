@@ -118,7 +118,7 @@ function leesBuurt(mirrorPad: string): Map<string, Buurtfeit[]> {
   const db = new DatabaseSync(mirrorPad, { readOnly: true });
   const rijen = db
     .prepare(
-      `select o.StageName as fase, coalesce(o.ERA_Datum_Ondertekening_VK_OV__c, o.CloseDate) as verkocht, o.ERA_Datum_Op_de_markt__c as markt,
+      `select b.Id as object, o.StageName as fase, coalesce(o.ERA_Datum_Ondertekening_VK_OV__c, o.CloseDate) as verkocht, o.ERA_Datum_Op_de_markt__c as markt,
               b.ERA_Straat__c as straat, b.ERA_Gemeente__c as gemeente, coalesce(b.ERA_Object_Type__c, o.ERA_Object_Type__c) as type
        from Opportunity o join ERA_Object__c b on b.Id = o.ERA_Object__c
        where o._verwijderd = 0 and b._verwijderd = 0
@@ -128,7 +128,12 @@ function leesBuurt(mirrorPad: string): Map<string, Buurtfeit[]> {
     .all() as Record<string, string | null>[];
   db.close();
   const uit = new Map<string, Buurtfeit[]>();
+  const gezien = new Set<string>();
   for (const r of rijen) {
+    // Eén pand met meerdere dossiers (bv. "Verkocht OV" en daarna "Verkocht") telt één keer.
+    const sleutel = `${r.object}:${r.fase === 'Verkocht' || r.fase === 'Verkocht OV' ? 'v' : 't'}`;
+    if (gezien.has(sleutel)) continue;
+    gezien.add(sleutel);
     const gemeente = (r.gemeente ?? '').trim().toLowerCase();
     const straat = (r.straat ?? '').replace(/\s+\d.*$/, '').trim();
     if (!gemeente || !straat) continue;
@@ -157,9 +162,11 @@ function maakContext(ref: string, k: Kandidaat, gegevens: Awaited<ReturnType<typ
   const c = k.contact;
   const veldwerk = prospectieblokkenOp(gegevens.afspraken, dag).length > 0;
   const gesprekken = gegevens.activiteiten
-    .filter((a) => a.contactId === c.id && a.type === 'gesprek' && a.gebeurdOp)
+    .filter((a) => a.contactId === c.id && (a.type === 'gesprek' || a.type === 'notitie') && a.gebeurdOp)
+    // Lege items ("invite .", enkel een onderwerp) tellen niet mee; zo blijven oudere, inhoudelijke gesprekken zichtbaar.
+    .filter((a) => a.tekst.split(/\s+/).filter((w) => /\p{L}{2,}/u.test(w)).length >= 5)
     .sort((a, b) => b.gebeurdOp!.getTime() - a.gebeurdOp!.getTime())
-    .slice(0, 3)
+    .slice(0, 5)
     .map((a) => ({ dag: dagVan(a.gebeurdOp!), tekst: a.tekst.slice(0, 700) }));
   const notities = gegevens.belpogingen
     .filter((p) => p.contactId === c.id && !p.ongedaanOp && p.notitie)
@@ -212,7 +219,7 @@ function maakContext(ref: string, k: Kandidaat, gegevens: Awaited<ReturnType<typ
     lokaal_nieuws: nieuwsLokaal.map((n) => ({ titel: n.titel, bron: n.bron, dag: n.dag, url: n.url })),
   };
   // De vingerafdruk gebruikt de inhoud zonder het algemene nieuws, zodat een nieuw krantenartikel niet alles opnieuw laat maken.
-  const hash = createHash('sha256').update(JSON.stringify({ tekst, model: MODEL, versie: 1 })).digest('hex').slice(0, 32);
+  const hash = createHash('sha256').update(JSON.stringify({ tekst, model: MODEL, versie: 2 })).digest('hex').slice(0, 32);
   return { ref, kandidaat: k, tekst, links, hash };
 }
 
@@ -239,6 +246,10 @@ Werkwijze ("ossenpikker"): altijd aanwezig, nooit opdringerig. De hook levert de
 - openingszin: wat Jonas zegt als iemand opneemt of de deur opendoet (max 2 zinnen, begin met "Goeiedag" of de naam,
   "met Jonas van ERA", eindig met een korte vraag). Leeg ("") als het kanaal geen gesprek is (brief, flyer).
 - conceptbericht: enkel bij bericht, whatsapp, mail, brief of flyer: een kort voorstel (max 500 tekens), ondertekend "Jonas – ERA". Anders "".
+- Zet NOOIT een URL in de openingszin of het conceptbericht; noem de bron bij naam (bv. "volgens VRT"). De app toont de link apart.
+- Spreek altijd aan met de naam (meneer/mevrouw + achternaam, of de voornaam bij "je").
+- Lokaal nieuws gebruik je enkel als het over wonen, bouwen, verkavelingen, ruimtelijke plannen, mobiliteit of
+  voorzieningen in hun buurt gaat. Algemene dorpsverhalen, sport of human interest zijn geen hook.
 - bronnen: enkel URL's die letterlijk in de invoer staan en die je gebruikt; anders [].
 - Is er echt geen bruikbaar aanknopingspunt, geef dan onderwerp "" (dan toont de app het aanknopingspunt uit de taak).
 
@@ -298,10 +309,10 @@ function controleer(a: Antwoord, ctx: Context, algemeen: Nieuws[]) {
   return {
     onderwerp,
     detail: t(a.detail, 400),
-    openingszin: t(a.openingszin, 400),
+    openingszin: t(a.openingszin?.replace(/\s*https?:\/\/\S+/g, ''), 400),
     kanaal,
     kanaal_reden: kanaal ? t(a.kanaal_reden, 200) : null,
-    conceptbericht: t(a.conceptbericht, 700),
+    conceptbericht: t(a.conceptbericht?.replace(/\s*https?:\/\/\S+/g, '').replace(/\s+([.,;:!?])/g, '$1'), 700),
     bronlinks: (a.bronnen ?? []).filter((u) => toegelaten.has(u)).slice(0, 3).map((url) => ({ titel: toegelaten.get(url)!, url })),
   };
 }
@@ -313,8 +324,20 @@ async function verbind() {
   if (!projectRef) throw new Error('Supabase-project niet gevonden in .env.local.');
   const wachtwoord = sleutel(SLEUTELHANGER);
   if (!wachtwoord) throw new Error('geen importwachtwoord in de sleutelhanger');
-  const db = new pg.Client({ host: DB_HOST, port: 5432, user: `oxpecker_import.${projectRef}`, password: wachtwoord, database: 'postgres', ssl: { rejectUnauthorized: false } });
-  await db.connect();
+  // Net na een wachtwoordwijziging weigert de pooler het wachtwoord soms even: dan nog twee keer proberen.
+  const maakClient = () => new pg.Client({ host: DB_HOST, port: 5432, user: `oxpecker_import.${projectRef}`, password: wachtwoord, database: 'postgres', ssl: { rejectUnauthorized: false } });
+  let db = maakClient();
+  for (let poging = 1; ; poging++) {
+    try {
+      await db.connect();
+      break;
+    } catch (e) {
+      if (poging >= 3 || !/password authentication failed/i.test(String(e))) throw e;
+      console.log(`Aanmelden geweigerd; nieuwe poging over 60 s (${poging}/2).`);
+      await new Promise((r) => setTimeout(r, 60_000));
+      db = maakClient();
+    }
+  }
   return db;
 }
 

@@ -97,8 +97,20 @@ const projectRef = /https:\/\/([a-z0-9]+)\.supabase\.co/.exec(readFileSync(join(
 if (!projectRef) throw new Error('Supabase-project niet gevonden in .env.local.');
 const wachtwoord = execFileSync('security', ['find-generic-password', '-s', SLEUTELHANGER, '-w'], { encoding: 'utf8' }).trim();
 
-const db = new pg.Client({ host: DB_HOST, port: 5432, user: `oxpecker_import.${projectRef}`, password: wachtwoord, database: 'postgres', ssl: { rejectUnauthorized: false } });
-await db.connect();
+// Net na een wachtwoordwijziging weigert de pooler het wachtwoord soms even: dan nog twee keer proberen.
+const maakClient = () => new pg.Client({ host: DB_HOST, port: 5432, user: `oxpecker_import.${projectRef}`, password: wachtwoord, database: 'postgres', ssl: { rejectUnauthorized: false } });
+let db = maakClient();
+for (let poging = 1; ; poging++) {
+  try {
+    await db.connect();
+    break;
+  } catch (e) {
+    if (poging >= 3 || !/password authentication failed/i.test(String(e))) throw e;
+    console.log(`Aanmelden geweigerd; nieuwe poging over 60 s (${poging}/2).`);
+    await new Promise((r) => setTimeout(r, 60_000));
+    db = maakClient();
+  }
+}
 
 const iso = (d: Date | null | undefined) => d?.toISOString() ?? null;
 const herkomst = (x: { externId: string | null; gebeurdOp: Date | null; gewijzigdInBronOp: Date | null }) => ({

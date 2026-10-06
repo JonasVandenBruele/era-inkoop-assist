@@ -64,6 +64,13 @@ jobs:
             exit 0
           fi
           echo "::add-mask::$MIRROR_IMPORT_PASSWORD"
+          # Enkel zetten als aanmelden met het wachtwoord nog niet lukt: opnieuw zetten laat de databaseverbinding
+          # het wachtwoord enkele minuten weigeren, en dan mislukt een import of hooks-run op de Mac.
+          if PGPASSWORD="$MIRROR_IMPORT_PASSWORD" psql -q -c 'select 1' \
+            "host=$SUPABASE_DB_HOST port=5432 dbname=postgres user=oxpecker_import.$SUPABASE_PROJECT_ID sslmode=require" >/dev/null 2>&1; then
+            echo "Importgebruiker ok; wachtwoord ongewijzigd."
+            exit 0
+          fi
           export PGPASSWORD="$SUPABASE_DB_PASSWORD"
           echo "alter role oxpecker_import with login password :'pw';" | psql -q -v ON_ERROR_STOP=1 -v pw="$MIRROR_IMPORT_PASSWORD" \
             "host=$SUPABASE_DB_HOST port=5432 dbname=postgres user=postgres.$SUPABASE_PROJECT_ID sslmode=require"
