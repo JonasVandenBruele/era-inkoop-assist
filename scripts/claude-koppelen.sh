@@ -1,7 +1,7 @@
 #!/bin/bash
 # Eenmalig: koppelt de hooks aan je eigen Claude-abonnement (geen API-sleutel, geen extra kosten).
 # 1. Claude opent je browser; meld je aan met je Claude-account en keur goed.
-# 2. Claude toont daarna een lange code (begint met "sk-ant-oat"). Kopieer die en plak ze hier.
+# 2. Het script haalt de code (begint met "sk-ant-oat") zelf uit wat Claude toont; je hoeft niets te kopiëren.
 # De code gaat enkel naar je macOS-sleutelhanger ("Oxpecker Claude-token") en wordt nergens getoond of gelogd.
 set -euo pipefail
 export PATH="$HOME/.local/bin:$HOME/.local/node/bin:$PATH"
@@ -12,22 +12,29 @@ CLAUDE=$(ls -d "$HOME/Library/Application Support/Claude/claude-code/"*/*/claude
 [ -z "$CLAUDE" ] && CLAUDE=$(command -v claude || true)
 if [ -z "$CLAUDE" ]; then echo "Claude-programma niet gevonden. Open eerst de Claude-app."; exit 1; fi
 
-echo "Stap 1: je browser opent. Meld je aan en keur goed."
-"$CLAUDE" setup-token
+echo "Stap 1: je browser opent. Meld je aan en keur goed. Je hoeft daarna niets te kopiëren."
+# De uitvoer van setup-token gaat naar een tijdelijk bestand dat enkel jij kan lezen; de code wordt eruit gehaald
+# (ook als ze over twee regels staat) en het bestand wordt meteen gewist.
+LOG=$(mktemp -t oxpecker-claude)
+chmod 600 "$LOG"
+trap 'rm -f "$LOG"' EXIT
+script -q "$LOG" "$CLAUDE" setup-token
+TOKEN=$(python3 - "$LOG" <<'PY'
+import re, sys
+t = open(sys.argv[1], 'rb').read().decode('utf8', 'ignore')
+t = re.sub(r'\x1b\[[0-9;?]*[ -/]*[@-~]|\x1b\][^\x07]*\x07|\r', '', t)
+m = re.search(r'(sk-ant-oat[A-Za-z0-9_-]+)[ \t]*\n[ \t]*([A-Za-z0-9_-]+)?', t)
+code = m.group(1) if m else ''
+# Afgebroken over twee regels? Dan de volgende regel erbij (enkel als de code nog te kort is).
+if m and len(code) < 100 and m.group(2):
+    code += m.group(2)
+print(code)
+PY
+)
+rm -f "$LOG"
 echo
-echo "Stap 2: kopieer de VOLLEDIGE code (ze staat over twee regels: van sk-ant-oat tot het einde van de regel eronder)."
-read -r -s -p "Plak ze hier en druk op Enter (je ziet niets verschijnen): " TOKEN
-echo
-TOKEN=$(printf '%s' "$TOKEN" | tr -d '[:space:]')
-# Kwam enkel de eerste regel mee? Dan de tweede regel er nog bij vragen.
-while [ ${#TOKEN} -lt 100 ] && [ -n "$TOKEN" ]; do
-  read -r -s -p "De code is nog niet volledig (${#TOKEN} tekens). Plak het stuk dat ontbreekt (de tweede regel) en druk op Enter: " MEER
-  echo
-  MEER=$(printf '%s' "$MEER" | tr -d '[:space:]')
-  [ -z "$MEER" ] && break
-  TOKEN="$TOKEN$MEER"
-done
-case "$TOKEN" in sk-ant-*) ;; *) echo "Dat lijkt geen geldige code (begint niet met sk-ant-). Niets bewaard."; exit 1 ;; esac
+[ ${#TOKEN} -lt 100 ] && TOKEN=""
+case "$TOKEN" in sk-ant-*) ;; *) echo "Ik vond geen code in wat Claude toonde. Niets bewaard. Probeer het script nog eens."; exit 1 ;; esac
 printf 'add-generic-password -U -a oxpecker -s "%s" -l "%s" -w "%s"\n' "$LABEL" "$LABEL" "$TOKEN" | security -i >/dev/null
 
 echo "Stap 3: even testen…"
