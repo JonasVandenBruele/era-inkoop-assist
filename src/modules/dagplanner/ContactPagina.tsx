@@ -8,7 +8,7 @@ import { historiek, laatsteInhoudelijkContact } from '../../domain/overzicht';
 import { pogingenSindsContact } from '../../domain/prioriteit';
 import { KeuzeKnoppen, ResultaatPaneel } from './ResultaatPaneel';
 import { HakenEnVoorkeur } from './HakenEnVoorkeur';
-import { adresSleutelVan } from '../../domain/adres';
+import { dubbelReden, personen } from '../../domain/dubbels';
 import { signaalTekst, signalenVan } from '../../domain/marktsignaal';
 
 export function ContactPagina() {
@@ -39,11 +39,12 @@ export function ContactPagina() {
     );
   }
 
-  const items = historiek(contact.id, gegevens.activiteiten, gegevens.belpogingen);
-  const signalen = signalenVan(contact.id, gegevens.marktsignalen);
-  // Dubbels: andere contacten op hetzelfde adres (straat, nummer, bus en postcode; de gemeentenaam telt niet).
-  const sleutel = adresSleutelVan(contact);
-  const zelfdeAdres = sleutel ? gegevens.contacten.filter((c) => c.id !== contact.id && adresSleutelVan(c) === sleutel) : [];
+  // Bij dubbele prospects: de historiek van alle samen (Jonas, 6/10/2026).
+  const groep = personen(gegevens.contacten).get(contact.id) ?? [contact];
+  const items = groep.flatMap((c) => historiek(c.id, gegevens.activiteiten, gegevens.belpogingen)).sort((a, b) => b.tijdstip.getTime() - a.tijdstip.getTime());
+  const signalen = groep.flatMap((c) => signalenVan(c.id, gegevens.marktsignalen));
+  // Dubbele prospects: zelfde telefoon, e-mail of adres (straat, nummer, bus, postcode; de gemeentenaam telt niet).
+  const dubbels = groep.filter((c) => c.id !== contact.id);
   const laatste = laatsteInhoudelijkContact(contact.id, gegevens.activiteiten, gegevens.belpogingen);
   const openTaken = gegevens.activiteiten.filter((a) => a.contactId === contact.id && a.type === 'taak' && !a.taakAfgerond);
   const pogingen = pogingenSindsContact(contact.id, gegevens.belpogingen, laatste).length;
@@ -93,13 +94,16 @@ export function ContactPagina() {
           <dt>Herkomst</dt>
           <dd>{contact.herkomstContact ?? 'onbekend'}</dd>
         </dl>
-        {zelfdeAdres.length > 0 && (
+        {dubbels.length > 0 && (
           <p className="klein">
-            🏠 Zelfde adres:{' '}
-            {zelfdeAdres.map((c, i) => (
+            👥 Dubbele prospect (telt als één persoon):{' '}
+            {dubbels.map((c, i) => (
               <span key={c.id}>
                 {i > 0 && ', '}
-                <Link to={`/contact/${c.id}`}>{volledigeNaam(c)}</Link> <span className="zacht">({STATUS_LABEL[c.statusBron]})</span>
+                <Link to={`/contact/${c.id}`}>{volledigeNaam(c)}</Link>{' '}
+                <span className="zacht">
+                  ({STATUS_LABEL[c.statusBron]}, {c.straat ?? 'zonder adres'}; zelfde {dubbelReden(contact, c) ?? 'persoon'})
+                </span>
               </span>
             ))}
           </p>

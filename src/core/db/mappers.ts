@@ -4,8 +4,16 @@ import type { Afspraak, Belpoging, Belverbod, Bronactiviteit, Bronstatus, Contac
 type Rij = Record<string, unknown>;
 const d = (v: unknown): Date | null => (v ? new Date(v as string) : null);
 const s = (v: unknown): string | null => (v === null || v === undefined ? null : String(v));
-/** Datumkolom (Postgres `date`) → "YYYY-MM-DD". Supabase geeft een tekst, sommige drivers een Date (middernacht UTC). */
-const dagKolom = (v: unknown): string | null => (v instanceof Date ? v.toISOString().slice(0, 10) : v ? String(v).slice(0, 10) : null);
+/**
+ * Datumkolom (Postgres `date`) → "YYYY-MM-DD". Supabase geeft een tekst; node-pg (scripts op de Mac) een Date op
+ * middernacht in de LOKALE tijd. Daarom de lokale datumdelen: toISOString zou in België een dag te vroeg geven.
+ */
+const dagKolom = (v: unknown): string | null =>
+  v instanceof Date
+    ? `${v.getFullYear()}-${String(v.getMonth() + 1).padStart(2, '0')}-${String(v.getDate()).padStart(2, '0')}`
+    : v
+      ? String(v).slice(0, 10)
+      : null;
 
 function herkomstNaarModel(r: Rij) {
   return {

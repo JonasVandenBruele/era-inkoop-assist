@@ -23,6 +23,7 @@ import { leesInstellingen } from '../src/core/settings/schema';
 import * as m from '../src/core/db/mappers';
 import { isGevoelig } from '../src/domain/haken';
 import { normPostcode, normStraat, splitsStraatregel } from '../src/domain/adres';
+import { personen } from '../src/domain/dubbels';
 import { berekenBellijst, type Kandidaat } from '../src/domain/prioriteit';
 import { isWerkdag, plusWerkdagen } from '../src/domain/werkdagen';
 import { heeftTelefoon } from '../src/domain/overzicht';
@@ -174,15 +175,17 @@ function maakContext(
 ): Context {
   const c = k.contact;
   const veldwerk = prospectieblokkenOp(gegevens.afspraken, dag).length > 0;
+  // Dubbele prospects (zelfde telefoon, e-mail of adres): de gesprekken en notities van alle (Jonas, 6/10/2026).
+  const ids = new Set((personen(gegevens.contacten).get(c.id) ?? [c]).map((x) => x.id));
   const gesprekken = gegevens.activiteiten
-    .filter((a) => a.contactId === c.id && (a.type === 'gesprek' || a.type === 'notitie') && a.gebeurdOp)
+    .filter((a) => a.contactId !== null && ids.has(a.contactId) && (a.type === 'gesprek' || a.type === 'notitie') && a.gebeurdOp)
     // Lege items ("invite .", enkel een onderwerp) tellen niet mee; zo blijven oudere, inhoudelijke gesprekken zichtbaar.
     .filter((a) => a.tekst.split(/\s+/).filter((w) => /\p{L}{2,}/u.test(w)).length >= 5)
     .sort((a, b) => b.gebeurdOp!.getTime() - a.gebeurdOp!.getTime())
     .slice(0, 5)
     .map((a) => ({ dag: dagVan(a.gebeurdOp!), tekst: a.tekst.slice(0, 700) }));
   const notities = gegevens.belpogingen
-    .filter((p) => p.contactId === c.id && !p.ongedaanOp && p.notitie)
+    .filter((p) => ids.has(p.contactId) && !p.ongedaanOp && p.notitie)
     .sort((a, b) => b.tijdstip.getTime() - a.tijdstip.getTime())
     .slice(0, 2)
     .map((p) => ({ dag: dagVan(p.tijdstip), kanaal: p.kanaal ?? 'telefoon', uitkomst: p.uitkomst, notitie: p.notitie!.slice(0, 300) }));

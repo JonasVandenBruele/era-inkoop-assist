@@ -4,7 +4,8 @@ import { dagVan, dagenTussen, korteDag, relatief, uurVan, type DagKey } from '..
 import type { Instellingen } from '../core/settings/schema';
 import type { Afspraak, Belpoging, Belverbod, Bronactiviteit, Contact, Contacthook, Contactkanaal, ContactPand, Contactvoorkeur, Fase, Marktsignaal, Opvolgactie, Pand, Planningskeuze, Waardehaak } from './model';
 import { signaalTekst, signaalVoorVandaag } from './marktsignaal';
-import { adresSleutelVan } from './adres';
+import { personen, samengevoegd } from './dubbels';
+import { adresTekst, splitsStraatregel } from './adres';
 import { hakenVoorContact, specifiekeHaken } from './haken';
 import { KANAAL_LABEL, kanaaladvies, kanaalVan, type Kanaaladvies } from './kanaaladvies';
 export type { Belverbod, Opvolgactie, Planningskeuze } from './model';
@@ -245,24 +246,59 @@ export function berekenBellijst(invoer: BellijstInvoer): Bellijst {
   const blokkenVandaag = prospectieblokkenOp(invoer.afspraken, vandaag, invoer.uur);
   const pinVolgorde = new Map<string, number>();
 
-  for (const c of invoer.contacten) {
+  // Dubbele prospects (zelfde telefoon, e-mail of adres) zijn één persoon: het laatste gesprek en de volgende stap
+  // van de ene gelden ook voor de andere (Jonas, 6/10/2026).
+  const persoon = personen(invoer.contacten);
+  const laatsteCache = new Map<string, LaatsteContact | null>();
+  const eigenLaatsteVan = (id: string) => {
+    if (!laatsteCache.has(id)) laatsteCache.set(id, laatsteInhoudelijkContact(id, invoer.activiteiten, invoer.belpogingen));
+    return laatsteCache.get(id)!;
+  };
+  /** Eerstvolgende geplande stap NA vandaag van één contact (ERAForce-taak of je eigen opvolging). */
+  const toekomstigeStap = (id: string): DagKey | null => {
+    const t = geldendeTerugbel(id, invoer, eigenLaatsteVan(id));
+    const dagen = [
+      t && t.dag > vandaag ? t.dag : null,
+      ...invoer.activiteiten.filter((a) => a.contactId === id && a.type === 'taak' && !a.taakAfgerond && a.vervaltOp && a.vervaltOp > vandaag).map((a) => a.vervaltOp!),
+      ...(invoer.opvolgacties ?? []).filter((o) => o.contactId === id && o.status === 'open' && o.dag > vandaag).map((o) => o.dag),
+    ].filter((d): d is DagKey => Boolean(d));
+    return dagen.sort()[0] ?? null;
+  };
+  // Enkel berekend voor contacten met een dubbel (meestal weinig).
+  const toekomstCache = new Map<string, DagKey | null>();
+  const toekomstVan = (id: string) => {
+    if (!toekomstCache.has(id)) toekomstCache.set(id, toekomstigeStap(id));
+    return toekomstCache.get(id)!;
+  };
+  const anderen = (c: Contact) => (persoon.get(c.id) ?? [c]).filter((x) => x.id !== c.id);
+  const beschrijf = (x: Contact) => (x.straat ? adresTekst({ ...splitsStraatregel(x.straat), postcode: x.postcode, gemeente: null }) : 'zonder adres');
+
+  for (const origineel of invoer.contacten) {
+    // Bij dubbele prospects: één persoon met de gegevens van alle (adres, nummers, e-mail …), Jonas 6/10/2026.
+    const c = samengevoegd(origineel, anderen(origineel));
     const mijnKeuzes = keuzes.filter((k) => k.contactId === c.id);
     const pin = mijnKeuzes.find((k) => k.soort === 'vastpinnen' && k.voorDag === vandaag);
     const sluitUit = (reden: UitsluitReden, detail: string) => resultaat.uitgesloten.push({ contact: c, reden, detail });
 
-    // Regel 1: belverbod. Ook vastpinnen omzeilt dit niet.
-    if (c.nietBellenBron || verboden.has(c.id)) {
+    // Regel 1: belverbod (ook op een dubbele prospect van dezelfde persoon). Ook vastpinnen omzeilt dit niet.
+    if (c.nietBellenBron || verboden.has(c.id) || anderen(c).some((x) => x.nietBellenBron || verboden.has(x.id))) {
       sluitUit('belverbod', c.nietBellenBron ? 'Wil niet meer gebeld worden (bron).' : 'Wil niet meer gebeld worden (jouw keuze).');
       if (pin) resultaat.pinGeweigerd.push({ contact: c, reden: 'Kan niet vastgepind worden: belverbod.' });
       continue;
     }
 
-    const laatste = laatsteInhoudelijkContact(c.id, invoer.activiteiten, invoer.belpogingen);
+    // Laatste gesprek met deze persoon, ook als het op een dubbele prospect gelogd is.
+    const laatste = [c, ...anderen(c)]
+      .map((x) => eigenLaatsteVan(x.id))
+      .reduce<LaatsteContact | null>((m, x) => (x && (!m || x.tijdstip > m.tijdstip) ? x : m), null);
     const terugbel = geldendeTerugbel(c.id, invoer, laatste);
     const pogingen = pogingenSindsContact(c.id, invoer.belpogingen, laatste);
     // Woning te koop gezet (zelf of via een andere makelaar): de dag erna een bericht, ongeacht ritme, status of
     // geplande stap (Jonas, 6/10/2026). Enkel een belverbod, een afspraak vandaag of "vandaag overslaan" houdt het tegen.
-    const signaal = signaalVoorVandaag(c.id, invoer.marktsignalen ?? [], invoer.belpogingen, invoer.activiteiten, vandaag);
+    // Ook een signaal op een dubbele prospect (bv. die mét adres) telt, en een bericht aan eender welke rondt het af.
+    const leden = new Set([c.id, ...anderen(c).map((x) => x.id)]);
+    const alsDeze = <T extends { contactId: string | null }>(xs: T[]) => (leden.size === 1 ? xs : xs.filter((x) => x.contactId && leden.has(x.contactId)).map((x) => ({ ...x, contactId: c.id })));
+    const signaal = signaalVoorVandaag(c.id, alsDeze(invoer.marktsignalen ?? []), alsDeze(invoer.belpogingen), alsDeze(invoer.activiteiten), vandaag);
 
     // Beëindigde leads en relaties (geen prospect) komen enkel op de lijst met een terugbelafspraak of als je ze vastpint.
     if ((c.statusBron === 'beeindigd' || c.statusBron === 'relatie') && !pin && !signaal && !(terugbel && terugbel.dag <= vandaag)) continue;
@@ -281,9 +317,19 @@ export function berekenBellijst(invoer: BellijstInvoer): Bellijst {
       Boolean(terugbel) ||
       Boolean(bronStap) ||
       (invoer.opvolgacties ?? []).some((o) => o.contactId === c.id && o.status === 'open' && o.dag >= vandaag);
-    if (!heeftTimeline && c.statusBron !== 'nieuwe_lead') resultaat.zonderTimeline.push(c);
+    // De volgende stap van een dubbele prospect is ook de volgende stap van deze persoon.
+    const stapElders = anderen(c)
+      .map((x) => ({ x, dag: toekomstVan(x.id) }))
+      .filter((y): y is { x: Contact; dag: DagKey } => Boolean(y.dag))
+      .sort((a, b) => a.dag.localeCompare(b.dag))[0];
+    if (!heeftTimeline && !stapElders && c.statusBron !== 'nieuwe_lead') resultaat.zonderTimeline.push(c);
 
     if (!pin && !signaal) {
+      // Regel 1b: dubbele prospect met een geplande stap op de andere (bv. taak in november op de lead mét adres).
+      if (stapElders && !(terugbel && terugbel.dag <= vandaag)) {
+        sluitUit('terugbel_later', `Dubbele prospect: volgende stap op ${korteDag(stapElders.dag)} bij de prospect ${beschrijf(stapElders.x)}.`);
+        continue;
+      }
       // Regel 2: toekomstige expliciete terugbeldatum wordt gerespecteerd.
       if (terugbel && terugbel.dag > vandaag) {
         sluitUit('terugbel_later', `Terugbellen op ${korteDag(terugbel.dag)}${terugbel.uur ? ` om ${terugbel.uur}` : ''}.`);
@@ -532,21 +578,19 @@ export function berekenBellijst(invoer: BellijstInvoer): Bellijst {
     }
   });
 
-  // ----- Dubbels: één contact per adres per dag (bv. lead en contact, of twee leads op hetzelfde adres) -----
-  // Het adres is genormaliseerd (straat, nummer, bus, postcode; de gemeentenaam telt niet). De eerste in de volgorde blijft;
-  // terugbelafspraken met uur blijven altijd staan.
-  const perAdres = new Map<string, Kandidaat>();
+  // ----- Dubbels: één persoon per dag (zelfde telefoon, e-mail of adres; bv. lead en contact, of twee leads) -----
+  // De eerste in de volgorde blijft; terugbelafspraken met uur en vastgepinde contacten blijven altijd staan.
+  const perPersoon = new Map<string, Kandidaat>();
   for (const k of [...kandidaten]) {
-    const sleutel = adresSleutelVan(k.contact);
-    if (!sleutel) continue;
-    const eerste = perAdres.get(sleutel);
+    const sleutel = (persoon.get(k.contact.id) ?? [k.contact])[0]!.id;
+    const eerste = perPersoon.get(sleutel);
     if (!eerste) {
-      perAdres.set(sleutel, k);
+      perPersoon.set(sleutel, k);
       continue;
     }
     if (k.groep === 'A' || k.isVastgepind) continue;
     kandidaten.splice(kandidaten.indexOf(k), 1);
-    resultaat.uitgesloten.push({ contact: k.contact, reden: 'zelfde_adres', detail: `Zelfde adres als ${aanspreking(eerste.contact)}, die vandaag al op de lijst staat.` });
+    resultaat.uitgesloten.push({ contact: k.contact, reden: 'zelfde_adres', detail: `Dubbele prospect van ${aanspreking(eerste.contact)}, die vandaag al op de lijst staat.` });
   }
 
   // ----- Limiet: groep A altijd volledig, daarna tot het maximum -----
