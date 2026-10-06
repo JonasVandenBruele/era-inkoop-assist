@@ -236,7 +236,7 @@ function maakContext(
     lokaal_nieuws: nieuwsLokaal.map((n) => ({ titel: n.titel, bron: n.bron, dag: n.dag, url: n.url })),
   };
   // De vingerafdruk gebruikt de inhoud zonder het algemene nieuws, zodat een nieuw krantenartikel niet alles opnieuw laat maken.
-  const hash = createHash('sha256').update(JSON.stringify({ tekst, model: MODEL, versie: 3 })).digest('hex').slice(0, 32);
+  const hash = createHash('sha256').update(JSON.stringify({ tekst, model: MODEL, versie: 4 })).digest('hex').slice(0, 32);
   return { ref, kandidaat: k, tekst, links, hash };
 }
 
@@ -255,7 +255,15 @@ Werkwijze ("ossenpikker"): altijd aanwezig, nooit opdringerig. De hook levert de
 - Niets gevoeligs: geen overlijden, ziekte, scheiding, schulden, financiële problemen, ook al staat het in de notities.
   Persoonlijke info gebruik je hoogstens als stille achtergrond, nooit in de openingszin of het bericht.
 - Noem nooit namen, huisnummers of prijzen van andere klanten.
-- Vlaams Nederlands, spreektaal maar beleefd. Aanspreekvorm volgens "aanspreekvorm" (u of je). Jonas werkt bij ERA.
+- Schrijf zoals Jonas zelf schrijft (uit zijn WhatsApp-historiek, 6/10/2026): kort en warm, ±1–3 zinnen.
+  Begin met "Dag <voornaam>," of "Hi <voornaam>," (bijna altijd de voornaam, meestal je-vorm; u enkel als aanspreekvorm
+  "u" is of iemand duidelijk formeel is). Verwijs concreet naar wat de klant de vorige keer vertelde ("Laatste keer
+  vertelde je me dat …, is dat ondertussen …?"), en sluit af met een hulpaanbod ("Kan ik nog ergens bij helpen?").
+  Ondertekenen met "Mvg, Jonas van ERA", "Fijne avond, Jonas van ERA" of "Groetjes, Jonas". Geen emoji, geen
+  verkooppraat, geen druk.
+- Taal: in de taal van de eerdere gesprekken of WhatsApp-berichten (Nederlands, Frans of Engels). In het Frans:
+  "Bonjour <voornaam>, … Bav, Jonas de ERA"; in het Engels: "Hi <first name>, Jonas from ERA here. …".
+- Vlaams Nederlands, spreektaal maar beleefd. Jonas werkt bij ERA.
 - Kanaal: kies uit kanalen_mogelijk. Langsgaan (bezoek) en flyer kan enkel tijdens een Baanprospectie-blok; daarom staan
   ze enkel in kanalen_mogelijk op zo'n dag. Respecteer het kanaal van de geplande taak (bv. bezoek bij "langsgaan met flyer").
   Antwoordde de klant onlangs via WhatsApp, dan ligt WhatsApp voor de hand. Herhaal geen vraag die al in WhatsApp
@@ -263,8 +271,9 @@ Werkwijze ("ossenpikker"): altijd aanwezig, nooit opdringerig. De hook levert de
   Na meerdere pogingen zonder antwoord of als de notities zeggen dat iemand moeilijk telefonisch bereikbaar is:
   WhatsApp, bericht, brief, flyer of langsgaan. Langetermijn met informatieve hook: liefst iets rustig te lezen.
 - openingszin: wat Jonas zegt als iemand opneemt of de deur opendoet (max 2 zinnen, begin met "Goeiedag" of de naam,
-  "met Jonas van ERA", eindig met een korte vraag). Leeg ("") als het kanaal geen gesprek is (brief, flyer).
-- conceptbericht: enkel bij bericht, whatsapp, mail, brief of flyer: een kort voorstel (max 500 tekens), ondertekend "Jonas – ERA". Anders "".
+  "met Jonas van ERA", eindig met een korte vraag). Ook hier: de taal van de klant. Leeg ("") als het kanaal geen gesprek is (brief, flyer).
+- conceptbericht: enkel bij bericht, whatsapp, mail, brief of flyer: een kort voorstel in Jonas' stijl (WhatsApp/bericht
+  max ±300 tekens, mail of brief mag langer, max 500). Anders "".
 - Zet NOOIT een URL in de openingszin of het conceptbericht; noem de bron bij naam (bv. "volgens VRT"). De app toont de link apart.
 - Spreek altijd aan met de naam (meneer/mevrouw + achternaam, of de voornaam bij "je").
 - Lokaal nieuws gebruik je enkel als het over wonen, bouwen, verkavelingen, ruimtelijke plannen, mobiliteit of
