@@ -300,6 +300,8 @@ describe('hooks en kanalen (6/10/2026)', () => {
     expect(isNietszeggend('Opvolgen :)')).toBe(true);
     expect(isNietszeggend('update')).toBe(true);
     expect(isNietszeggend('Zeker van biddit?')).toBe(false);
+    expect(isNietszeggend('Zomerbrief')).toBe(false);
+    expect(aanknopingspunt(null, { tijdstip: new Date(), herkomst: 'bron', tekst: 'Uitgaande Oproep\n\ninvite .' }).gesprek).toBeNull();
   });
 
   it('de hook van vandaag; anders de recentste van de laatste dagen', () => {
