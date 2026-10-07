@@ -12,9 +12,8 @@
 // Naar Claude gaan enkel de evaluaties en de context van Jonas' eigen prospects; van andere klanten enkel de straatnaam,
 // het type en de maand van een verkoop (geen namen, huisnummers of prijzen). Logt enkel aantallen, nooit inhoud.
 import { createHash } from 'node:crypto';
-import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
-import { homedir, tmpdir } from 'node:os';
+import { CLAUDE_TOKEN, sleutel, vraagClaudeJson, zoekClaude } from './claude';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import pg from 'pg';
@@ -35,7 +34,6 @@ import { leesWhatsapp, zoekWhatsapp } from './whatsapp-lezen';
 const OXPECKER_EMAIL = process.env.OXPECKER_EMAIL ?? 'jonas@eraleustoye.be';
 const DB_HOST = process.env.SUPABASE_DB_HOST ?? 'aws-1-eu-central-1.pooler.supabase.com';
 const SLEUTELHANGER = 'Oxpecker import (Supabase)';
-const CLAUDE_TOKEN = 'Oxpecker Claude-token';
 const PER_KEER = 5;
 const MODEL = process.env.HOOKS_MODEL ?? 'sonnet';
 const KANALEN: Contactkanaal[] = ['bellen', 'bericht', 'whatsapp', 'mail', 'flyer', 'brief', 'bezoek'];
@@ -49,34 +47,6 @@ const MAX = Number(optie('--max') ?? 25);
 if (!pad) {
   console.error('Gebruik: hooks-maken.ts <mirror.sqlite> [--droog] [--dag JJJJ-MM-DD] [--max 25] [--opnieuw]');
   process.exit(1);
-}
-
-// ---------- Claude zoeken ----------
-
-/** Het claude-programma: in PATH, ~/.local/bin, of de versie die de Claude-app meebrengt (nieuwste eerst). */
-function zoekClaude(): string | null {
-  const kandidaten = [process.env.CLAUDE_PAD, join(homedir(), '.local/bin/claude'), '/opt/homebrew/bin/claude', '/usr/local/bin/claude'];
-  for (const k of kandidaten) if (k && existsSync(k)) return k;
-  const basis = join(homedir(), 'Library/Application Support/Claude/claude-code');
-  if (!existsSync(basis)) return null;
-  const versies = readdirSync(basis)
-    .filter((v) => /^\d+\.\d+\.\d+$/.test(v))
-    .sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
-  for (const v of versies) {
-    for (const h of readdirSync(join(basis, v))) {
-      const p = join(basis, v, h, 'claude.app/Contents/MacOS/claude');
-      if (existsSync(p)) return p;
-    }
-  }
-  return null;
-}
-
-function sleutel(dienst: string): string | null {
-  try {
-    return execFileSync('security', ['find-generic-password', '-s', dienst, '-w'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim() || null;
-  } catch {
-    return null;
-  }
 }
 
 // ---------- Nieuws (Google Nieuws RSS) ----------
@@ -321,31 +291,7 @@ interface Antwoord {
 
 function vraagClaude(claude: string, token: string | null, contexten: Context[], algemeen: Nieuws[], dag: DagKey): Antwoord[] {
   const invoer = { dag, algemeen_vastgoednieuws: algemeen.map((n) => ({ titel: n.titel, bron: n.bron, dag: n.dag, url: n.url })), contacten: contexten.map((c) => c.tekst) };
-  const map = mkdtempSync(join(tmpdir(), 'oxpecker-hooks-'));
-  try {
-    const env = { ...process.env };
-    delete env.ANTHROPIC_API_KEY; // altijd via het abonnement, nooit een API-sleutel
-    if (token) env.CLAUDE_CODE_OAUTH_TOKEN = token;
-    const r = spawnSync(
-      claude,
-      ['-p', '--output-format', 'json', '--tools', '', '--model', MODEL, '--no-session-persistence', '--setting-sources', '', '--strict-mcp-config', '--system-prompt', REGELS],
-      { input: JSON.stringify(invoer), encoding: 'utf8', cwd: map, env, timeout: 300_000, maxBuffer: 20 * 1024 * 1024 },
-    );
-    if (r.error) throw new Error(`claude start niet (${r.error.message.slice(0, 80)})`);
-    let uit: { is_error?: boolean; result?: string; terminal_reason?: string };
-    try {
-      uit = JSON.parse(r.stdout);
-    } catch {
-      throw new Error(`claude gaf geen JSON (code ${r.status})`);
-    }
-    if (uit.is_error) throw new Error(/log ?in/i.test(uit.result ?? '') ? 'claude is niet aangemeld' : `claude-fout (${uit.terminal_reason ?? 'onbekend'})`);
-    const tekst = uit.result ?? '';
-    const json = tekst.slice(tekst.indexOf('['), tekst.lastIndexOf(']') + 1);
-    const lijst = JSON.parse(json) as Antwoord[];
-    return Array.isArray(lijst) ? lijst : [];
-  } finally {
-    rmSync(map, { recursive: true, force: true });
-  }
+  return vraagClaudeJson<Antwoord>(claude, token, REGELS, invoer, MODEL);
 }
 
 /** Controle achteraf: geen verzonnen links, geen gevoelige inhoud, geldige kanalen, redelijke lengtes. */

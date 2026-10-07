@@ -90,3 +90,21 @@ export function aanspreekvormVan(eigenTeksten: (string | null)[]): Aanspreekvorm
   if (je === 0 && u === 0) return null;
   return u > je ? 'u' : 'je';
 }
+
+// ---------- Te beantwoorden (7/10/2026, toestemming Jonas: alle 1-op-1-chats op het zakelijke nummer) ----------
+
+/** Wat een bericht zonder tekst is, volgens het berichttype in de WhatsApp-database. */
+export function berichtSoortTekst(type: number): string {
+  return { 1: '[foto]', 2: '[video]', 3: '[spraakbericht]', 4: '[contactkaart]', 5: '[locatie]', 8: '[document]', 14: '[verwijderd bericht]', 15: '[sticker]' }[type] ?? '[bijlage]';
+}
+
+/**
+ * Is de chat open: schreef de klant het laatst, binnen `dagen` dagen? Dan geeft dit de klantberichten sinds jouw laatste
+ * bericht (max. `max`, nieuwste laatst); anders null.
+ */
+export function openKlantberichten(berichten: WaBericht[], nu: Date, dagen = 14, max = 3): WaBericht[] | null {
+  const laatste = berichten.at(-1);
+  if (!laatste || laatste.vanMij || nu.getTime() - laatste.tijd.getTime() > dagen * 86400_000) return null;
+  const vanaf = berichten.map((b) => b.vanMij).lastIndexOf(true) + 1;
+  return berichten.slice(vanaf).slice(-max);
+}

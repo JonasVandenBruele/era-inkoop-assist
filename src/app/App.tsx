@@ -203,6 +203,10 @@ function IngelogdeApp({ store, email }: { store: Store; email: string | null }) 
         await store.verwijderHaak(id);
         await herlaad();
       },
+      async handelWhatsappAf(id) {
+        await store.handelWhatsappAf(id, klok.nu());
+        await herlaad();
+      },
       async handelMarktsignaalAf(id) {
         await store.handelMarktsignaalAf(id, klok.nu());
         await herlaad();

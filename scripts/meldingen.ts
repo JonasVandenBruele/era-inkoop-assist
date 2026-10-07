@@ -54,6 +54,7 @@ async function gegevensVan(eigenaar: string): Promise<Gegevens> {
     contacthooks: [],
     // Te koop gezet: telt mee in de ochtendmelding. Zonder tabel (oude databank) geen signalen.
     marktsignalen: (await tabel('marktsignalen', eigenaar).catch(() => [])).map(m.marktsignaalNaarModel),
+    whatsappOpen: [],
   };
 }
 

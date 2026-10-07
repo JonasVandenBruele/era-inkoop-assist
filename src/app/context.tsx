@@ -59,6 +59,7 @@ export interface AppStaat {
   bewaarHaak(h: Omit<Waardehaak, 'id' | 'aangemaaktOp' | 'isTestdata'>): Promise<void>;
   verwijderHaak(id: string): Promise<void>;
   handelMarktsignaalAf(id: string): Promise<void>;
+  handelWhatsappAf(id: string): Promise<void>;
   bewaarVoorkeur(v: Omit<Contactvoorkeur, 'isTestdata'>): Promise<void>;
 
   // ---- Eén tik na het bellen ----

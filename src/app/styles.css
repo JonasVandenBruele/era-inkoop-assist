@@ -89,7 +89,8 @@ a { color: var(--blauw); }
 .afspraak { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 10px; }
 /* Lange woorden zonder spaties (links in een agendalocatie, mailadressen) breken af in plaats van de pagina breder te
    maken dan het scherm (7/10/2026: een Teams-link maakte alles kleiner). */
-.kaart, .kaart * { overflow-wrap: anywhere; min-width: 0; }
+.kaart, .kaart * { overflow-wrap: break-word; }
+.afspraak > *, .lijst > *, .kaart > * { min-width: 0; }
 .afspraak .tijd { font-weight: 700; color: var(--blauw); font-variant-numeric: tabular-nums; }
 
 .contactrij {
@@ -506,3 +507,8 @@ h1, .appnaam { font-weight: 900; }
   .tekoop-signaal { background: #3a0f1a; color: var(--tekst, #f2f2f5); }
   .tekoop-signaal a, .tekoop-signaal .tekstknop { color: #ff8fa0; }
 }
+
+/* WhatsApp te beantwoorden (7/10/2026) */
+.belkaart.whatsapp-open { border-left-color: #1d8a5a; }
+.whatsapp-open .citaat { margin: 2px 0; font-style: italic; }
+.whatsapp-open textarea { width: 100%; }

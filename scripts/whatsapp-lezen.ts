@@ -5,7 +5,7 @@ import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
-import { CORE_DATA_EPOCH, coreDataDatum, nummerUitJid, type WaBericht } from '../src/adapters/gesprekken/whatsapp';
+import { berichtSoortTekst, CORE_DATA_EPOCH, coreDataDatum, nummerUitJid, type WaBericht } from '../src/adapters/gesprekken/whatsapp';
 
 /** Waar de WhatsApp-app op de Mac haar chats bewaart. De Business-app eerst. */
 export function zoekWhatsapp(): string | null {
@@ -64,6 +64,50 @@ export function leesWhatsapp(pad: string, nummers: Set<string>, dagen = 365): Wa
       }
     }
     return { berichten, telling: { chats: chats.length, gekoppeld: sessieNummer.size, berichten: aantal } };
+  } finally {
+    db.close();
+  }
+}
+
+export interface WaChat {
+  nummer: string;
+  /** Naam zoals WhatsApp ze toont (contact in je telefoon of profielnaam). */
+  naam: string | null;
+  /** Berichten van de laatste `dagen` dagen, oudste eerst; zonder systeem- en reactieberichten. */
+  berichten: WaBericht[];
+}
+
+/**
+ * Alle 1-op-1-chats met een bericht in de laatste `dagen` dagen (Te beantwoorden, toestemming Jonas 7/10/2026).
+ * Geen groepen, verborgen of verwijderde chats. Berichten zonder tekst worden "[foto]", "[spraakbericht]", ….
+ */
+export function leesRecenteChats(pad: string, dagen = 30, perChat = 20): WaChat[] {
+  const db = new DatabaseSync(pad, { readOnly: true });
+  try {
+    const vanaf = Date.now() / 1000 - CORE_DATA_EPOCH - dagen * 86400;
+    const chats = db
+      .prepare(
+        `select Z_PK as id, ZCONTACTJID as jid, ZPARTNERNAME as naam from ZWACHATSESSION
+         where ZCONTACTJID like '%@s.whatsapp.net' and coalesce(ZREMOVED, 0) = 0 and coalesce(ZHIDDEN, 0) = 0 and ZLASTMESSAGEDATE >= ?`,
+      )
+      .all(vanaf) as { id: number; jid: string | null; naam: string | null }[];
+    const uit: WaChat[] = [];
+    const lees = db.prepare(
+      `select ZISFROMME as vanMij, ZMESSAGEDATE as datum, ZTEXT as tekst, ZMESSAGETYPE as type from ZWAMESSAGE
+       where ZCHATSESSION = ? and ZMESSAGEDATE >= ? and ZMESSAGETYPE not in (6, 10, 59, 66) order by ZMESSAGEDATE desc limit ?`,
+    );
+    for (const c of chats) {
+      const nummer = nummerUitJid(c.jid);
+      if (!nummer) continue;
+      const rijen = lees.all(c.id, vanaf, perChat) as { vanMij: number; datum: number; tekst: string | null; type: number }[];
+      if (rijen.length === 0) continue;
+      uit.push({
+        nummer,
+        naam: c.naam?.trim() || null,
+        berichten: rijen.reverse().map((r) => ({ tijd: coreDataDatum(r.datum), vanMij: r.vanMij === 1, tekst: r.tekst?.trim() || berichtSoortTekst(r.type) })),
+      });
+    }
+    return uit;
   } finally {
     db.close();
   }

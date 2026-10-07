@@ -55,6 +55,7 @@ export function maakSupabaseStore(gebruikerId: string): Store {
       const vanaf = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
       const hooks = await sb.from('contacthooks').select('*').gte('dag', vanaf);
       // Te koop gezet: de laatste 90 dagen. Ontbreekt de tabel nog, dan geen signalen.
+      const whatsapp = await sb.from('whatsapp_open').select('*');
       const signalen = await sb.from('marktsignalen').select('*').gte('laatst_gezien_op', new Date(Date.now() - 90 * 86400000).toISOString());
       return {
         contacten: contacten!.map(m.contactNaarModel),
@@ -71,6 +72,7 @@ export function maakSupabaseStore(gebruikerId: string): Store {
         voorkeuren: voorkeuren!.map(m.voorkeurNaarModel),
         contacthooks: hooks.error ? [] : (hooks.data ?? []).map(m.contacthookNaarModel),
         marktsignalen: signalen.error ? [] : (signalen.data ?? []).map(m.marktsignaalNaarModel),
+        whatsappOpen: whatsapp.error ? [] : (whatsapp.data ?? []).map(m.whatsappOpenNaarModel),
       };
     },
 
@@ -114,6 +116,10 @@ export function maakSupabaseStore(gebruikerId: string): Store {
 
     async verwijderHaak(id) {
       controleer(await sb.from('waardehaken').delete().eq('id', id), 'Verwijderen van hook');
+    },
+
+    async handelWhatsappAf(id, op) {
+      controleer(await sb.from('whatsapp_open').update({ afgehandeld_op: op.toISOString() }).eq('id', id), 'WhatsApp afhandelen');
     },
 
     async handelMarktsignaalAf(id, op) {

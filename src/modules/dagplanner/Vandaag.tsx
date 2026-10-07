@@ -8,6 +8,7 @@ import { afsprakenVanDag } from '../../domain/overzicht';
 import { BLOK_VAN_GROEP, berekenBellijst, samenvattingNietOpLijst, type Kandidaat } from '../../domain/prioriteit';
 import { dagWeergave, wachtOpAntwoord } from '../../domain/dagplan';
 import { WachtOpAntwoordBlok } from './WachtOpAntwoord';
+import { TeBeantwoorden } from './TeBeantwoorden';
 import { berekenBelmomenten, blokTekst } from '../../domain/belmomenten';
 import { BelKaart } from './BelKaart';
 
@@ -131,6 +132,8 @@ export function Vandaag() {
       </section>
 
       <Belmomenten actief={actief} />
+
+      <TeBeantwoorden />
 
       <section>
         <h2>Bellijst ({actief.length})</h2>

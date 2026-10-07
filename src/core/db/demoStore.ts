@@ -26,6 +26,13 @@ export function maakDemoStore(): Store {
   const genereer = (td: string) => {
     testdatum = td;
     g = { ...leegGegevens(), ...genereerTestdata({ testdatum: td, idPrefix: 'demo' }) };
+    // Twee fictieve open WhatsApp-chats (Te beantwoorden), zodat de demo het blok toont.
+    const t = (uurTerug: number) => new Date(new Date(`${td.slice(0, 16)}:00+02:00`).getTime() - uurTerug * 3600_000);
+    const c = g.contacten.find((x) => x.telefoons.some((n) => n.label === 'gsm'));
+    g.whatsappOpen = [
+      { id: 'demo-wa-1', nummer: '32470000001', contactId: c?.id ?? null, naam: c ? [c.voornaam, c.achternaam].filter(Boolean).join(' ') : 'Fictieve klant', laatsteOp: t(14), klantBerichten: [{ tijd: t(14), tekst: 'Dag Jonas, zou je volgende week eens kunnen langskomen voor die schatting?' }], nodig: true, antwoord: 'Dag! Dat lukt zeker, ik kijk even in mijn agenda en laat je vandaag nog een moment weten. Groetjes, Jonas', reden: 'Vraagt een afspraak voor een schatting.', afgehandeldOp: null, isTestdata: true },
+      { id: 'demo-wa-2', nummer: '32470000002', contactId: null, naam: 'Kandidaat-koper (fictief)', laatsteOp: t(3), klantBerichten: [{ tijd: t(3), tekst: 'Is het appartement in de Stationsstraat nog beschikbaar?' }], nodig: true, antwoord: 'Hi, bedankt voor je bericht! Ik check het even en laat je zo snel mogelijk iets weten. Mvg, Jonas', reden: 'Vraagt of een pand nog beschikbaar is.', afgehandeldOp: null, isTestdata: true },
+    ];
     dagplannen.clear();
     donna.clear();
   };
@@ -94,6 +101,9 @@ export function maakDemoStore(): Store {
     },
     async verwijderHaak(id) {
       g.haken = g.haken.filter((x) => x.id !== id);
+    },
+    async handelWhatsappAf(id, op) {
+      g.whatsappOpen = g.whatsappOpen.map((w) => (w.id === id ? { ...w, afgehandeldOp: op } : w));
     },
     async handelMarktsignaalAf(id, op) {
       g.marktsignalen = g.marktsignalen.map((s) => (s.id === id ? { ...s, afgehandeldOp: op } : s));

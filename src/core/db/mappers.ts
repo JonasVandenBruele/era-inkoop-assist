@@ -1,5 +1,5 @@
 // Vertaling tussen databaserijen (snake_case) en het interne model (camelCase).
-import type { Afspraak, Belpoging, Belverbod, Bronactiviteit, Bronstatus, Contact, Contacthook, ContactPand, Contactvoorkeur, Dagplan, DonnaOverzicht, Marktsignaal, Opvolgactie, Pand, Planningskeuze, Waardehaak } from '../../domain/model';
+import type { Afspraak, Belpoging, Belverbod, Bronactiviteit, Bronstatus, Contact, Contacthook, ContactPand, Contactvoorkeur, Dagplan, DonnaOverzicht, Marktsignaal, Opvolgactie, WhatsappOpen, Pand, Planningskeuze, Waardehaak } from '../../domain/model';
 
 type Rij = Record<string, unknown>;
 const d = (v: unknown): Date | null => (v ? new Date(v as string) : null);
@@ -380,6 +380,20 @@ export const marktsignaalNaarModel = (r: Rij): Marktsignaal => ({
   status: r.status as Marktsignaal['status'],
   eerstGezienOp: new Date(r.eerst_gezien_op as string),
   laatstGezienOp: new Date(r.laatst_gezien_op as string),
+  afgehandeldOp: d(r.afgehandeld_op),
+  isTestdata: false,
+});
+
+export const whatsappOpenNaarModel = (r: Rij): WhatsappOpen => ({
+  id: r.id as string,
+  nummer: r.nummer as string,
+  contactId: s(r.contact_id),
+  naam: s(r.naam),
+  laatsteOp: new Date(r.laatste_op as string),
+  klantBerichten: Array.isArray(r.klant_berichten) ? (r.klant_berichten as { tijd: string; tekst: string }[]).map((b) => ({ tijd: new Date(b.tijd), tekst: b.tekst })) : [],
+  nodig: Boolean(r.nodig),
+  antwoord: s(r.antwoord),
+  reden: s(r.reden),
   afgehandeldOp: d(r.afgehandeld_op),
   isTestdata: false,
 });

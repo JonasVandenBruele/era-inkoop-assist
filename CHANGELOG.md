@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.14.0] — 2026-10-07 — WhatsApp te beantwoorden
+
+### Toegevoegd
+- **WhatsApp te beantwoorden** (toestemming Jonas 7/10/2026), op Vandaag vlak boven de bellijst: elke open 1-op-1-chat op je zakelijke nummer (de klant schreef het laatst, max. 14 dagen) met de laatste klantberichten en een antwoord van Claude in jouw stijl en de taal van de klant, klaar om aan te passen. "Open in WhatsApp Business" zet het antwoord klaar; "✓ Verstuurd — log in ERAForce" opent bij een gekende prospect een ingevulde taak met de tekst; "Geen antwoord nodig" verbergt de chat tot er een nieuw bericht komt. Chats zonder antwoord nodig ("ok", "dank je") worden niet getoond.
+- `scripts/whatsapp-open.ts` op de Mac, elk half uur 8–20u (ma–za) via `mirror.py whatsapp` (launchd `be.eraleustoye.oxpecker-whatsapp`). Een ongewijzigde chat wordt niet opnieuw aan Claude gevraagd; wat je beantwoordde, verdwijnt bij de volgende ronde. Claude verzint geen feiten (prijzen, data, beschikbaarheid) en bevestigt geen afspraken zelf.
+- Migratie `20261007000011_whatsapp_open.sql`. Naar Supabase gaan enkel de laatste klantberichten (max. 3, ingekort) en het voorgestelde antwoord.
+
+### Opgelost
+- Knoppen braken midden in een woord af ("Verstu-urd") door de fix voor lange links; nu breken enkel woorden die echt niet passen.
+
 ## [0.13.0] — 2026-10-06 — Te koop gezet en adressen
 
 ### Toegevoegd

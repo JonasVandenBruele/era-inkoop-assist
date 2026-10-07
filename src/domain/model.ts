@@ -267,6 +267,24 @@ export interface Marktsignaal {
   isTestdata?: boolean;
 }
 
+/**
+ * Open WhatsApp-chat (7/10/2026, toestemming Jonas): de klant schreef het laatst. Met de laatste klantberichten en een
+ * voorgesteld antwoord van Claude in Jonas' stijl. Gemaakt op de Mac (scripts/whatsapp-open.ts).
+ */
+export interface WhatsappOpen {
+  id: string;
+  nummer: string;
+  contactId: string | null;
+  naam: string | null;
+  laatsteOp: Date;
+  klantBerichten: { tijd: Date; tekst: string }[];
+  nodig: boolean;
+  antwoord: string | null;
+  reden: string | null;
+  afgehandeldOp: Date | null;
+  isTestdata?: boolean;
+}
+
 export interface Bronstatus {
   id: string;
   soort: BronSoort;
