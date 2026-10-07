@@ -47,3 +47,20 @@ describe('handmatige koppeling', () => {
     expect(salesforceIdUitLink('')).toBeNull();
   });
 });
+
+import { eraforceOproepLink, eraforceRecordLink } from './eraforce';
+
+describe('oproep loggen in ERAForce (zoals ERA Scout)', () => {
+  const lead = { bron: 'eraforce_mirror' as const, externId: '00QTt00000F0DcbMAF' };
+  it('opent een ingevulde Uitgaande Oproep-taak op de prospect', () => {
+    expect(eraforceOproepLink(lead, DOMEIN, '2026-10-07')).toBe(
+      `https://${DOMEIN}/lightning/o/Task/new?recordTypeId=01224000000gEemAAE&defaultFieldValues=Subject=Uitgaande%20Oproep,Type=Uitgaande%20Oproep,Status=Gesloten,WhoId=00QTt00000F0DcbMAF,ActivityDate=2026-10-07`,
+    );
+  });
+  it('inkomende oproep als de klant terugbelt; niet voor testdata of zonder domein', () => {
+    expect(eraforceOproepLink(lead, DOMEIN, '2026-10-07', 'inkomend')).toContain('Type=Inkomende%20Oproep');
+    expect(eraforceOproepLink({ bron: 'demo' as never, externId: 'FIC-C-001' }, DOMEIN, '2026-10-07')).toBeNull();
+    expect(eraforceOproepLink(lead, undefined, '2026-10-07')).toBeNull();
+    expect(eraforceRecordLink(lead, DOMEIN)).toBe(`https://${DOMEIN}/lightning/r/Lead/00QTt00000F0DcbMAF/view`);
+  });
+});

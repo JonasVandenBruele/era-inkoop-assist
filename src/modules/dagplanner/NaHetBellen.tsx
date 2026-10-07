@@ -2,22 +2,26 @@ import { useState } from 'react';
 import { useApp } from '../../app/context';
 import { korteDag } from '../../core/dates';
 import { volledigeNaam } from '../../domain/model';
+import { eraforceOproepLink } from '../../domain/eraforce';
 import { laatsteInhoudelijkContact } from '../../domain/overzicht';
 import { pogingenSindsContact, volgendePogingDag } from '../../domain/prioriteit';
 import { plusWerkdagen } from '../../domain/werkdagen';
 
 /**
- * Eén optionele tik na het bellen. Verschijnt als je terugkomt in de app nadat je vanuit de app belde.
- * Negeren mag: dan wordt er niets gelogd. De inhoud van het gesprek log je zoals altijd in ERAForce.
+ * Na het bellen (zoals ERA Scout, 7/10/2026): "Log in ERAForce" opent een ingevulde oproeptaak op de prospect, daar typ je
+ * enkel de evaluatie. Daarna (optioneel) één tik voor de app, zodat je lijst zich meteen aanpast.
  */
 export function NaHetBellen() {
   const { oproep, sluitOproep, gegevens, registreerBelresultaat, maakBelresultaatOngedaan, toon, klok, instellingen } = useApp();
   const [terugbellen, setTerugbellen] = useState(false);
   const [terugbelDag, setTerugbelDag] = useState(plusWerkdagen(klok.vandaag(), 1));
   const [bezig, setBezig] = useState(false);
+  const [gelogd, setGelogd] = useState(false);
   if (!oproep?.vraag) return null;
   const contact = gegevens.contacten.find((c) => c.id === oproep.contactId);
   if (!contact) return null;
+
+  const logLink = eraforceOproepLink(contact, import.meta.env.VITE_ERAFORCE_DOMEIN, klok.vandaag());
 
   async function log(uitkomst: 'gesproken' | 'geen_antwoord' | 'terugbellen') {
     setBezig(true);
@@ -46,6 +50,11 @@ export function NaHetBellen() {
     <div className="blad-achtergrond" role="dialog" aria-modal="true" aria-label="Hoe ging het gesprek?">
       <div className="blad">
         <p className="reden">Hoe ging het met {volledigeNaam(contact)}?</p>
+        {logLink && (
+          <a className={`knop groot belknop ${gelogd ? '' : 'primair'}`} href={logLink} target="_blank" rel="noreferrer" onClick={() => setGelogd(true)}>
+            {gelogd ? '✓ Taak geopend in ERAForce' : '📝 Log in ERAForce'}
+          </a>
+        )}
         {!terugbellen ? (
           <div className="uitkomstknoppen">
             <button className="knop groot uitkomst goed" disabled={bezig} onClick={() => log('gesproken')}>✅ Gesproken</button>
@@ -63,7 +72,10 @@ export function NaHetBellen() {
             <button className="knop tekstknop" onClick={() => setTerugbellen(false)}>← Terug</button>
           </div>
         )}
-        <p className="klein zacht">Optioneel. Zo past je lijst zich meteen aan; ERAForce blijft de plek voor de inhoud.</p>
+        <p className="klein zacht">
+          {logLink ? '"Log in ERAForce" opent een ingevulde taak (Uitgaande Oproep, vandaag); typ je evaluatie en bewaar. ' : ''}
+          De andere knoppen zijn optioneel: zo past je lijst zich meteen aan.
+        </p>
       </div>
     </div>
   );

@@ -106,16 +106,16 @@ export function InstellingenPagina() {
       <section className="kaart">
         <h2>ERAForce</h2>
         <p className="zacht klein">
-          Contacten uit ERAForce krijgen een knop "Bel via ERAForce": die opent de prospect in de Salesforce-app, waar je via More → Maf Call belt en
-          meteen je evaluatie invult. Testcontacten bellen gewoon (gesimuleerd).
+          Je belt rechtstreeks vanuit de app. Kom je terug, dan opent "Log in ERAForce" een ingevulde taak (Uitgaande Oproep, gekoppeld aan de
+          prospect, datum vandaag): enkel nog je evaluatie typen en bewaren. Testcontacten bellen gewoon (gesimuleerd).
         </p>
         <label className="vinkje">
           <input
             type="checkbox"
-            checked={instellingen.eraforce.belViaEraforce}
-            onChange={(e) => doe('eraf', () => wijzigInstellingen({ ...instellingen, eraforce: { ...instellingen.eraforce, belViaEraforce: e.target.checked } }), 'Bewaard.')}
+            checked={instellingen.eraforce.belViaMafCall}
+            onChange={(e) => doe('eraf', () => wijzigInstellingen({ ...instellingen, eraforce: { ...instellingen.eraforce, belViaMafCall: e.target.checked } }), 'Bewaard.')}
           />
-          Bellen via ERAForce (Maf Call)
+          Toch bellen via ERAForce (Maf Call) in plaats van rechtstreeks
         </label>
         <label className="vinkje">
           <input

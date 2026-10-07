@@ -4,7 +4,7 @@ import { useApp } from '../../app/context';
 import { UITKOMST_LABEL } from '../../app/labels';
 import { uurVan } from '../../core/dates';
 import type { WachtOpAntwoord as Wacht } from '../../domain/dagplan';
-import { eraforceLink } from '../../domain/eraforce';
+import { eraforceOproepLink } from '../../domain/eraforce';
 import { volledigeNaam } from '../../domain/model';
 import { ResultaatPaneel } from './ResultaatPaneel';
 
@@ -19,7 +19,7 @@ export function WachtOpAntwoordBlok({ wacht }: { wacht: Wacht[] }) {
       <h3>
         Wacht op antwoord <span className="zacht">({wacht.length})</span>
       </h3>
-      <p className="klein zacht">Vandaag niet opgenomen of bericht gestuurd. Belt iemand terug? Tik "Belt terug" of open hem in ERAForce. Anders zet de app hem zelf terug op de lijst.</p>
+      <p className="klein zacht">Vandaag niet opgenomen of bericht gestuurd. Belt iemand terug? "Log in ERAForce" opent een ingevulde Inkomende Oproep; "Belt terug" past je lijst aan. Anders zet de app hem zelf terug op de lijst.</p>
       <ul className="lijst">
         {wacht.map((w) => (
           <WachtKaart key={w.contact.id} w={w} />
@@ -30,13 +30,14 @@ export function WachtOpAntwoordBlok({ wacht }: { wacht: Wacht[] }) {
 }
 
 function WachtKaart({ w }: { w: Wacht }) {
-  const { instellingen, startOproep } = useApp();
+  const { klok, startOproep } = useApp();
   const [resultaat, setResultaat] = useState(false);
   const c = w.contact;
   const laatste = w.pogingen[0]!;
   const wanneer = uurVan(laatste.tijdstip);
   const tel = c.telefoons[0];
-  const erafLink = eraforceLink(c, import.meta.env.VITE_ERAFORCE_DOMEIN);
+  // Belt de klant terug: een ingevulde "Inkomende Oproep"-taak in ERAForce (zoals ERA Scout).
+  const logLink = eraforceOproepLink(c, import.meta.env.VITE_ERAFORCE_DOMEIN, klok.vandaag(), 'inkomend');
   const volgende = /volgende poging ([^.;]+)|rust tot ([^.;]+)/.exec(w.detail);
 
   return (
@@ -60,9 +61,9 @@ function WachtKaart({ w }: { w: Wacht }) {
           <button className="knop primair" onClick={() => setResultaat(true)}>
             📲 Belt terug
           </button>
-          {erafLink && (
-            <a className="knop" href={erafLink} onClick={() => instellingen.eraforce.vraagNaBellenViaEraforce && startOproep(c.id)}>
-              ERAForce
+          {logLink && (
+            <a className="knop" href={logLink} target="_blank" rel="noreferrer">
+              📝 Log in ERAForce
             </a>
           )}
           {tel && !c.isTestdata && (

@@ -9,7 +9,7 @@ import { GROEP_LABEL, type Kandidaat } from '../../domain/prioriteit';
 import { KeuzeKnoppen, ResultaatPaneel } from './ResultaatPaneel';
 import { BerichtPaneel } from './BerichtPaneel';
 import { haakLabel } from '../../domain/haken';
-import { eraforceLink } from '../../domain/eraforce';
+import { eraforceLink, eraforceOproepLink, eraforceRecordLink } from '../../domain/eraforce';
 import { aanknopingspunt } from '../../domain/aanknopingspunt';
 import { KANAAL_ICOON } from '../../domain/kanaaladvies';
 import { GedaanPaneel, type GedaanKanaal } from './GedaanPaneel';
@@ -45,7 +45,11 @@ export function BelKaart({ k, nummer, opLijst = true }: { k: Kandidaat; nummer?:
   const kanaal = k.advies.kanaal;
   const bericht = berichtTekst({ kandidaat: k, kanaal: kanaal === 'mail' ? 'mail' : kanaal === 'whatsapp' ? 'whatsapp' : 'sms', voornaamGebruiker: instellingen.gebruiker.voornaam, organisatie: instellingen.gebruiker.organisatie });
   const voorstel = { tekst: bericht.tekst, vanHook: Boolean(hook?.conceptbericht && bericht.tekst === hook.conceptbericht) };
-  const erafLink = instellingen.eraforce.belViaEraforce ? eraforceLink(c, import.meta.env.VITE_ERAFORCE_DOMEIN) : null;
+  const domein = import.meta.env.VITE_ERAFORCE_DOMEIN;
+  // Standaard rechtstreeks bellen en daarna loggen (zoals ERA Scout); Maf Call enkel als je dat in de instellingen kiest.
+  const erafLink = instellingen.eraforce.belViaMafCall ? eraforceLink(c, domein) : null;
+  const logLink = eraforceOproepLink(c, domein, vandaag);
+  const recordLink = eraforceRecordLink(c, domein);
   const geenAntwoordVandaag = gegevens.belpogingen.filter((p) => p.contactId === c.id && !p.ongedaanOp && p.uitkomst === 'geen_antwoord' && dagVan(p.tijdstip) === vandaag).length;
 
   return (
@@ -248,6 +252,23 @@ export function BelKaart({ k, nummer, opLijst = true }: { k: Kandidaat; nummer?:
                   ) : (
                     <a className="knop" href={`tel:${tel.nummer.replace(/\s/g, '')}`} onClick={() => startOproep(c.id)}>📞 Toch bellen</a>
                   )
+                )}
+                {/* Andere nummers (bv. van een dubbele prospect). */}
+                {!c.isTestdata &&
+                  c.telefoons.slice(1).map((t) => (
+                    <a key={t.nummer} className="knop" href={`tel:${t.nummer.replace(/\s/g, '')}`} onClick={() => startOproep(c.id)}>
+                      📞 {t.nummer}
+                    </a>
+                  ))}
+                {logLink && (
+                  <a className="knop" href={logLink} target="_blank" rel="noreferrer">
+                    📝 Log oproep in ERAForce
+                  </a>
+                )}
+                {recordLink && (
+                  <a className="knop" href={recordLink} target="_blank" rel="noreferrer">
+                    Open in ERAForce
+                  </a>
                 )}
                 {kanaal !== 'bericht' && tel && <button className="knop" onClick={() => setPaneel('sms')}>💬 Bericht</button>}
                 {kanaal !== 'whatsapp' && tel && <button className="knop" onClick={() => setPaneel('whatsapp')}>🟢 WhatsApp</button>}

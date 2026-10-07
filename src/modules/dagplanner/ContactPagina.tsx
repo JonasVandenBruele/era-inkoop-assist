@@ -9,6 +9,7 @@ import { pogingenSindsContact } from '../../domain/prioriteit';
 import { KeuzeKnoppen, ResultaatPaneel } from './ResultaatPaneel';
 import { HakenEnVoorkeur } from './HakenEnVoorkeur';
 import { dubbelReden, personen } from '../../domain/dubbels';
+import { eraforceOproepLink, eraforceRecordLink } from '../../domain/eraforce';
 import { signaalTekst, signalenVan } from '../../domain/marktsignaal';
 
 export function ContactPagina() {
@@ -45,6 +46,8 @@ export function ContactPagina() {
   const signalen = groep.flatMap((c) => signalenVan(c.id, gegevens.marktsignalen));
   // Dubbele prospects: zelfde telefoon, e-mail of adres (straat, nummer, bus, postcode; de gemeentenaam telt niet).
   const dubbels = groep.filter((c) => c.id !== contact.id);
+  const logLink = eraforceOproepLink(contact, import.meta.env.VITE_ERAFORCE_DOMEIN, klok.vandaag());
+  const recordLink = eraforceRecordLink(contact, import.meta.env.VITE_ERAFORCE_DOMEIN);
   const laatste = laatsteInhoudelijkContact(contact.id, gegevens.activiteiten, gegevens.belpogingen);
   const openTaken = gegevens.activiteiten.filter((a) => a.contactId === contact.id && a.type === 'taak' && !a.taakAfgerond);
   const pogingen = pogingenSindsContact(contact.id, gegevens.belpogingen, laatste).length;
@@ -81,6 +84,13 @@ export function ContactPagina() {
               📞 Bel {t.nummer}
             </a>
           ),
+        )}
+        {(logLink || recordLink) && (
+          <p className="klein">
+            {logLink && <a href={logLink} target="_blank" rel="noreferrer">📝 Log oproep in ERAForce</a>}
+            {logLink && recordLink && ' · '}
+            {recordLink && <a href={recordLink} target="_blank" rel="noreferrer">Open in ERAForce</a>}
+          </p>
         )}
         {contact.email && <p>✉️ {contact.email}</p>}
         {contact.straat && <p>🏠 {contact.straat}, {contact.postcode} {contact.gemeente}</p>}

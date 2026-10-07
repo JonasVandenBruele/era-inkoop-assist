@@ -80,12 +80,17 @@ export const InstellingenSchema = z.object({
   // ERAForce: bellen via "Maf Call" in de Salesforce-app (de app opent enkel het record).
   eraforce: z
     .object({
-      /** Bel via ERAForce als het contact een ERAForce-record heeft; anders gewoon via de telefoon. */
+      /** Oud (tot 7/10/2026): bellen via ERAForce (Maf Call). Vervangen door belViaMafCall; niet meer gebruikt. */
       belViaEraforce: z.boolean().default(true),
+      /**
+       * Bellen via Maf Call in ERAForce in plaats van rechtstreeks. Standaard rechtstreeks bellen en daarna met één knop
+       * een ingevulde oproeptaak openen in ERAForce, zoals ERA Scout (Jonas, 7/10/2026).
+       */
+      belViaMafCall: z.boolean().default(false),
       /** Na bellen via ERAForce nog "hoe ging het?" vragen? Standaard niet: de evaluatie staat dan al in ERAForce. */
       vraagNaBellenViaEraforce: z.boolean().default(false),
     })
-    .default({ belViaEraforce: true, vraagNaBellenViaEraforce: false }),
+    .default({ belViaEraforce: true, belViaMafCall: false, vraagNaBellenViaEraforce: false }),
 
   // Pushmeldingen (zonder klantgegevens tenzij toonNamen aan staat).
   meldingen: z
