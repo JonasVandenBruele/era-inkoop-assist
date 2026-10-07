@@ -46,26 +46,49 @@ export function salesforceIdUitLink(tekst: string): string | null {
 /** Recordtype "ERAforce Prospectie taken" (zelfde als ERA Scout, 7/10/2026). */
 export const TAAK_RECORDTYPE = '01224000000gEemAAE';
 
+/** Soorten taken die Oxpecker in ERAForce laat openen (bestaande ERAForce-types; "WhatsApp" bestaat niet, dus "SMS"). */
+export type EraforceTaakSoort = 'uitgaand' | 'inkomend' | 'whatsapp' | 'sms' | 'mail';
+
+const TAAK_VELDEN: Record<EraforceTaakSoort, { Subject: string; Type: string }> = {
+  uitgaand: { Subject: 'Uitgaande Oproep', Type: 'Uitgaande Oproep' },
+  inkomend: { Subject: 'Inkomende Oproep', Type: 'Inkomende Oproep' },
+  whatsapp: { Subject: 'WhatsApp verstuurd', Type: 'SMS' },
+  sms: { Subject: 'Sms verstuurd', Type: 'SMS' },
+  mail: { Subject: 'Mail verstuurd', Type: 'E-mail' },
+};
+
 /**
- * Link die in ERAForce een nieuwe, ingevulde oproeptaak opent op de prospect (zoals ERA Scout): onderwerp en type
- * "Uitgaande Oproep" (of "Inkomende Oproep" als de klant terugbelde), status Gesloten, datum vandaag, gekoppeld aan het
- * contact. Jonas vult enkel de evaluatie in en bewaart. Oxpecker schrijft zelf niets naar ERAForce.
+ * Link die in ERAForce een nieuwe, ingevulde taak opent op de prospect (zoals ERA Scout): onderwerp en type, status
+ * Gesloten, datum vandaag, gekoppeld aan het contact, en bij een bericht de tekst als omschrijving. Jonas vult enkel
+ * nog aan (evaluatie) en bewaart. Oxpecker schrijft zelf niets naar ERAForce.
  */
+export function eraforceTaakLink(
+  contact: Pick<Contact, 'bron' | 'externId'>,
+  domein: string | null | undefined,
+  vandaag: string,
+  soort: EraforceTaakSoort,
+  omschrijving?: string | null,
+): string | null {
+  const id = contact.bron === 'eraforce_mirror' ? contact.externId : null;
+  if (!domein || !id || !SALESFORCE_ID.test(id) || !['00Q', '003'].includes(id.slice(0, 3))) return null;
+  const host = domein.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+  const velden: Record<string, string> = { ...TAAK_VELDEN[soort], Status: 'Gesloten', WhoId: id, ActivityDate: vandaag };
+  // Lange teksten inkorten: de link moet in de Salesforce-app passen.
+  if (omschrijving?.trim()) velden.Description = omschrijving.trim().slice(0, 1500);
+  const dv = Object.entries(velden)
+    .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
+    .join(',');
+  return `https://${host}/lightning/o/Task/new?recordTypeId=${TAAK_RECORDTYPE}&defaultFieldValues=${dv}`;
+}
+
+/** Oproeptaak (uitgaand, of inkomend als de klant terugbelde). */
 export function eraforceOproepLink(
   contact: Pick<Contact, 'bron' | 'externId'>,
   domein: string | null | undefined,
   vandaag: string,
   richting: 'uitgaand' | 'inkomend' = 'uitgaand',
 ): string | null {
-  const id = contact.bron === 'eraforce_mirror' ? contact.externId : null;
-  if (!domein || !id || !SALESFORCE_ID.test(id) || !['00Q', '003'].includes(id.slice(0, 3))) return null;
-  const host = domein.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
-  const soort = richting === 'inkomend' ? 'Inkomende Oproep' : 'Uitgaande Oproep';
-  const velden = { Subject: soort, Type: soort, Status: 'Gesloten', WhoId: id, ActivityDate: vandaag };
-  const dv = Object.entries(velden)
-    .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
-    .join(',');
-  return `https://${host}/lightning/o/Task/new?recordTypeId=${TAAK_RECORDTYPE}&defaultFieldValues=${dv}`;
+  return eraforceTaakLink(contact, domein, vandaag, richting);
 }
 
 /** Gewone link naar het record (om de prospect te bekijken). */

@@ -141,6 +141,16 @@ export function InstellingenPagina() {
             <option value="standaard">Standaard-mailapp (Apple Mail)</option>
           </select>
         </label>
+        <label className="formulier">
+          WhatsApp openen in
+          <select
+            value={instellingen.whatsappApp}
+            onChange={(e) => doe('mail', () => wijzigInstellingen({ ...instellingen, whatsappApp: e.target.value as 'business' | 'gewoon' }), 'Bewaard.')}
+          >
+            <option value="business">WhatsApp Business (zakelijk nummer)</option>
+            <option value="gewoon">Gewone WhatsApp</option>
+          </select>
+        </label>
       </section>
 
       <section className="kaart">

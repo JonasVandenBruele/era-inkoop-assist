@@ -4,6 +4,8 @@ import { uurVan } from '../../core/dates';
 import { berichtLink, berichtTekst } from '../../domain/berichten';
 import { berichtNuGepast } from '../../domain/kanaaladvies';
 import type { Kandidaat } from '../../domain/prioriteit';
+import { eraforceTaakLink } from '../../domain/eraforce';
+import { openWhatsapp } from '../../app/whatsapp';
 
 type BerichtKanaal = 'sms' | 'whatsapp' | 'mail';
 
@@ -41,7 +43,8 @@ export function BerichtPaneel({ k, start, onKlaar }: { k: Kandidaat; start: Beri
   const adres = kanaal === 'mail' ? c.email! : tel!;
   // Verzonnen testnummers nooit echt openen; testmailadressen eindigen op .test en komen nergens aan.
   const openenUit = c.isTestdata && kanaal !== 'mail';
-  const appNaam = { sms: 'Berichten', whatsapp: 'WhatsApp', mail: instellingen.mailApp === 'outlook' ? 'Outlook' : 'Mail' }[kanaal];
+  const logLink = eraforceTaakLink(c, import.meta.env.VITE_ERAFORCE_DOMEIN, klok.vandaag(), kanaal === 'mail' ? 'mail' : kanaal === 'whatsapp' ? 'whatsapp' : 'sms', kanaal === 'mail' ? `${huidigOnderwerp}\n\n${huidigeTekst}` : huidigeTekst);
+  const appNaam = { sms: 'Berichten', whatsapp: instellingen.whatsappApp === 'business' ? 'WhatsApp Business' : 'WhatsApp', mail: instellingen.mailApp === 'outlook' ? 'Outlook' : 'Mail' }[kanaal];
 
   async function bewaar() {
     setBezig(true);
@@ -80,7 +83,20 @@ export function BerichtPaneel({ k, start, onKlaar }: { k: Kandidaat; start: Beri
         {openenUit ? (
           <button className="knop primair groot" disabled title="Testdata: verzonnen nummer">Open in {appNaam} (testdata)</button>
         ) : (
-          <a className="knop primair groot" href={berichtLink(kanaal, adres, { onderwerp: huidigOnderwerp, tekst: huidigeTekst }, instellingen.mailApp)} target="_blank" rel="noreferrer" onClick={() => setGeopend(true)}>
+          <a
+            className="knop primair groot"
+            href={berichtLink(kanaal, adres, { onderwerp: huidigOnderwerp, tekst: huidigeTekst }, instellingen.mailApp)}
+            target="_blank"
+            rel="noreferrer"
+            onClick={(e) => {
+              setGeopend(true);
+              // WhatsApp: standaard de Business-app (zakelijk nummer), met terugval op de gewone link.
+              if (kanaal === 'whatsapp') {
+                e.preventDefault();
+                openWhatsapp(adres, huidigeTekst, instellingen.whatsappApp);
+              }
+            }}
+          >
             Open in {appNaam}
           </a>
         )}
@@ -98,10 +114,20 @@ export function BerichtPaneel({ k, start, onKlaar }: { k: Kandidaat; start: Beri
           📋 Kopieer
         </button>
       </div>
-      <button className={`knop groot ${geopend ? 'primair' : ''}`} disabled={bezig} onClick={bewaar}>
-        ✓ Verstuurd — registreren
-      </button>
-      <p className="klein zacht">De app verstuurt zelf niets. Tik pas op "Verstuurd" als je het bericht echt verstuurd hebt.</p>
+      {/* Verstuurd: registreert het in de app én opent in ERAForce een ingevulde taak met de tekst (Jonas, 7/10/2026). */}
+      {logLink && !c.isTestdata ? (
+        <a className={`knop groot ${geopend ? 'primair' : ''}`} href={logLink} target="_blank" rel="noreferrer" onClick={() => void bewaar()}>
+          ✓ Verstuurd — log in ERAForce
+        </a>
+      ) : (
+        <button className={`knop groot ${geopend ? 'primair' : ''}`} disabled={bezig} onClick={bewaar}>
+          ✓ Verstuurd — registreren
+        </button>
+      )}
+      <p className="klein zacht">
+        De app verstuurt zelf niets. Tik pas op "Verstuurd" als je het bericht echt verstuurd hebt
+        {logLink ? '; ERAForce opent dan een taak met je tekst al ingevuld, bewaar ze daar.' : '.'}
+      </p>
       <button className="knop tekstknop" onClick={onKlaar}>Annuleren</button>
     </div>
   );

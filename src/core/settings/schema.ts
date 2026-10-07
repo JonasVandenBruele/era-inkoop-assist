@@ -106,6 +106,8 @@ export const InstellingenSchema = z.object({
 
   /** Welke mail-app opent bij "Mail": Outlook (standaard) of de standaard-mailapp van het toestel (Apple Mail). */
   mailApp: z.enum(['outlook', 'standaard']).default('outlook'),
+  /** Welke WhatsApp-app berichten opent: Business (zakelijk nummer, standaard sinds 7/10/2026) of de gewone. */
+  whatsappApp: z.enum(['business', 'gewoon']).default('business'),
 
   // AI (fase 4)
   ai: z

@@ -64,3 +64,12 @@ describe('oproep loggen in ERAForce (zoals ERA Scout)', () => {
     expect(eraforceRecordLink(lead, DOMEIN)).toBe(`https://${DOMEIN}/lightning/r/Lead/00QTt00000F0DcbMAF/view`);
   });
 });
+
+import { eraforceTaakLink } from './eraforce';
+
+describe('bericht loggen in ERAForce', () => {
+  it('WhatsApp: type SMS, onderwerp "WhatsApp verstuurd", tekst als omschrijving (komma\'s en enters gecodeerd)', () => {
+    const l = eraforceTaakLink({ bron: 'eraforce_mirror', externId: '00QTt00000F0DcbMAF' }, DOMEIN, '2026-10-07', 'whatsapp', 'Dag Olivier, veel succes!\nGroetjes, Jonas')!;
+    expect(l).toContain('Subject=WhatsApp%20verstuurd,Type=SMS,Status=Gesloten,WhoId=00QTt00000F0DcbMAF,ActivityDate=2026-10-07,Description=Dag%20Olivier%2C%20veel%20succes!%0AGroetjes%2C%20Jonas');
+  });
+});
