@@ -86,7 +86,10 @@ a { color: var(--blauw); }
 }
 .lijst .kaart { margin-bottom: 0; }
 
-.afspraak { display: grid; grid-template-columns: 92px 1fr; gap: 10px; }
+.afspraak { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 10px; }
+/* Lange woorden zonder spaties (links in een agendalocatie, mailadressen) breken af in plaats van de pagina breder te
+   maken dan het scherm (7/10/2026: een Teams-link maakte alles kleiner). */
+.kaart, .kaart * { overflow-wrap: anywhere; min-width: 0; }
 .afspraak .tijd { font-weight: 700; color: var(--blauw); font-variant-numeric: tabular-nums; }
 
 .contactrij {
@@ -498,3 +501,8 @@ h1, .appnaam { font-weight: 900; }
 /* Wacht op antwoord (6/10/2026): onderaan de bellijst, rustig. */
 .belkaart.wacht { border-left-color: #b7b7c2; opacity: 0.92; }
 .wacht-blok h3 { color: var(--zacht); }
+@media (prefers-color-scheme: dark) {
+  /* Donkere modus: donkerrode achtergrond, lichte tekst (7/10/2026: witte tekst op lichtroze was onleesbaar). */
+  .tekoop-signaal { background: #3a0f1a; color: var(--tekst, #f2f2f5); }
+  .tekoop-signaal a, .tekoop-signaal .tekstknop { color: #ff8fa0; }
+}

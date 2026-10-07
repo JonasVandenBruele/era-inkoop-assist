@@ -18,6 +18,8 @@
 - **Uitgaande oproep zonder evaluatie of met "vm"** (of "ingesproken", "nt opgenomen", "répondeur" …) telt als antwoordapparaat, niet als gesprek (Jonas, 6/10/2026). Een inkomende oproep zonder tekst blijft een gesprek.
 
 ### Opgelost
+- Een lange link zonder spaties in een agendalocatie maakte de pagina breder dan het scherm, waardoor alle kaartjes kleiner werden. Lange woorden breken nu af.
+- Het rode "te koop"-vak was in de donkere modus onleesbaar (witte tekst op lichtroze); de reden op die kaart herhaalt de details niet meer.
 - De scripts op de Mac (hooks) lazen datums een dag te vroeg (bv. een taak op 19/11 als 18/11). De app op je gsm had dat probleem niet.
 
 ### Tests

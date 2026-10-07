@@ -3,7 +3,7 @@
 import { dagVan, dagenTussen, korteDag, relatief, uurVan, type DagKey } from '../core/dates';
 import type { Instellingen } from '../core/settings/schema';
 import type { Afspraak, Belpoging, Belverbod, Bronactiviteit, Contact, Contacthook, Contactkanaal, ContactPand, Contactvoorkeur, Fase, Marktsignaal, Opvolgactie, Pand, Planningskeuze, Waardehaak } from './model';
-import { signaalTekst, signaalVoorVandaag } from './marktsignaal';
+import { signaalVoorVandaag } from './marktsignaal';
 import { personen, samengevoegd } from './dubbels';
 import { adresTekst, splitsStraatregel } from './adres';
 import { hakenVoorContact, specifiekeHaken } from './haken';
@@ -417,7 +417,8 @@ export function berekenBellijst(invoer: BellijstInvoer): Bellijst {
       reden = `Terugbelafspraak vandaag om ${terugbel.uur}`;
     } else if (signaal) {
       groep = 'S';
-      reden = `${signaalTekst(signaal)} — stuur vandaag een berichtje met veel succes`;
+      // De details (verkoper, sinds, prijs, link) staan in het rode vak op de kaart.
+      reden = 'Woning te koop gezet — stuur vandaag een berichtje met veel succes';
     } else if (pin) {
       groep = 'pin';
       reden = 'Door jou vastgepind voor vandaag';

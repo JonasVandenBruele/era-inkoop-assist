@@ -51,7 +51,7 @@ describe('te koop gezet', () => {
     const l = lijst({ marktsignalen: [signaal()] });
     const k = l.vandaag.find((x) => x.contact.id === maes.id)!;
     expect(k.groep).toBe('S');
-    expect(k.reden).toContain('zelf te koop op Immoweb');
+    expect(signaalTekst(k.signaal!)).toContain('zelf te koop op Immoweb');
     expect(k.reden).toContain('veel succes');
     expect(['whatsapp', 'bericht', 'mail', 'brief', 'bellen']).toContain(k.advies.kanaal);
     const groepen = l.vandaag.map((x) => x.groep);
