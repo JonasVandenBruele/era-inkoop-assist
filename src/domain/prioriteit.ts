@@ -108,6 +108,7 @@ export type UitsluitReden =
   | 'uitgesteld'
   | 'vandaag_overgeslagen'
   | 'afspraak_vandaag'
+  | 'afspraak_gepland'
   | 'wacht_na_geen_antwoord'
   | 'nog_niet_aan_de_beurt'
   | 'zelfde_adres';
@@ -239,7 +240,14 @@ export function berekenBellijst(invoer: BellijstInvoer): Bellijst {
   const w = inst.gewichten;
   const keuzes = (invoer.keuzes ?? []).filter(actief);
   const verboden = new Set((invoer.belverboden ?? []).filter((b) => !b.ingetrokkenOp).map((b) => b.contactId));
-  const afspraakVandaag = new Set(invoer.afspraken.filter((a) => a.contactId && dagVan(a.start) <= vandaag && vandaag <= dagVan(a.einde)).map((a) => a.contactId!));
+  // Eerstvolgende afspraak (vandaag of later) per contact: een geplande afspraak is de afgesproken volgende stap,
+  // dan bel je niet (Jonas, 7/10/2026).
+  const komendeAfspraak = new Map<string, Afspraak>();
+  for (const a of invoer.afspraken) {
+    if (!a.contactId || dagVan(a.einde) < vandaag) continue;
+    const vorige = komendeAfspraak.get(a.contactId);
+    if (!vorige || a.start < vorige.start) komendeAfspraak.set(a.contactId, a);
+  }
 
   const resultaat: Bellijst = { vandaag: [], nietOpLijst: [], nummerZoeken: [], handmatigBeoordelen: [], uitgesloten: [], pinGeweigerd: [], waarschuwingen: [], zonderTimeline: [], achterstand: [], langsgaanLater: [] };
   const kandidaten: Kandidaat[] = [];
@@ -313,7 +321,13 @@ export function berekenBellijst(invoer: BellijstInvoer): Bellijst {
     const bronStap = invoer.activiteiten
       .filter((a) => a.contactId === c.id && a.type === 'taak' && a.taakSoort !== 'terugbellen' && !a.taakAfgerond && a.vervaltOp && a.vervaltOp >= vandaag)
       .sort((x, y) => x.vervaltOp!.localeCompare(y.vervaltOp!))[0];
+    // Afspraak met deze persoon (ook op een dubbele prospect), vandaag of later.
+    const afspraak = [c, ...anderen(c)]
+      .map((x) => komendeAfspraak.get(x.id))
+      .filter((a): a is Afspraak => Boolean(a))
+      .sort((a, b) => a.start.getTime() - b.start.getTime())[0];
     const heeftTimeline =
+      Boolean(afspraak) ||
       Boolean(terugbel) ||
       Boolean(bronStap) ||
       (invoer.opvolgacties ?? []).some((o) => o.contactId === c.id && o.status === 'open' && o.dag >= vandaag);
@@ -360,9 +374,13 @@ export function berekenBellijst(invoer: BellijstInvoer): Bellijst {
         sluitUit('vandaag_overgeslagen', 'Vandaag overgeslagen; morgen weer zichtbaar.');
         continue;
       }
-      // Regel 5: afspraak vandaag met dit contact.
-      if (afspraakVandaag.has(c.id)) {
+      // Regel 5: afspraak met dit contact, vandaag of later.
+      if (afspraak && dagVan(afspraak.start) <= vandaag) {
         sluitUit('afspraak_vandaag', 'Je hebt vandaag een afspraak met dit contact.');
+        continue;
+      }
+      if (afspraak) {
+        sluitUit('afspraak_gepland', `Afspraak gepland op ${korteDag(dagVan(afspraak.start))}${afspraak.heleDag ? '' : ` om ${uurVan(afspraak.start)}`}: ${afspraak.titel}.`);
         continue;
       }
     }

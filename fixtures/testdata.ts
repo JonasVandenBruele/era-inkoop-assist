@@ -63,6 +63,7 @@ export const RANDGEVAL = {
   nieuweLeadVandaag: 'FIC-C-018',
   afspraakVandaag: 'FIC-C-019',
   afspraakOverlap: 'FIC-C-020',
+  afspraakLater: 'FIC-C-903',
   afspraakZonderContact: 'FIC-A-ZONDER-CONTACT',
   pandErfenis: 'FIC-P-010',
   // Contactstrategie (fase 3b)
@@ -385,8 +386,12 @@ export function genereerTestdata(opties: TestdataOpties): Testdataset {
 
   // Andere dagen in de testagenda
   afspraak(1, '00:00', '23:59', 'ERA opleiding (hele dag)', null, { heleDag: true, locatie: 'Gent', koppelStatus: 'geen' });
-  afspraak(2, '09:30', '10:30', 'Schatting app. Wouters', wouters);
-  afspraak(3, '15:00', '16:00', 'Gesprek erfgenamen Van den Broeck', vdbKoen);
+  // Afspraak later deze week: dan bel je niet (Jonas, 7/10/2026). Wouters en Van den Broeck blijven zonder afspraak,
+  // zodat hun voorbeelden uit PLAN.md §5.4 gelden.
+  const pauwels = voegContactToe({ ext: RANDGEVAL.afspraakLater, aanhef: 'Dhr.', voornaam: 'Bart', achternaam: 'Pauwels', status: 'prospect', fase: 'warm', horizon: 'binnen 6 mnd', aanspreek: 'je', aangemaaktDagGeleden: 400 });
+  activiteit(pauwels, 'gesprek', 200, 'Bart P.: wil eerst renoveren, nadien schatting. Opvolgen.');
+  afspraak(2, '09:30', '10:30', 'Schatting app. Pauwels', pauwels);
+  afspraak(3, '15:00', '16:00', 'Gesprek erfgenamen (fictief)', null, { koppelStatus: 'geen' });
   afspraak(-1, '11:00', '12:00', 'Schatting Hermans', hermans);
 
   // ================= Overige contacten (gegenereerd) =================

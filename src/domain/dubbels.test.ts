@@ -79,3 +79,17 @@ describe('dubbele prospects', () => {
     expect(k.contact.email).toBe('n@voorbeeld.test');
   });
 });
+
+describe('afspraak gepland (Jonas, 7/10/2026)', () => {
+  it('een afspraak later deze week: niet bellen, ook niet op de dubbele prospect', () => {
+    const l = lijst(data.contacten);
+    const pauwels = data.contacten.find((c) => c.externId === RANDGEVAL.afspraakLater)!;
+    expect(plaats(l, pauwels.id)).toMatchObject({ reden: 'afspraak_gepland' });
+    expect((plaats(l, pauwels.id) as { detail: string }).detail).toMatch(/^Afspraak gepland op .* om 09:30: Schatting app\. Pauwels\.$/);
+    expect(l.zonderTimeline.some((c) => c.id === pauwels.id)).toBe(false);
+
+    const afspraak = data.afspraken.find((a) => a.contactId === pauwels.id)!;
+    const l2 = berekenBellijst({ ...data, contacten: [...data.contacten, metAdres, zonderAdres], afspraken: [...data.afspraken, { ...afspraak, id: 'x', contactId: metAdres.id }], instellingen: STANDAARD_INSTELLINGEN, vandaag: VANDAAG });
+    expect(plaats(l2, zonderAdres.id)).toMatchObject({ reden: 'afspraak_gepland' });
+  });
+});

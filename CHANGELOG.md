@@ -13,6 +13,7 @@
 - Migratie `20261006000010_marktsignalen.sql`: tabel `marktsignalen` (enkel advertentiegegevens), schrijfbaar door de importrol bij je ERAForce-contacten; jij mag enkel "afgehandeld" zetten.
 
 ### Gewijzigd
+- **Geplande afspraak = volgende stap** (Jonas, 7/10/2026): wie een afspraak heeft vandaag of later (ook op een dubbele prospect), komt niet op de bellijst; de reden toont dag, uur en titel van de afspraak.
 - **Dubbele prospects = één persoon** (Jonas, 6/10/2026): zelfde gsm-/telefoonnummer, e-mailadres of adres. De volgende stap op de ene geldt ook voor de andere (bv. een prospect zonder adres komt niet "volgens ritme" op de lijst als de dubbel mét adres een taak in november heeft). Het laatste gesprek, belverbod, te-koop-signaal en de gegevens (adres, nummers, e-mail, taal) van alle dubbels worden samen gebruikt, ook in de hooks en de historiek op de contactpagina ("👥 Dubbele prospect"). Eén persoon per dag op de lijst.
 - **Wacht op antwoord:** wie vandaag niet opnam (of een bericht kreeg) verdwijnt niet meer van de bellijst, maar zakt naar een blok onderaan met "Belt terug" (resultaat Gesproken), "ERAForce" (opent de prospect meteen) en "Opnieuw". Ook bij de derde keer geen antwoord. Belde hij die dag niet terug, dan geldt vanaf morgen de gewone herplanning (Jonas, 6/10/2026).
 - **Uitgaande oproep zonder evaluatie of met "vm"** (of "ingesproken", "nt opgenomen", "répondeur" …) telt als antwoordapparaat, niet als gesprek (Jonas, 6/10/2026). Een inkomende oproep zonder tekst blijft een gesprek.
@@ -24,7 +25,7 @@
 - De scripts op de Mac (hooks) lazen datums een dag te vroeg (bv. een taak op 19/11 als 18/11). De app op je gsm had dat probleem niet.
 
 ### Tests
-- 221 tests, o.a. dubbele prospects, wacht op antwoord, adresnormalisatie, officiële straatnamen, groep "Te koop gezet" (dag erna, boven het maximum, verdwijnt na een bericht) en voicemail-herkenning.
+- 222 tests, o.a. geplande afspraak, dubbele prospects, wacht op antwoord, adresnormalisatie, officiële straatnamen, groep "Te koop gezet" (dag erna, boven het maximum, verdwijnt na een bericht) en voicemail-herkenning.
 
 ## [0.12.0] — 2026-10-06 — Taal, aanspreking, ander kanaal en evaluatie-vinkje
 
