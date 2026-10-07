@@ -14,6 +14,7 @@ import { aanknopingspunt } from '../../domain/aanknopingspunt';
 import { KANAAL_ICOON } from '../../domain/kanaaladvies';
 import { GedaanPaneel, type GedaanKanaal } from './GedaanPaneel';
 import { signaalTekst } from '../../domain/marktsignaal';
+import { berichtTekst } from '../../domain/berichten';
 
 /** Route naar het adres in Apple Kaarten (opent de app op de iPhone). */
 const routeLink = (adres: string) => `https://maps.apple.com/?daddr=${encodeURIComponent(adres)}`;
@@ -42,6 +43,8 @@ export function BelKaart({ k, nummer, opLijst = true }: { k: Kandidaat; nummer?:
   const hook = k.hook;
   const contactAdres = c.straat && c.gemeente ? `${c.straat}, ${c.postcode ? `${c.postcode} ` : ''}${c.gemeente}` : null;
   const kanaal = k.advies.kanaal;
+  const bericht = berichtTekst({ kandidaat: k, kanaal: kanaal === 'mail' ? 'mail' : kanaal === 'whatsapp' ? 'whatsapp' : 'sms', voornaamGebruiker: instellingen.gebruiker.voornaam, organisatie: instellingen.gebruiker.organisatie });
+  const voorstel = { tekst: bericht.tekst, vanHook: Boolean(hook?.conceptbericht && bericht.tekst === hook.conceptbericht) };
   const erafLink = instellingen.eraforce.belViaEraforce ? eraforceLink(c, import.meta.env.VITE_ERAFORCE_DOMEIN) : null;
   const geenAntwoordVandaag = gegevens.belpogingen.filter((p) => p.contactId === c.id && !p.ongedaanOp && p.uitkomst === 'geen_antwoord' && dagVan(p.tijdstip) === vandaag).length;
 
@@ -155,11 +158,19 @@ export function BelKaart({ k, nummer, opLijst = true }: { k: Kandidaat; nummer?:
         )}
       </p>}
 
-      {opLijst && (
+      {/* Openingszin enkel bij bellen of langsgaan; bij een bericht het voorgestelde bericht (Jonas, 7/10/2026). */}
+      {opLijst && (kanaal === 'bellen' || kanaal === 'bezoek') && (
         <p className="openingszin">
           <span className="klein zacht">Openingszin {hook?.openingszin ? '(hook)' : '(standaard)'}</span>
           <br />
           {zin}
+        </p>
+      )}
+      {opLijst && (kanaal === 'bericht' || kanaal === 'whatsapp' || kanaal === 'mail') && (
+        <p className="openingszin">
+          <span className="klein zacht">Bericht {voorstel.vanHook ? '(hook)' : '(standaard)'} — pas aan bij het versturen</span>
+          <br />
+          {voorstel.tekst}
         </p>
       )}
 
