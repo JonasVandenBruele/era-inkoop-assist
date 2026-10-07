@@ -8,6 +8,7 @@
 - Migratie `20261007000011_whatsapp_open.sql`. Naar Supabase gaan enkel de laatste klantberichten (max. 3, ingekort) en het voorgestelde antwoord.
 
 ### Opgelost
+- Een prospect met reden **Reeds verkocht/verhuurd, Dubbele prospect of No lead** in ERAForce telt als beëindigd, ook als de status nog "Ingave" of "In Opvolging" is (7/10/2026: een al verkocht pand stond op de lijst).
 - Knoppen braken midden in een woord af ("Verstu-urd") door de fix voor lange links; nu breken enkel woorden die echt niet passen.
 
 ## [0.13.0] — 2026-10-06 — Te koop gezet en adressen

@@ -82,9 +82,21 @@ export function telefoons(r: SfRij, velden: [string, Telefoon['label']][]): Tele
 // ---------- contacten ----------
 
 /** Leadstatus in ERAForce → status in Oxpecker. */
+/**
+ * Redenen in ERAForce die een prospect afsluiten, ook als de status nog open staat (Jonas, 7/10/2026: een
+ * Marketpulse-prospect stond op "Ingave" met reden "Reeds verkocht"; het pand was al verkocht).
+ */
+const AFGESLOTEN_REDEN = /^(reeds verkocht|reeds verhuurd|dubbele prospect|no lead)$/i;
+
+export function afsluitReden(r: SfRij): string | null {
+  const reden = tekst(r, 'ERA_Reden__c');
+  return reden && AFGESLOTEN_REDEN.test(reden.trim()) ? reden.trim() : null;
+}
+
 export function leadStatus(r: SfRij): ContactStatus {
   const status = (tekst(r, 'Status') ?? '').toLowerCase();
   if (status.startsWith('beëindigd') || status.startsWith('beeindigd')) return 'beeindigd';
+  if (afsluitReden(r)) return 'beeindigd';
   if (waar(r, 'ERA_Long_term_lead__c')) return 'langetermijn';
   if (status === 'ingave' || status === 'nieuw') return 'nieuwe_lead';
   return 'prospect';
@@ -116,7 +128,7 @@ export function leadNaarContact(r: SfRij): ContactImport | null {
     postcode: tekst(r, 'ERA_Postcode__c') ?? tekst(r, 'PostalCode'),
     gemeente: tekst(r, 'ERA_Gemeente__c') ?? tekst(r, 'City'),
     statusBron: leadStatus(r),
-    statusLabelBron: tekst(r, 'Status'),
+    statusLabelBron: afsluitReden(r) && !/beëindigd/i.test(tekst(r, 'Status') ?? '') ? `${tekst(r, 'Status')} — ${afsluitReden(r)}` : tekst(r, 'Status'),
     faseBron: null,
     tijdshorizonBron: null,
     aanspreekvormBron: null,

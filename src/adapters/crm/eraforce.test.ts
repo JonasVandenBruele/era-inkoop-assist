@@ -141,3 +141,14 @@ describe('ERAForce → Oxpecker', () => {
     expect(afspraakAlsGesprek(event(), new Date('2026-10-13T08:30:00Z'), naam)).toBeNull();
   });
 });
+
+describe('afgesloten reden (Jonas, 7/10/2026)', () => {
+  it('"Reeds verkocht" sluit de prospect af, ook met status Ingave', () => {
+    const c = leadNaarContact({ Id: '00QAAA0000000009AA', LastName: 'Voorbeeld', Status: 'Ingave', ERA_Reden__c: 'Reeds verkocht' })!;
+    expect(c.statusBron).toBe('beeindigd');
+    expect(c.statusLabelBron).toBe('Ingave — Reeds verkocht');
+    expect(leadNaarContact({ Id: '00QAAA0000000010AA', LastName: 'Voorbeeld', Status: 'In Opvolging', ERA_Reden__c: 'Dubbele prospect' })!.statusBron).toBe('beeindigd');
+    // Andere redenen veranderen niets.
+    expect(leadNaarContact({ Id: '00QAAA0000000011AA', LastName: 'Voorbeeld', Status: 'In Opvolging', ERA_Reden__c: 'Vrijblijvende schatting' })!.statusBron).toBe('prospect');
+  });
+});
