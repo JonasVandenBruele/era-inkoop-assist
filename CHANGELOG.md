@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.15.0] — 2026-10-10 — Opvolgtaak na het bellen
+
+### Toegevoegd
+- **Opvolgtaak plannen** na het bellen, onder "Log in ERAForce": kies Morgen, 1 week, 2 weken, 1 maand of een eigen dag, en "📅 Opvolgtaak in ERAForce" opent een tweede, ingevulde taak op de prospect: **Telefonische opvolging**, type Bellen, status Open, met de gekozen dag als vervaldatum. Je hoeft die taak enkel nog te bewaren.
+- Tik je daarna op "Gesproken", dan bewaart de app de opvolging meteen als volgende stap, zodat de prospect niet op je lijst komt voor de volgende mirror. Daarna herkent de mirror de open taak in ERAForce zelf. De gekozen dag wordt ook voorgesteld bij "Terugbellen op…".
+
 ## [0.14.0] — 2026-10-07 — WhatsApp te beantwoorden
 
 ### Toegevoegd

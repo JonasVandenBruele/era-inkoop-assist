@@ -47,19 +47,21 @@ export function salesforceIdUitLink(tekst: string): string | null {
 export const TAAK_RECORDTYPE = '01224000000gEemAAE';
 
 /** Soorten taken die Oxpecker in ERAForce laat openen (bestaande ERAForce-types; "WhatsApp" bestaat niet, dus "SMS"). */
-export type EraforceTaakSoort = 'uitgaand' | 'inkomend' | 'whatsapp' | 'sms' | 'mail';
+export type EraforceTaakSoort = 'uitgaand' | 'inkomend' | 'whatsapp' | 'sms' | 'mail' | 'opvolging';
 
-const TAAK_VELDEN: Record<EraforceTaakSoort, { Subject: string; Type: string }> = {
+const TAAK_VELDEN: Record<EraforceTaakSoort, { Subject: string; Type: string; Status?: string }> = {
   uitgaand: { Subject: 'Uitgaande Oproep', Type: 'Uitgaande Oproep' },
   inkomend: { Subject: 'Inkomende Oproep', Type: 'Inkomende Oproep' },
   whatsapp: { Subject: 'WhatsApp verstuurd', Type: 'SMS' },
   sms: { Subject: 'Sms verstuurd', Type: 'SMS' },
   mail: { Subject: 'Mail verstuurd', Type: 'E-mail' },
+  // Waarden uit de keuzelijsten van ERAForce (Task: Subject "Telefonische opvolging", Type "Bellen", Status "Open").
+  opvolging: { Subject: 'Telefonische opvolging', Type: 'Bellen', Status: 'Open' },
 };
 
 /**
  * Link die in ERAForce een nieuwe, ingevulde taak opent op de prospect (zoals ERA Scout): onderwerp en type, status
- * Gesloten, datum vandaag, gekoppeld aan het contact, en bij een bericht de tekst als omschrijving. Jonas vult enkel
+ * Gesloten (een opvolgtaak: Open), datum vandaag (een opvolgtaak: de gekozen dag), gekoppeld aan het contact, en bij een bericht de tekst als omschrijving. Jonas vult enkel
  * nog aan (evaluatie) en bewaart. Oxpecker schrijft zelf niets naar ERAForce.
  */
 export function eraforceTaakLink(
@@ -72,7 +74,8 @@ export function eraforceTaakLink(
   const id = contact.bron === 'eraforce_mirror' ? contact.externId : null;
   if (!domein || !id || !SALESFORCE_ID.test(id) || !['00Q', '003'].includes(id.slice(0, 3))) return null;
   const host = domein.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
-  const velden: Record<string, string> = { ...TAAK_VELDEN[soort], Status: 'Gesloten', WhoId: id, ActivityDate: vandaag };
+  const { Status = 'Gesloten', ...rest } = TAAK_VELDEN[soort];
+  const velden: Record<string, string> = { ...rest, Status, WhoId: id, ActivityDate: vandaag };
   // Lange teksten inkorten: de link moet in de Salesforce-app passen.
   if (omschrijving?.trim()) velden.Description = omschrijving.trim().slice(0, 1500);
   const dv = Object.entries(velden)
@@ -89,6 +92,18 @@ export function eraforceOproepLink(
   richting: 'uitgaand' | 'inkomend' = 'uitgaand',
 ): string | null {
   return eraforceTaakLink(contact, domein, vandaag, richting);
+}
+
+/**
+ * Opvolgtaak (8/10/2026): een open taak "Telefonische opvolging" (type Bellen, status Open) met de gekozen dag als
+ * vervaldatum. De mirror herkent die daarna als terugbeltaak en dus als volgende stap.
+ */
+export function eraforceOpvolgLink(
+  contact: Pick<Contact, 'bron' | 'externId'>,
+  domein: string | null | undefined,
+  dag: string,
+): string | null {
+  return eraforceTaakLink(contact, domein, dag, 'opvolging');
 }
 
 /** Gewone link naar het record (om de prospect te bekijken). */

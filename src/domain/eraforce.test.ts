@@ -73,3 +73,14 @@ describe('bericht loggen in ERAForce', () => {
     expect(l).toContain('Subject=WhatsApp%20verstuurd,Type=SMS,Status=Gesloten,WhoId=00QTt00000F0DcbMAF,ActivityDate=2026-10-07,Description=Dag%20Olivier%2C%20veel%20succes!%0AGroetjes%2C%20Jonas');
   });
 });
+
+import { eraforceOpvolgLink } from './eraforce';
+
+describe('opvolgtaak in ERAForce', () => {
+  it('open taak Telefonische opvolging (type Bellen) met de gekozen dag als vervaldatum', () => {
+    expect(eraforceOpvolgLink({ bron: 'eraforce_mirror', externId: '00QTt00000F0DcbMAF' }, DOMEIN, '2026-10-17')).toBe(
+      `https://${DOMEIN}/lightning/o/Task/new?recordTypeId=01224000000gEemAAE&defaultFieldValues=Subject=Telefonische%20opvolging,Type=Bellen,Status=Open,WhoId=00QTt00000F0DcbMAF,ActivityDate=2026-10-17`,
+    );
+    expect(eraforceOpvolgLink({ bron: 'fictief', externId: 'FIC-C-001' }, DOMEIN, '2026-10-17')).toBeNull();
+  });
+});
