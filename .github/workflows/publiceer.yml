@@ -83,6 +83,15 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
           VITE_ERAFORCE_DOMEIN: ${{ vars.VITE_ERAFORCE_DOMEIN }}
           VITE_VAPID_PUBLIC_KEY: ${{ vars.VITE_VAPID_PUBLIC_KEY }}
+      # Aparte DEMO van de verkoopmodule (fictieve gegevens), op .../verkoop-demo/. Zelfde code, eigen configuratie:
+      # geen login, gedeelde demo-opslag in het aparte schema verkoop_demo (enkel met de toegangscode uit de link).
+      - name: Demo verkoopmodule bouwen
+        run: npx vite build --outDir dist/verkoop-demo --emptyOutDir
+        env:
+          VITE_APP: verkoop-demo
+          BASE_PATH: /${{ github.event.repository.name }}/verkoop-demo/
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

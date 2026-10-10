@@ -4,6 +4,7 @@
 
 Persoonlijke dagplanner voor een inkoper: wie bel ik vandaag, waarom, en wanneer past dat tussen mijn afspraken.
 Het volledige plan staat in [PLAN.md](PLAN.md), de wijzigingen in [CHANGELOG.md](CHANGELOG.md).
+De verkoopmodule (koperspool en matchmaking, voorlopig enkel als demo) staat beschreven in [VERKOOP.md](VERKOOP.md).
 
 > Deze repository bevat **uitsluitend fictieve testdata**. Alle namen, adressen en telefoonnummers zijn verzonnen.
 

@@ -1,12 +1,14 @@
 {
   "name": "era-inkoop-assist",
   "private": true,
-  "version": "0.15.0",
+  "version": "0.16.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit -p . && vite build",
     "preview": "vite preview",
+    "dev:verkoopdemo": "VITE_APP=verkoop-demo vite",
+    "build:verkoopdemo": "tsc --noEmit -p . && VITE_APP=verkoop-demo vite build --outDir dist/verkoop-demo",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit -p ."

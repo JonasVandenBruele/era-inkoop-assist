@@ -11,4 +11,6 @@ interface ImportMetaEnv {
   readonly VITE_ERAFORCE_DOMEIN?: string;
   /** Publieke VAPID-sleutel voor pushmeldingen (repo-variabele). */
   readonly VITE_VAPID_PUBLIC_KEY?: string;
+  /** 'verkoop-demo' = aparte demo-build van de verkoopmodule (zie vite.config.ts). */
+  readonly VITE_APP?: string;
 }

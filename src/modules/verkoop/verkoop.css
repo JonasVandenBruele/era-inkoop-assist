@@ -1,0 +1,171 @@
+/* Verkoopmodule — bouwt verder op styles.css (ERA-huisstijl). Gsm eerst: niets mag horizontaal scrollen. */
+.vk { overflow-x: hidden; }
+.vk .pagina { overflow-wrap: anywhere; }
+.vk-demostrook { background: var(--test-bg, #ffe08a); }
+.vk-appbalk { gap: 8px; }
+.vk-ruimte { flex: 1; }
+.vk-profielknop {
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.85rem;
+  min-height: 40px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--rand);
+  background: var(--blauw-licht);
+  color: var(--blauw);
+  cursor: pointer;
+}
+.vk-hulp { min-height: 40px; min-width: 40px; padding: 0; font-weight: 800; font-size: 1.1rem; }
+.vk-balk { margin: 8px 16px 0; }
+.vk-profielen { display: grid; gap: 10px; margin-top: 16px; }
+.vk-profielen .knop { flex-direction: column; gap: 2px; }
+.vk-profielrol { font-size: 0.75rem; font-weight: 500; opacity: 0.85; text-transform: none; letter-spacing: 0; }
+
+/* Chips (keuzes met één tik) */
+.vk-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.vk-chip {
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  min-height: 40px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--rand);
+  background: var(--kaart);
+  color: var(--tekst);
+  cursor: pointer;
+}
+.vk-chip.aan { background: var(--blauw); border-color: var(--blauw); color: #fff; }
+
+/* Tabs */
+.vk-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 0; margin: 10px 0 12px; border: 1px solid var(--rand); border-radius: var(--radius); overflow: hidden; }
+.vk-tabs button { font: inherit; font-weight: 700; font-size: 0.9rem; min-height: 46px; border: none; background: var(--kaart); color: var(--zacht); cursor: pointer; }
+.vk-tabs button.aan { background: var(--blauw); color: #fff; }
+
+/* Kaarten */
+.vk-rijkop { display: flex; gap: 8px; align-items: flex-start; justify-content: space-between; }
+.vk-rijnaam { flex: 1; min-width: 0; }
+.vk-rijnaam a, .vk-pandkaart, .vk-poolkaart { color: inherit; }
+.vk-pandkaart, .vk-poolkaart { display: block; text-decoration: none; }
+.vk-pandkaart p, .vk-poolkaart p { margin: 4px 0; }
+.vk-select { width: 26px; height: 26px; min-height: 0; flex: none; margin-top: 2px; }
+.vk-rij.vk-koopklaar { border-left: 4px solid var(--rood); }
+.vk-redenen { margin: 6px 0; padding-left: 18px; }
+.vk-redenen li { margin: 2px 0; }
+.vk-uitgesloten { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.vk-feiten { font-size: 0.9rem; }
+.vk-onderdeel { border-top: 1px solid var(--rand); padding-top: 6px; }
+.vk-verzoek { background: var(--blauw-licht); border-left: 3px solid var(--blauw); padding: 6px 10px; margin: 0; border-radius: var(--radius); }
+.vk-prijsregel { margin: 6px 0 0; }
+.vk-actiekaart { border-left: 4px solid var(--blauw); }
+.vk-actiekaart h2 { margin-bottom: 4px; }
+.vk-prijsdaling { border-left-color: var(--rood); }
+.vk-tellers { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 0.85rem; color: var(--zacht); margin: 8px 0; }
+.vk-tellers strong { color: var(--blauw); }
+.vk-filter { display: grid; gap: 2px; font-size: 0.85rem; font-weight: 600; margin: 6px 0; }
+.vk-filters { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
+@media (max-width: 380px) { .vk-filters { grid-template-columns: 1fr; } }
+.vk-tabel { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.vk-tabel td { padding: 4px 0; vertical-align: top; border-top: 1px solid var(--rand); }
+.vk-tabel .punten { text-align: right; white-space: nowrap; padding-left: 8px; font-variant-numeric: tabular-nums; }
+.vk-kenmerken { list-style: none; padding: 0; margin: 0; }
+.vk-kenmerken li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 8px; padding: 6px 0; border-top: 1px solid var(--rand); }
+.vk-kenmerken li > :nth-child(2) { grid-column: 1; font-weight: 600; }
+.vk-kenmerken li > :nth-child(3) { grid-column: 1; }
+.vk-kenmerken li > button { grid-column: 2; grid-row: 1 / span 3; align-self: center; min-height: 44px; }
+.vk-criteria ul { margin: 4px 0 8px; padding-left: 18px; }
+.vk-verworpen { opacity: 0.6; }
+.vk-verworpen > :first-child { text-decoration: line-through; }
+.vk-inzichten { list-style: none; padding: 0; margin: 0 0 10px; display: grid; gap: 8px; }
+.vk-inzicht { background: var(--kaart); border: 1px solid var(--rand); border-left: 3px solid var(--blauw); border-radius: var(--radius); padding: 8px 10px; }
+.vk-inzicht p { margin: 2px 0; }
+.vk-route { list-style: none; padding: 0; margin: 0; }
+.vk-route .kaart p { margin: 6px 0 10px; }
+.vk-route .label { margin-left: 8px; }
+.vk-h3 { margin: 6px 0 0; font-size: 0.95rem; }
+.vk-veld { display: grid; gap: 6px; border: none; padding: 0; margin: 0; }
+.vk-veld legend { font-weight: 700; margin-bottom: 4px; }
+
+/* Labels */
+.vk-bellabel-vandaag_eerst { background: var(--rood); color: #fff; }
+.vk-bellabel-eerst_controleren { background: var(--waarschuwing-bg); color: var(--waarschuwing); }
+.vk-bellabel-deze_week { background: var(--rand); color: var(--tekst); }
+.vk-belkaart.vk-label-vandaag_eerst { border-left-color: var(--rood); border-left-width: 6px; }
+.vk-belkaart.vk-label-vandaag { border-left-color: var(--blauw); }
+.vk-belkaart.vk-label-eerst_controleren { border-left-color: #b45309; }
+.vk-belkaart.vk-label-deze_week { border-left-color: #b7b7c2; }
+.vk-klasse-sterk { background: #dcfce7; color: #166534; }
+.vk-klasse-goed { background: var(--blauw-licht); color: var(--blauw); }
+.vk-klasse-mogelijk, .vk-klasse-zwak { background: var(--rand); color: var(--tekst); }
+.vk-klasse-uitgesloten { background: var(--gevaar-bg); color: var(--gevaar); }
+.vk-vg-interesse, .vk-vg-bezoek_gepland { background: #dcfce7; color: #166534; }
+.vk-vg-geen_interesse, .vk-vg-afgerond { background: var(--rand); color: var(--zacht); }
+.vk-vg-geen_antwoord, .vk-vg-terugbellen, .vk-vg-te_beoordelen { background: var(--waarschuwing-bg); color: var(--waarschuwing); }
+.vk-pool-koopklaar { background: var(--rood); color: #fff; }
+.vk-pool-gepauzeerd, .vk-pool-afgerond { background: var(--rand); color: var(--zacht); }
+.vk-pool-te_kwalificeren { background: var(--waarschuwing-bg); color: var(--waarschuwing); }
+.vk-cat { background: #fde7ea; color: #95103a; }
+@media (prefers-color-scheme: dark) {
+  .vk-klasse-sterk, .vk-vg-interesse, .vk-vg-bezoek_gepland { background: #12301f; color: #86efac; }
+  .vk-cat { background: #3a0f1a; color: #ff8fa0; }
+}
+
+/* Details */
+.vk-details { margin-top: 8px; }
+.vk-details summary { cursor: pointer; font-weight: 600; color: var(--blauw); min-height: 44px; display: flex; align-items: center; }
+.vk-details-inhoud { padding-top: 4px; }
+
+/* Onderblad: eigen scroll, past zich aan bij het schermtoetsenbord */
+.vk-blad-achtergrond { align-items: flex-end; }
+.vk-blad { max-height: calc(100dvh - 24px); overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+.vk-bladkop { display: flex; justify-content: space-between; align-items: center; gap: 8px; position: sticky; top: -18px; background: var(--kaart); padding-top: 4px; z-index: 1; }
+.vk-bladkop h2 { margin: 0; }
+.vk-uitkomsten { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.vk-uitkomst { min-height: 52px; font-size: 0.9rem; padding: 8px; text-align: center; line-height: 1.2; }
+.vk-uitkomst.aan { background: var(--blauw); border-color: var(--blauw); color: #fff; }
+.vk-uitkomst.gevaar:not(.aan) { color: var(--gevaar); }
+.vk-daguur { display: grid; gap: 4px; }
+.vk-blad textarea, .vk-blad input { font-size: 16px; } /* voorkomt inzoomen op iPhone */
+
+/* Bulkbalk boven de onderbalk */
+.vk-bulkbalk {
+  position: sticky;
+  bottom: calc(68px + env(safe-area-inset-bottom));
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--kaart);
+  border: 1px solid var(--rand);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  margin-top: 10px;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.15);
+  z-index: 5;
+}
+.vk input, .vk select, .vk textarea { font-size: 16px; }
+.vk .belkaart > .knoppenrij { flex-wrap: wrap; }
+.vk .belkaart > .knoppenrij .belknop { flex: 1 1 100%; }
+.vk .belkaart > .knoppenrij .knop:not(.belknop) { flex: 1 1 0; }
+.vk .kleine-knoppen { flex-wrap: wrap; }
+
+/* Smalle gsm's: compacte kopbalk, profielknop altijd volledig zichtbaar */
+.vk-appbalk { flex-wrap: nowrap; min-width: 0; }
+.vk-appbalk .appondertitel { white-space: nowrap; }
+.vk-profielknop { flex: none; white-space: nowrap; }
+@media (max-width: 420px) {
+  /* "Demo" staat al in de gele strook erboven. */
+  .vk-appbalk .appondertitel { display: none; }
+  .vk-appbalk .appmerk { width: 28px; height: 28px; }
+}
+
+/* Lange labels en feiten breken af in plaats van de pagina te verbreden */
+.vk .label { white-space: normal; max-width: 100%; }
+.vk .feiten { grid-template-columns: minmax(0, 38%) minmax(0, 1fr); }
+.vk .feiten dd, .vk .feiten dt { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 350px) {
+  .vk-appbalk .appnaam { font-size: 0.85rem; }
+  .vk-appbalk { gap: 6px; padding-left: 12px; padding-right: 12px; }
+  .vk-profielknop { padding: 6px 10px; }
+}

@@ -7,13 +7,19 @@ const versie = JSON.parse(readFileSync(new URL('./package.json', import.meta.url
 
 // BASE_PATH wordt door de GitHub Pages-workflow gezet (bv. /era-inkoop-assist/).
 const base = process.env.BASE_PATH ?? '/';
+// Aparte demo-build van de verkoopmodule: geen servicewerker of installatie, eigen titel.
+const verkoopDemo = process.env.VITE_APP === 'verkoop-demo';
 
 export default defineConfig({
   base,
   define: { __APP_VERSIE__: JSON.stringify(versie) },
   plugins: [
     react(),
-    VitePWA({
+    verkoopDemo && {
+      name: 'verkoop-demo-titel',
+      transformIndexHtml: (html: string) => html.replace('<title>Oxpecker</title>', '<title>Oxpecker Verkoop — demo</title>'),
+    },
+    !verkoopDemo && VitePWA({
       registerType: 'autoUpdate',
       // Eigen servicewerker (src/sw.ts) voor pushmeldingen; precaching blijft via Workbox.
       strategies: 'injectManifest',

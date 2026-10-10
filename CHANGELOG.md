@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.16.0] — 2026-10-10 — Verkoopmodule (demo)
+
+### Toegevoegd
+- **Verkoopmodule als aparte demo** met fictieve gegevens op `…/verkoop-demo/` (zelfde code, eigen configuratie): Vandaag bellen, Koperspool, Aanbod, Kandidaten & opvolging per pand, Kandidaatdetail, Kantooroverzicht en een demonstratieroute. Zie [VERKOOP.md](VERKOOP.md).
+- Matchscore per zoekopdracht (met dekking en harde voorwaarden), aankoopintentie en belprioriteit in controleerbare code; feedback uit gesprekken als bevestigbare voorstellen met bronzin.
+- "Bereid lancering voor" en "Volg prijsdaling op" (automatisch uit de prijshistoriek of handmatig, twijfelgevallen bevestigen), vrijgave vóór publicatie, gedeelde contactacties met toewijzen, overnemen, claimen en resultaat registreren.
+- Gedeelde demo-opslag in het aparte schema `verkoop_demo` (migratie `20261010000012_verkoop_demo.sql`), enkel bereikbaar met de toegangscode uit de link; met versiecontrole en een bevestigde reset. Geen productiegegevens, geen echte oproepen of berichten.
+- De gewone app is ongewijzigd: de democode zit niet in de gewone build.
+
 ## [0.15.0] — 2026-10-10 — Opvolgtaak na het bellen
 
 ### Toegevoegd
